@@ -1,3 +1,7 @@
+## Release 1.7 (Wed, Mar 11 00:00)
+
+- Added `ThreeGlobeRenderer` — full Three.js-based globe renderer integrating EarthBuilder, GraticuleBuilder, MarkerManager, ArcPathManager, RegionManager, and CalloutManager into a unified render pipeline with rAF loop, dirty-flag optimization, WebGL texture loading with error events, hit-testing via Raycaster, and CSS2D callout labels.
+
 ## Release 1.6 (Wed, Mar 11 00:00)
 
 - Added ArcPathManager for rendering great-circle arcs and multi-point paths on the globe using fat lines (Three.js `Line2`), with support for configurable stroke width, color, and dash patterns.
