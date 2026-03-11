@@ -576,12 +576,13 @@ export class ThreeGlobeRenderer {
   #applyGlobeRotation() {
     if (!this.#globeGroup) return;
     // latLonToCartesian puts (0,0) on +X with z negated for Three.js UV alignment.
-    // Camera at +Z. YXZ: Y by -(centerLon+90°), then X by centerLat.
+    // Camera at +Z. XYZ order: Y rotation (longitude) applied to point first,
+    // then X rotation (latitude tilt). This decouples lat/lon centering exactly.
     this.#globeGroup.rotation.set(
       this.#centerLat * DEG_TO_RAD,
       -(this.#centerLon + 90) * DEG_TO_RAD,
       0,
-      'YXZ'
+      'XYZ'
     );
   }
 
