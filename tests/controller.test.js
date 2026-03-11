@@ -35,6 +35,19 @@ class MockRenderer {
     return { centerLon: 2, centerLat: 1, zoom: 1.3 };
   }
 
+  screenToLatLon(clientX, clientY) {
+    this.calls.push(['screenToLatLon', clientX, clientY]);
+    return { lat: 10, lon: 20 };
+  }
+
+  pauseIdleRotation() {
+    this.calls.push(['pauseIdleRotation']);
+  }
+
+  resumeIdleRotation() {
+    this.calls.push(['resumeIdleRotation']);
+  }
+
   destroy() {
     this.calls.push(['destroy']);
   }
@@ -62,4 +75,21 @@ test('GlobeController renders on scene updates and proxies flyTo', () => {
 
   controller.destroy();
   assert.ok(renderer.calls.some((call) => call[0] === 'destroy'));
+});
+
+test('GlobeController proxies screenToLatLon to renderer', () => {
+  const renderer = new MockRenderer();
+  const controller = new GlobeController({ renderer });
+  const result = controller.screenToLatLon(100, 200);
+  assert.deepEqual(result, { lat: 10, lon: 20 });
+  assert.ok(renderer.calls.some(c => c[0] === 'screenToLatLon'));
+});
+
+test('GlobeController proxies pauseIdleRotation and resumeIdleRotation', () => {
+  const renderer = new MockRenderer();
+  const controller = new GlobeController({ renderer });
+  controller.pauseIdleRotation();
+  controller.resumeIdleRotation();
+  assert.ok(renderer.calls.some(c => c[0] === 'pauseIdleRotation'));
+  assert.ok(renderer.calls.some(c => c[0] === 'resumeIdleRotation'));
 });

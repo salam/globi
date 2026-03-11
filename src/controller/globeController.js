@@ -143,6 +143,25 @@ export class GlobeController {
     }
   }
 
+  screenToLatLon(clientX, clientY) {
+    if (typeof this.#renderer.screenToLatLon === 'function') {
+      return this.#renderer.screenToLatLon(clientX, clientY);
+    }
+    return null;
+  }
+
+  pauseIdleRotation() {
+    if (typeof this.#renderer.pauseIdleRotation === 'function') {
+      this.#renderer.pauseIdleRotation();
+    }
+  }
+
+  resumeIdleRotation() {
+    if (typeof this.#renderer.resumeIdleRotation === 'function') {
+      this.#renderer.resumeIdleRotation();
+    }
+  }
+
   zoomBy(deltaScale) {
     if (typeof this.#renderer.zoomBy === 'function') {
       this.#renderer.zoomBy(deltaScale);
