@@ -50,6 +50,8 @@ const viewerUiShowLegendButton = document.getElementById('viewer-ui-show-legend-
 const viewerUiShowInspectButton = document.getElementById('viewer-ui-show-inspect-button');
 const viewerUiShowCompass = document.getElementById('viewer-ui-show-compass');
 const viewerUiShowScale = document.getElementById('viewer-ui-show-scale');
+const showBordersToggle = document.getElementById('viewer-ui-show-borders');
+const showLabelsToggle = document.getElementById('viewer-ui-show-labels');
 const exampleSceneSelect = document.getElementById('example-scene');
 const loadExampleButton = document.getElementById('load-example');
 const exampleStatus = document.getElementById('example-status');
@@ -205,6 +207,8 @@ function renderToViewer(options = {}) {
   viewerUiShowInspectButton.checked = scene.viewerUi.showInspectButton;
   viewerUiShowCompass.checked = scene.viewerUi.showCompass;
   viewerUiShowScale.checked = scene.viewerUi.showScale;
+  showBordersToggle.checked = scene.planet?.showBorders !== false;
+  showLabelsToggle.checked = scene.planet?.showLabels !== false;
   jsonBuffer.value = exportSceneToJSON(scene);
   if (!options.skipInspectRefresh) {
     syncInspectSelection();
@@ -954,6 +958,28 @@ bindControlEvents(viewerUiShowScale, () => {
   updateViewerUi({
     showScale: viewerUiShowScale.checked,
   });
+});
+
+showBordersToggle.addEventListener('change', () => {
+  scene = {
+    ...scene,
+    planet: {
+      ...scene.planet,
+      showBorders: showBordersToggle.checked,
+    },
+  };
+  renderToViewer();
+});
+
+showLabelsToggle.addEventListener('change', () => {
+  scene = {
+    ...scene,
+    planet: {
+      ...scene.planet,
+      showLabels: showLabelsToggle.checked,
+    },
+  };
+  renderToViewer();
 });
 
 inspectClose.addEventListener('click', () => {
