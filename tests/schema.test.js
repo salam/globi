@@ -7,6 +7,7 @@ import {
   normalizeScene,
   validateScene,
 } from '../src/scene/schema.js';
+import { resolvePlanetConfig } from '../src/scene/celestial.js';
 
 test('createEmptyScene creates a valid baseline scene', () => {
   const scene = createEmptyScene('de');
@@ -139,4 +140,39 @@ test('validateScene accepts text markers as a valid visual type', () => {
   const result = validateScene(scene);
   assert.equal(result.valid, true);
   assert.deepEqual(result.errors, []);
+});
+
+test('validateScene rejects invalid obliquity', () => {
+  const scene = createEmptyScene();
+  scene.planet.obliquity = -10;
+  const result = validateScene(scene);
+  assert.ok(result.errors.some(e => e.includes('obliquity')));
+});
+
+test('validateScene rejects zero siderealRotation', () => {
+  const scene = createEmptyScene();
+  scene.planet.siderealRotation = 0;
+  const result = validateScene(scene);
+  assert.ok(result.errors.some(e => e.includes('siderealRotation')));
+});
+
+test('validateScene rejects rings with innerRadius >= outerRadius', () => {
+  const scene = createEmptyScene();
+  scene.planet.rings = { innerRadius: 3, outerRadius: 2, opacity: 0.5, color: '#fff', textureUri: '' };
+  const result = validateScene(scene);
+  assert.ok(result.errors.some(e => e.includes('rings')));
+});
+
+test('validateScene rejects atmosphere density > 1', () => {
+  const scene = createEmptyScene();
+  scene.planet.atmosphere = { enabled: true, scaleHeight: 8, surfacePressure: 1, scatterColor: '#fff', thickness: 0.06, density: 1.5 };
+  const result = validateScene(scene);
+  assert.ok(result.errors.some(e => e.includes('density')));
+});
+
+test('validateScene accepts valid planet with atmosphere and rings', () => {
+  const scene = createEmptyScene();
+  scene.planet = resolvePlanetConfig('saturn');
+  const result = validateScene(scene);
+  assert.equal(result.valid, true);
 });

@@ -225,6 +225,52 @@ export function validateScene(sceneInput) {
     errors.push('planet.showLabels must be a boolean');
   }
 
+  // Obliquity
+  if (scene.planet.obliquity !== undefined) {
+    if (!Number.isFinite(scene.planet.obliquity) || scene.planet.obliquity < 0 || scene.planet.obliquity > 360) {
+      errors.push('planet.obliquity must be within [0, 360]');
+    }
+  }
+
+  // Orbital period
+  if (scene.planet.orbitalPeriod !== undefined) {
+    if (!Number.isFinite(scene.planet.orbitalPeriod) || scene.planet.orbitalPeriod <= 0) {
+      errors.push('planet.orbitalPeriod must be > 0');
+    }
+  }
+
+  // Sidereal rotation
+  if (scene.planet.siderealRotation !== undefined) {
+    if (!Number.isFinite(scene.planet.siderealRotation) || scene.planet.siderealRotation === 0) {
+      errors.push('planet.siderealRotation must not be 0');
+    }
+  }
+
+  // Atmosphere
+  if (scene.planet.atmosphere !== null && scene.planet.atmosphere !== undefined) {
+    const atmo = scene.planet.atmosphere;
+    if (atmo.density !== undefined && (!Number.isFinite(atmo.density) || atmo.density < 0 || atmo.density > 1)) {
+      errors.push('planet.atmosphere.density must be within [0, 1]');
+    }
+    if (atmo.thickness !== undefined && (!Number.isFinite(atmo.thickness) || atmo.thickness < 0)) {
+      errors.push('planet.atmosphere.thickness must be >= 0');
+    }
+    if (atmo.scaleHeight !== undefined && (!Number.isFinite(atmo.scaleHeight) || atmo.scaleHeight <= 0)) {
+      errors.push('planet.atmosphere.scaleHeight must be > 0');
+    }
+  }
+
+  // Rings
+  if (scene.planet.rings !== null && scene.planet.rings !== undefined) {
+    const rings = scene.planet.rings;
+    if (rings.innerRadius >= rings.outerRadius) {
+      errors.push('planet.rings.innerRadius must be < outerRadius');
+    }
+    if (rings.opacity !== undefined && (!Number.isFinite(rings.opacity) || rings.opacity < 0 || rings.opacity > 1)) {
+      errors.push('planet.rings.opacity must be within [0, 1]');
+    }
+  }
+
   const rawMarkers = Array.isArray(rawScene.markers) ? rawScene.markers : [];
   scene.markers.forEach((marker, index) => {
     const pointer = `markers[${index}]`;
