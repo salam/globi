@@ -1,5 +1,13 @@
+## Release 2.4 (Wed, Mar 12 06:00)
+
+* Surface-grab drag rotation — grabbing the globe now feels like physically turning a ball; the point under your finger stays anchored to the cursor
+* Drag sensitivity scales with zoom level automatically (zoomed in = finer control)
+* Removed momentum/inertia after drag release — globe stops immediately when you let go
+* Idle rotation pauses during drag and resumes on release
+
 ## Release 2.3 (Tue, Mar 11 23:30)
 
+* Fixed mirrored globe rendering: earth texture and markers no longer appear east/west flipped (BUG8)
 * Search now dims non-matching legend/key items to 20% opacity instead of leaving them at full brightness
 * Matching legend items are shown in bold for quick scanning
 * Legend auto-scrolls to the first search hit

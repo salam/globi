@@ -7,6 +7,8 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Apply a low-resolution NASA Earth texture to built-in example scenes.
 - [x] Add `text` marker visual type so labels can be written directly on the globe.
 - [x] Add timestamped ISS history dot markers to the ISS real-time example using API position samples.
+- [x] Add pulsating ring animation around the current ISS position marker.
+- [x] Add simple procedural 3D ISS model (body + solar panels) as a visual marker for ISS current position.
 - [x] Add an arrow-only north compass and dynamic kilometer scale overlay in the viewer.
 - [x] Animate camera pan/rotation when selecting markers from the legend.
 - [x] Add idle slow globe rotation based on planet axis rotation direction/speed.
@@ -23,7 +25,8 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Offer sun-position-based sphere lighting as an optional mode.
 - [x] Default to Earth when no base data is provided.
 - [x] Add planet/moon preset toggle (8 planets + 5 popular moons).
-- [x] Add rotation, zoom, pan, and inertial camera behavior for mouse/touch/keyboard.
+- [x] Add rotation, zoom, pan for mouse/touch/keyboard.
+- [x] Add surface-grab drag rotation (grab point tracks cursor, zoom-scaled sensitivity, no inertia).
 - [x] Add fullscreen toggle and ESC listener.
 - [x] Make renderer responsive to container size changes.
 - [x] Migrate rendering from Canvas 2D to Three.js WebGL with GPU-accelerated shaders.
