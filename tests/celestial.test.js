@@ -135,3 +135,26 @@ test('moon presets have parentId linking to their parent planet', () => {
   assert.equal(getCelestialPreset('ganymede').parentId, 'jupiter');
   assert.equal(getCelestialPreset('titan').parentId, 'saturn');
 });
+
+test('resolvePlanetConfig merges atmosphere override (shallow merge)', () => {
+  const planet = resolvePlanetConfig({ id: 'earth', atmosphere: { scatterColor: '#ff0000' } });
+  assert.equal(planet.atmosphere.scatterColor, '#ff0000');
+  // Other atmosphere fields preserved from preset
+  assert.equal(planet.atmosphere.scaleHeight, 8.5);
+  assert.equal(planet.atmosphere.enabled, true);
+});
+
+test('resolvePlanetConfig custom body gets default orbital values', () => {
+  const planet = resolvePlanetConfig({ id: 'custom-world', baseColor: '#ff0000' });
+  assert.equal(planet.obliquity, 0);
+  assert.equal(planet.orbitalPeriod, 365.256);
+  assert.equal(planet.siderealRotation, 24);
+  assert.equal(planet.atmosphere, null);
+  assert.equal(planet.rings, null);
+});
+
+test('resolvePlanetConfig preserves rings override', () => {
+  const planet = resolvePlanetConfig({ id: 'saturn', rings: { opacity: 0.5 } });
+  assert.equal(planet.rings.opacity, 0.5);
+  assert.equal(planet.rings.innerRadius, 1.24);
+});

@@ -303,6 +303,20 @@ export function getCelestialPreset(id = 'earth') {
   return clonePreset(preset);
 }
 
+function mergeAtmosphere(override, base) {
+  if (override === null) return null;
+  if (!base) return override ?? null;
+  if (!override || typeof override !== 'object') return base ? { ...base } : null;
+  return { ...base, ...override };
+}
+
+function mergeRings(override, base) {
+  if (override === null) return null;
+  if (!base) return override ?? null;
+  if (!override || typeof override !== 'object') return base ? { ...base } : null;
+  return { ...base, ...override };
+}
+
 export function resolvePlanetConfig(input) {
   if (typeof input === 'string') {
     return getCelestialPreset(input);
@@ -335,6 +349,16 @@ export function resolvePlanetConfig(input) {
         : '',
       showBorders: planet.showBorders !== false,
       showLabels: planet.showLabels !== false,
+      obliquity: safeNumber(planet.obliquity, preset.obliquity),
+      northPoleRA: safeNumber(planet.northPoleRA, preset.northPoleRA),
+      northPoleDec: safeNumber(planet.northPoleDec, preset.northPoleDec),
+      orbitalPeriod: safeNumber(planet.orbitalPeriod, preset.orbitalPeriod),
+      siderealRotation: safeNumber(planet.siderealRotation, preset.siderealRotation),
+      orbitalInclination: safeNumber(planet.orbitalInclination, preset.orbitalInclination),
+      longitudeOfAscNode: safeNumber(planet.longitudeOfAscNode, preset.longitudeOfAscNode),
+      meanLongitudeJ2000: safeNumber(planet.meanLongitudeJ2000, preset.meanLongitudeJ2000),
+      atmosphere: mergeAtmosphere(planet.atmosphere, preset.atmosphere),
+      rings: mergeRings(planet.rings, preset.rings),
     };
   }
 
@@ -360,5 +384,15 @@ export function resolvePlanetConfig(input) {
       : '',
     showBorders: planet.showBorders !== false,
     showLabels: planet.showLabels !== false,
+    obliquity: safeNumber(planet.obliquity, 0),
+    northPoleRA: safeNumber(planet.northPoleRA, 0),
+    northPoleDec: safeNumber(planet.northPoleDec, 90),
+    orbitalPeriod: safeNumber(planet.orbitalPeriod, 365.256),
+    siderealRotation: safeNumber(planet.siderealRotation, 24),
+    orbitalInclination: safeNumber(planet.orbitalInclination, 0),
+    longitudeOfAscNode: safeNumber(planet.longitudeOfAscNode, 0),
+    meanLongitudeJ2000: safeNumber(planet.meanLongitudeJ2000, 0),
+    atmosphere: planet.atmosphere ?? null,
+    rings: planet.rings ?? null,
   };
 }
