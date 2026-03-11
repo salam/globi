@@ -50,6 +50,11 @@ test('flyTo sets camera to target coordinates', () => {
   assert.equal(state.zoom, 2);
 });
 
+test('screenToLatLon is a function on the renderer', () => {
+  const renderer = new ThreeGlobeRenderer();
+  assert.equal(typeof renderer.screenToLatLon, 'function');
+});
+
 test('destroy is callable without init', () => {
   const renderer = new ThreeGlobeRenderer();
   assert.doesNotThrow(() => renderer.destroy());

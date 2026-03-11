@@ -23,7 +23,7 @@ import { RegionManager } from './regionManager.js';
 import { CalloutManager } from './calloutManager.js';
 import { getSunLightVector } from '../math/solar.js';
 import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
-import { latLonToCartesian } from '../math/geo.js';
+import { latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const ZOOM_MIN = 0.3;
@@ -422,6 +422,33 @@ export class ThreeGlobeRenderer {
     }
 
     return null;
+  }
+
+  /**
+   * Convert screen (client) coordinates to geographic lat/lon by raycasting
+   * against the earth mesh. Returns { lat, lon } or null if off-globe.
+   */
+  screenToLatLon(clientX, clientY) {
+    if (!this.#webglRenderer || !this.#camera || !this.#earthMesh) {
+      return null;
+    }
+
+    const canvas = this.#webglRenderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.#camera);
+    const hits = raycaster.intersectObject(this.#earthMesh);
+    if (hits.length === 0) return null;
+
+    const worldPoint = hits[0].point.clone();
+    const inverseRotation = this.#globeGroup.quaternion.clone().invert();
+    worldPoint.applyQuaternion(inverseRotation);
+
+    const geo = cartesianToLatLon(worldPoint.x, worldPoint.y, worldPoint.z);
+    return { lat: geo.lat, lon: geo.lon };
   }
 
   /**
