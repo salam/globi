@@ -867,18 +867,24 @@ export class GlobeViewerElement extends HTMLElement {
   #onPointerDown(event) {
     event.preventDefault();
     this.#stopFocusAnimation();
+    this.#controller.pauseIdleRotation();
+
     this.#drag.active = true;
     this.#drag.pointerId = event.pointerId;
     this.#drag.x = event.clientX;
     this.#drag.y = event.clientY;
-    this.#drag.vx = 0;
-    this.#drag.vy = 0;
     this.#drag.ts = performance.now();
     this.#drag.travel = 0;
-    if (this.#inertiaFrame) {
-      cancelAnimationFrame(this.#inertiaFrame);
-      this.#inertiaFrame = 0;
-    }
+
+    // Surface grab: find the geographic point under the cursor
+    const grabLatLon = this.#controller.screenToLatLon(event.clientX, event.clientY);
+    this.#drag.grabLatLon = grabLatLon; // null if off-disk
+    this.#drag.wasOffDisk = !grabLatLon;
+
+    // Store zoom for off-disk fallback scaling
+    const camState = this.#controller.getCameraState();
+    this.#drag.zoom = camState.zoom;
+
     this.#stage.setPointerCapture?.(event.pointerId);
   }
 
@@ -887,20 +893,47 @@ export class GlobeViewerElement extends HTMLElement {
       return;
     }
 
-    const now = performance.now();
-    const dt = Math.max(1, now - this.#drag.ts);
     const dx = event.clientX - this.#drag.x;
     const dy = event.clientY - this.#drag.y;
     this.#drag.travel += Math.abs(dx) + Math.abs(dy);
 
-    this.#drag.vx = dx / dt;
-    this.#drag.vy = dy / dt;
+    if (this.#drag.grabLatLon) {
+      // Surface-grab mode: raycast to find current lat/lon under cursor
+      const currentLatLon = this.#controller.screenToLatLon(event.clientX, event.clientY);
+
+      if (currentLatLon) {
+        // On-disk: compute geographic delta so grab point tracks cursor
+        const deltaLon = this.#drag.grabLatLon.lon - currentLatLon.lon;
+        const deltaLat = this.#drag.grabLatLon.lat - currentLatLon.lat;
+        this.#controller.panBy(deltaLon, deltaLat);
+
+        // If we were off-disk and came back, re-anchor to avoid jump
+        if (this.#drag.wasOffDisk) {
+          this.#drag.grabLatLon = this.#controller.screenToLatLon(event.clientX, event.clientY);
+          this.#drag.wasOffDisk = false;
+        }
+      } else {
+        // Off-disk fallback: zoom-scaled screen deltas
+        this.#drag.wasOffDisk = true;
+        this.#panByScreenDelta(dx, dy);
+      }
+    } else {
+      // Started off-disk: always use screen-delta fallback
+      this.#panByScreenDelta(dx, dy);
+    }
+
     this.#drag.x = event.clientX;
     this.#drag.y = event.clientY;
-    this.#drag.ts = now;
-
-    this.#controller.panBy(dx * 0.18, dy * 0.18);
+    this.#drag.ts = performance.now();
     this.#updateNavigationHud();
+  }
+
+  #panByScreenDelta(dx, dy) {
+    const canvas = this.#stage.querySelector('canvas') ?? this.#stage;
+    const rect = canvas.getBoundingClientRect();
+    const globeScreenRadius = Math.min(rect.width, rect.height) * 0.45 * this.#drag.zoom;
+    const coefficient = (180 / Math.PI) / globeScreenRadius;
+    this.#controller.panBy(dx * coefficient, -dy * coefficient);
   }
 
   #onPointerUp(event) {
@@ -908,41 +941,17 @@ export class GlobeViewerElement extends HTMLElement {
       return;
     }
     this.#drag.active = false;
+    this.#drag.grabLatLon = null;
+    this.#drag.wasOffDisk = false;
     this.#stage.releasePointerCapture?.(event.pointerId);
+    this.#controller.resumeIdleRotation();
+
     const isClick = this.#drag.travel < 6;
     if (isClick) {
       const hit = this.inspectAt(event.clientX, event.clientY);
       if (hit || this.#inspectMode) return;
     }
-    if (!isClick) {
-      this.#startInertia();
-    }
-  }
-
-  #startInertia() {
-    if (!this.#controller) {
-      return;
-    }
-
-    let vx = this.#drag.vx;
-    let vy = this.#drag.vy;
-    const friction = 0.94;
-
-    const tick = () => {
-      vx *= friction;
-      vy *= friction;
-
-      if (Math.abs(vx) < 0.005 && Math.abs(vy) < 0.005) {
-        this.#inertiaFrame = 0;
-        return;
-      }
-
-      this.#controller.panBy(vx * 7, vy * 7);
-      this.#updateNavigationHud();
-      this.#inertiaFrame = requestAnimationFrame(tick);
-    };
-
-    this.#inertiaFrame = requestAnimationFrame(tick);
+    // No inertia — globe stops immediately
   }
 
   #onWheel(event) {
