@@ -8,5 +8,9 @@
     "lint": "node tools/lint.mjs",
     "check": "npm run lint && npm run test",
     "serve:editor": "python3 -m http.server 4173"
+  },
+  "dependencies": {
+    "earcut": "^3.0.2",
+    "three": "^0.183.2"
   }
 }
