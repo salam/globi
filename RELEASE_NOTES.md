@@ -1,5 +1,6 @@
 ## Release 1.5 (Wed, Mar 11 00:00)
 
+- Added CalloutManager for rendering leader lines (WebGL `THREE.Line`) from marker surface points, with label positioning, backface culling, visibility modes (`always`, `hover`, `click`, `none`), and `showCallout`/`hideCallout` for event-driven display.
 - Added RegionManager for rendering GeoJSON Polygon and MultiPolygon regions on the globe with earcut triangulation and support for extruded (altitude > 0) regions with side faces.
 - Added EarthBuilder module for Three.js-based globe rendering with realistic day/night texture blending, Fresnel rim lighting, and atmospheric glow shell.
 
