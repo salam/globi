@@ -240,6 +240,9 @@ export class ThreeGlobeRenderer {
     this.#earthMesh = earthMesh;
     globeGroup.add(earthMesh);
 
+    // Load default day texture for Earth
+    this.#loadTexture('assets/earth_day_2k.jpg', 'dayTexture');
+
     // --- Graticule ---
     const graticule = createGraticule();
     this.#graticule = graticule;
