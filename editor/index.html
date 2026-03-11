@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Globi Editor</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="panel">
+        <h1>Globi Editor</h1>
+        <p>Create markers, paths, arcs, regions, and animations. Preview updates live.</p>
+
+        <div class="row">
+          <label for="locale">Locale</label>
+          <select id="locale">
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Francais</option>
+            <option value="it">Italiano</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="celestial-body">Celestial body</label>
+          <select id="celestial-body"></select>
+        </div>
+        <div class="row">
+          <label for="theme-mode">Theme</label>
+          <select id="theme-mode">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+        <div class="row backdrop-row">
+          <label for="backdrop-uri">Backdrop image URL</label>
+          <input id="backdrop-uri" placeholder="https://.../space-nebula.jpg" />
+        </div>
+        <label class="row inspect-mode-row"><input id="sun-lighting" type="checkbox" /> Use sun position for sphere lighting</label>
+        <label class="row inspect-mode-row"><input id="inspect-mode" type="checkbox" checked /> Inspect mode on click</label>
+
+        <details open>
+          <summary>Viewer UI</summary>
+          <div class="stack">
+            <div class="row">
+              <label for="viewer-ui-control-style">Button labels</label>
+              <select id="viewer-ui-control-style">
+                <option value="text">Text</option>
+                <option value="icon">Icons</option>
+              </select>
+            </div>
+            <label class="row inspect-mode-row"><input id="viewer-ui-show-body-selector" type="checkbox" checked /> Show body selector</label>
+            <label class="row inspect-mode-row"><input id="viewer-ui-show-fullscreen-button" type="checkbox" checked /> Show fullscreen button</label>
+            <label class="row inspect-mode-row"><input id="viewer-ui-show-legend-button" type="checkbox" checked /> Show legend button</label>
+            <label class="row inspect-mode-row"><input id="viewer-ui-show-inspect-button" type="checkbox" checked /> Show inspect button</label>
+            <label class="row inspect-mode-row"><input id="viewer-ui-show-compass" type="checkbox" checked /> Show compass</label>
+            <label class="row inspect-mode-row"><input id="viewer-ui-show-scale" type="checkbox" checked /> Show km scale</label>
+          </div>
+        </details>
+
+        <details open>
+          <summary>Load Example Scene</summary>
+          <div class="stack">
+            <select id="example-scene"></select>
+            <div class="row gap wrap">
+              <button id="load-example" type="button">Load Example</button>
+              <span id="example-status" class="inline-status" aria-live="polite"></span>
+            </div>
+          </div>
+        </details>
+
+        <details open>
+          <summary>Marker</summary>
+          <form id="marker-form" class="stack">
+            <input name="id" placeholder="id (e.g. zrh)" required />
+            <input name="name" placeholder="name" required />
+            <div class="grid-2">
+              <input name="lat" type="number" step="any" placeholder="lat" required />
+              <input name="lon" type="number" step="any" placeholder="lon" required />
+            </div>
+            <input name="alt" type="number" step="any" placeholder="alt" value="0" />
+            <select name="visualType">
+              <option value="dot">dot</option>
+              <option value="image">image</option>
+              <option value="model">model</option>
+              <option value="text">text</option>
+            </select>
+            <input name="assetUri" placeholder="assetUri (for image/model)" />
+            <textarea name="description" placeholder="description"></textarea>
+            <button type="submit">Add / Update Marker</button>
+          </form>
+        </details>
+
+        <details open>
+          <summary>Geo Lookup (OSM Nominatim)</summary>
+          <form id="geocode-form" class="stack">
+            <input id="geocode-query" name="query" placeholder="Search place name, e.g. Zurich HB, Switzerland" required />
+            <div class="row gap wrap">
+              <button type="submit">Search Places</button>
+              <span id="geocode-status" class="inline-status" aria-live="polite"></span>
+            </div>
+            <ul id="geocode-results" class="geocode-results"></ul>
+            <p class="subtle-note">Uses Nominatim search endpoint: <code>https://nominatim.openstreetmap.org/search</code></p>
+          </form>
+        </details>
+
+        <details>
+          <summary>Arc</summary>
+          <form id="arc-form" class="stack">
+            <input name="id" placeholder="arc id" required />
+            <div class="grid-2">
+              <input name="startLat" type="number" step="any" placeholder="start lat" required />
+              <input name="startLon" type="number" step="any" placeholder="start lon" required />
+            </div>
+            <div class="grid-2">
+              <input name="endLat" type="number" step="any" placeholder="end lat" required />
+              <input name="endLon" type="number" step="any" placeholder="end lon" required />
+            </div>
+            <input name="maxAltitude" type="number" step="any" placeholder="max altitude" value="0.1" />
+            <input name="color" placeholder="color" value="#ffd000" />
+            <button type="submit">Add / Update Arc</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Path</summary>
+          <form id="path-form" class="stack">
+            <input name="id" placeholder="path id" required />
+            <textarea name="points" placeholder="lat,lon,alt per line&#10;47.37,8.54,0&#10;40.71,-74.00,0" required></textarea>
+            <input name="color" placeholder="color" value="#00aaff" />
+            <input name="strokeWidth" type="number" step="any" placeholder="stroke width" value="1" />
+            <button type="submit">Add / Update Path</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Region</summary>
+          <form id="region-form" class="stack">
+            <input name="id" placeholder="region id" required />
+            <textarea name="geojson" placeholder='GeoJSON geometry, e.g. {\"type\":\"Polygon\",\"coordinates\":[[[8,47],[9,47],[9,48],[8,47]]]}' required></textarea>
+            <input name="capColor" placeholder="cap color" value="#4caf50" />
+            <input name="sideColor" placeholder="side color" value="#2e7d32" />
+            <input name="altitude" type="number" step="any" placeholder="altitude" value="0.02" />
+            <button type="submit">Add / Update Region</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Animation</summary>
+          <form id="animation-form" class="stack">
+            <input name="entityId" placeholder="target entity id" required />
+            <textarea name="keyframes" placeholder='JSON keyframes, e.g. [{"t":0,"value":{"lat":47,"lon":8}},{"t":10000,"value":{"lat":40,"lon":-74}}]' required></textarea>
+            <label class="row"><input name="loop" type="checkbox" /> Loop</label>
+            <button type="submit">Add / Update Animation</button>
+          </form>
+        </details>
+
+        <h2>Data</h2>
+        <div class="row gap wrap">
+          <button id="export-json" type="button">Export JSON</button>
+          <button id="import-json" type="button">Import JSON</button>
+          <button id="export-geojson" type="button">Export GeoJSON</button>
+          <button id="import-geojson" type="button">Import GeoJSON</button>
+          <button id="export-obj" type="button">Export OBJ</button>
+          <button id="export-usdz" type="button">Export USDZ Placeholder</button>
+        </div>
+        <textarea id="json-buffer" rows="14" placeholder="Scene JSON / GeoJSON"></textarea>
+      </section>
+
+      <section class="viewer-wrap">
+        <globe-viewer id="viewer" language="en"></globe-viewer>
+        <aside id="inspect-panel" class="inspect-panel hidden" aria-live="polite">
+          <div class="inspect-head">
+            <strong id="inspect-title">Inspect</strong>
+            <button id="inspect-close" type="button">Close</button>
+          </div>
+          <p class="inspect-hint">Click an object on the globe to edit it immediately.</p>
+          <div id="inspect-fields" class="inspect-fields"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

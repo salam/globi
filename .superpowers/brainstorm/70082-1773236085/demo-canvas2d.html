@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Globe Demo — Canvas 2D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e6f0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+  h1 { font-size: 18px; margin-bottom: 4px; color: #7eb8ff; }
+  .subtitle { font-size: 13px; color: #8899bb; margin-bottom: 16px; }
+  canvas { border: 1px solid #1d2a44; border-radius: 12px; }
+  #stats { margin-top: 12px; font-size: 13px; color: #99aacc; font-family: monospace; white-space: pre-line; }
+</style>
+</head>
+<body>
+<h1>Canvas 2D Globe</h1>
+<p class="subtitle">Open DevTools → Memory tab to inspect heap usage</p>
+<canvas id="globe" width="800" height="800"></canvas>
+<div id="stats">Loading texture...</div>
+
+<script>
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const CX = W / 2, CY = H / 2, R = 360;
+
+const TEX_URL = 'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57730/land_ocean_ice_2048.png';
+
+let texData = null;
+let tw = 0, th = 0;
+let centerLon = 0;
+const DEG = Math.PI / 180;
+
+const img = new Image();
+img.crossOrigin = 'anonymous';
+img.onload = () => {
+  tw = img.naturalWidth;
+  th = img.naturalHeight;
+  const off = document.createElement('canvas');
+  off.width = tw; off.height = th;
+  const oc = off.getContext('2d');
+  oc.drawImage(img, 0, 0);
+  texData = oc.getImageData(0, 0, tw, th);
+  document.getElementById('stats').textContent = `Texture loaded: ${tw}x${th}\nStarting render loop...`;
+  requestAnimationFrame(loop);
+};
+img.onerror = () => {
+  document.getElementById('stats').textContent = 'Failed to load texture (CORS). Try opening via local server.';
+};
+img.src = TEX_URL;
+
+function render() {
+  const t0 = performance.now();
+
+  // Clear
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, W, H);
+
+  if (!texData) return 0;
+
+  const step = 2;
+  const outW = Math.ceil((R * 2) / step);
+  const outH = Math.ceil((R * 2) / step);
+  const imageData = ctx.createImageData(outW, outH);
+  const out = imageData.data;
+  const pix = texData.data;
+
+  const clat = 20 * DEG;
+  const clon = centerLon * DEG;
+  const sinCL = Math.sin(clat), cosCL = Math.cos(clat);
+
+  for (let oy = 0; oy < outH; oy++) {
+    const py = CY - R + oy * step;
+    const ny = (CY - py) / R;
+    const nySq = ny * ny;
+
+    for (let ox = 0; ox < outW; ox++) {
+      const px = CX - R + ox * step;
+      const nx = (px - CX) / R;
+      const rhoSq = nx * nx + nySq;
+      if (rhoSq > 1) continue;
+
+      const rho = Math.sqrt(rhoSq);
+      let lat, lon;
+      if (rho < 1e-10) {
+        lat = 20; lon = centerLon;
+      } else {
+        const c = Math.asin(rho);
+        const cosC = Math.cos(c), sinC = Math.sin(c);
+        lat = Math.asin(cosC * sinCL + (ny * sinC * cosCL) / rho) * (180 / Math.PI);
+        lon = centerLon + Math.atan2(nx * sinC, rho * cosCL * cosC - ny * sinCL * sinC) * (180 / Math.PI);
+      }
+
+      const u = ((lon + 180) % 360 + 360) % 360 / 360;
+      const v = (90 - lat) / 180;
+      const tx = Math.min(tw - 1, Math.max(0, Math.round(u * (tw - 1))));
+      const ty = Math.min(th - 1, Math.max(0, Math.round(v * (th - 1))));
+      const si = (ty * tw + tx) * 4;
+      const di = (oy * outW + ox) * 4;
+
+      // Apply simple lighting (dot product with light direction)
+      const nz = Math.sqrt(Math.max(0, 1 - rhoSq));
+      const light = Math.max(0, -0.42 * nx + 0.32 * ny + 0.85 * nz);
+      const shade = 0.15 + 0.85 * light;
+
+      out[di]     = pix[si] * shade;
+      out[di + 1] = pix[si + 1] * shade;
+      out[di + 2] = pix[si + 2] * shade;
+      out[di + 3] = 255;
+    }
+  }
+
+  // Draw texture
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = outW; offCanvas.height = outH;
+  const oc = offCanvas.getContext('2d');
+  oc.putImageData(imageData, 0, 0);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(CX, CY, R, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.drawImage(offCanvas, CX - R, CY - R, R * 2, R * 2);
+  ctx.restore();
+
+  // Atmospheric edge glow
+  const glow = ctx.createRadialGradient(CX, CY, R * 0.92, CX, CY, R * 1.08);
+  glow.addColorStop(0, 'rgba(100, 180, 255, 0)');
+  glow.addColorStop(0.5, 'rgba(100, 180, 255, 0.15)');
+  glow.addColorStop(1, 'rgba(100, 180, 255, 0)');
+  ctx.beginPath();
+  ctx.arc(CX, CY, R * 1.08, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // Rim highlight
+  ctx.beginPath();
+  ctx.arc(CX, CY, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(140, 200, 255, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  return performance.now() - t0;
+}
+
+let frameCount = 0;
+let fpsAccum = 0;
+let lastFpsUpdate = performance.now();
+
+function loop() {
+  const frameTime = render();
+  centerLon += 0.15;
+  frameCount++;
+  fpsAccum += frameTime;
+
+  const now = performance.now();
+  if (now - lastFpsUpdate > 1000) {
+    const fps = (frameCount / ((now - lastFpsUpdate) / 1000)).toFixed(1);
+    const avgMs = (fpsAccum / frameCount).toFixed(1);
+    const mem = performance.memory
+      ? `JS Heap: ${(performance.memory.usedJSHeapSize / 1048576).toFixed(1)} MB / ${(performance.memory.totalJSHeapSize / 1048576).toFixed(1)} MB`
+      : 'JS Heap: use Chrome DevTools → Memory';
+    document.getElementById('stats').textContent =
+      `FPS: ${fps}  |  Frame: ${avgMs} ms\n${mem}\nTexture: ${tw}x${th}  |  Canvas: ${W}x${H}  |  Step: 2px`;
+    frameCount = 0;
+    fpsAccum = 0;
+    lastFpsUpdate = now;
+  }
+
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

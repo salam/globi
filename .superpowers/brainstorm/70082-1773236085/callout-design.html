@@ -1,0 +1,81 @@
+<h2>Callout Design: Spatially Anchored Labels</h2>
+<p class="subtitle">You mentioned liking the yellow callouts that radiate from the globe center outward. Let's nail down the details.</p>
+
+<div class="mockup" style="margin-bottom: 24px;">
+  <div class="mockup-header">Reference: How these callouts work</div>
+  <div class="mockup-body" style="background: #0a0e1a; padding: 24px; text-align: center;">
+    <svg viewBox="0 0 500 400" width="500" height="400" style="max-width:100%;">
+      <!-- Globe -->
+      <defs>
+        <radialGradient id="g1" cx="42%" cy="38%">
+          <stop offset="0%" stop-color="#2a5a8a"/>
+          <stop offset="100%" stop-color="#0a1a30"/>
+        </radialGradient>
+        <radialGradient id="atmos" cx="50%" cy="50%">
+          <stop offset="85%" stop-color="rgba(80,160,255,0)" />
+          <stop offset="100%" stop-color="rgba(80,160,255,0.15)" />
+        </radialGradient>
+      </defs>
+      <circle cx="250" cy="200" r="142" fill="url(#atmos)" />
+      <circle cx="250" cy="200" r="130" fill="url(#g1)" stroke="rgba(140,200,255,0.3)" stroke-width="1.5"/>
+
+      <!-- Callout lines (from surface point, extending outward from center) -->
+      <!-- Marker 1: top-right -->
+      <line x1="330" y1="120" x2="400" y2="60" stroke="#f6b73c" stroke-width="1.5" opacity="0.7"/>
+      <circle cx="330" cy="120" r="4" fill="#f6b73c"/>
+      <rect x="390" y="42" width="95" height="28" rx="4" fill="rgba(246,183,60,0.15)" stroke="#f6b73c" stroke-width="1"/>
+      <text x="437" y="60" fill="#f6b73c" font-size="11" font-family="system-ui" text-anchor="middle">ZRH → JFK</text>
+
+      <!-- Marker 2: right -->
+      <line x1="370" y1="190" x2="440" y2="190" stroke="#f6b73c" stroke-width="1.5" opacity="0.7"/>
+      <circle cx="370" cy="190" r="4" fill="#f6b73c"/>
+      <rect x="440" y="176" width="55" height="28" rx="4" fill="rgba(246,183,60,0.15)" stroke="#f6b73c" stroke-width="1"/>
+      <text x="467" y="194" fill="#f6b73c" font-size="11" font-family="system-ui" text-anchor="middle">Dubai</text>
+
+      <!-- Marker 3: bottom-left -->
+      <line x1="180" y1="290" x2="100" y2="350" stroke="#f6b73c" stroke-width="1.5" opacity="0.7"/>
+      <circle cx="180" cy="290" r="4" fill="#f6b73c"/>
+      <rect x="30" y="338" width="95" height="28" rx="4" fill="rgba(246,183,60,0.15)" stroke="#f6b73c" stroke-width="1"/>
+      <text x="77" y="356" fill="#f6b73c" font-size="11" font-family="system-ui" text-anchor="middle">São Paulo</text>
+
+      <!-- Marker 4: left -->
+      <line x1="140" y1="160" x2="60" y2="120" stroke="#f6b73c" stroke-width="1.5" opacity="0.7"/>
+      <circle cx="140" cy="160" r="4" fill="#f6b73c"/>
+      <rect x="5" y="106" width="70" height="28" rx="4" fill="rgba(246,183,60,0.15)" stroke="#f6b73c" stroke-width="1"/>
+      <text x="40" y="124" fill="#f6b73c" font-size="11" font-family="system-ui" text-anchor="middle">NYC</text>
+
+      <!-- Center dot for reference -->
+      <circle cx="250" cy="200" r="2" fill="rgba(255,255,255,0.2)"/>
+    </svg>
+  </div>
+</div>
+
+<h3>Question: How should callouts behave?</h3>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Always visible (all markers show callouts)</h3>
+      <p>Every marker on the visible side gets a callout label with a leader line pointing outward from globe center. Labels auto-arrange to avoid overlap. Best for dashboards with fewer markers (5-30).</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>On hover / click only</h3>
+      <p>Callouts appear when you interact with a marker. Clean globe by default, callout pops out on interaction. Best for dense datasets (30+ markers).</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Configurable per marker (default: always visible)</h3>
+      <p>Each marker has a <code>callout</code> property: <code>"always"</code>, <code>"hover"</code>, <code>"click"</code>, or <code>"none"</code>. The scene creator decides. Default is <code>"always"</code> for the reference look.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 2rem; font-style: italic;">My recommendation: <strong>Option C</strong> — gives content creators full control. Default "always" matches the reference look you showed.</p>

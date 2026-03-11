@@ -1,0 +1,157 @@
+{
+  "conversations": [
+    {
+      "id": "07286ba3-2f6d-4442-a21e-6cbe5db61caf",
+      "title": "Make it more production-quality 3D effects. I want to have a better texture f...",
+      "description": "▸",
+      "category": "user-story",
+      "status": "in-review",
+      "lastMessage": "---\nDoes this design look right so far? Any sections you'd like me to adjust before I write the spec doc?",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": true,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../70082-1773236085/migration-scope.html",
+        "outputHint": "File created successfully at: /Users/matthias/Development/globi/.superpowers/brainstorm/70082-177323...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T13:26:19.723Z",
+      "updatedAt": "2026-03-11T18:44:56.778Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/07286ba3-2f6d-4442-a21e-6cbe5db61caf.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "42cad8ae-7413-498f-b362-4ff271f1f0c2",
+      "title": "There is a tool \"codespeak\" in the workspace. Can you analyze it, possibly de...",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] ct-tutorial-20260209)\n- [GitHub - codespeak-dev/hello-codespeak](https://github.com/codespeak-dev/hello-codespeak)",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Read",
+        "summary": ".../console_client/console_client_main.py",
+        "outputHint": "31 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-04T10:01:25.271Z",
+      "updatedAt": "2026-03-04T10:05:37.056Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/42cad8ae-7413-498f-b362-4ff271f1f0c2.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review",
+      "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%20%20%20%20%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%236b7280%22%20opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Cpolygon%20points%3D%2249%2C35.5%2057.5%2C52.5%2040.5%2C52.5%22%20fill%3D%22hsl(95%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2244%22%20cy%3D%2239%22%20r%3D%228%22%20fill%3D%22hsl(95%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Crect%20x%3D%2231.5%22%20y%3D%2226.5%22%20width%3D%2215%22%20height%3D%2215%22%20fill%3D%22hsl(95%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Cpolygon%20points%3D%2234%2C22%2041%2C36%2027%2C36%22%20fill%3D%22hsl(95%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2229%22%20cy%3D%2224%22%20r%3D%226.5%22%20fill%3D%22hsl(95%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fsvg%3E"
+    },
+    {
+      "id": "32ff984a-4dac-4883-b7e0-31f1f1d62aae",
+      "title": "Bug: The texture of the earth surface is not transformed/projected to a spher...",
+      "description": "▸",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...]  renderer texture test in [renderer.test.js](tests/renderer.test.js) with proper DOM mocks.\n**All 84 tests pass.**",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-02T22:25:51.527Z",
+      "updatedAt": "2026-03-02T22:34:40.050Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/32ff984a-4dac-4883-b7e0-31f1f1d62aae.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review",
+      "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%20%20%20%20%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23ef4444%22%20opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Ccircle%20cx%3D%2233%22%20cy%3D%2212%22%20r%3D%228.5%22%20fill%3D%22hsl(279%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Crect%20x%3D%228%22%20y%3D%2231%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22hsl(279%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Cpolygon%20points%3D%2235%2C8.5%2040.5%2C19.5%2029.5%2C19.5%22%20fill%3D%22hsl(279%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fsvg%3E"
+    },
+    {
+      "id": "codex-019cac43-0039-71d3-91a7-c2c69d496a75",
+      "title": "Update the examples to include always all landmass shapes, and apply a low-re...",
+      "description": "▸ I’ll locate where the example assets and rendering settings are defined, then update them so all landmass shapes are always included and add a low-resolution Earth texture source. I’ll inspect `F...",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "- North-angle calculation remains in `computeNorthArrowRotation(...)`: [navigationHud.js:56](/Users/matthias/Developm...",
+      "agents": [
+        {
+          "id": "codex-main",
+          "name": "Codex",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "createdAt": "2026-03-02T01:57:29.119Z",
+      "updatedAt": "2026-03-02T13:39:43.041Z",
+      "filePath": "/Users/matthias/.codex/sessions/2026/03/02/rollout-2026-03-02T02-56-38-019cac43-0039-71d3-91a7-c2c69d496a75.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "codex",
+      "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%20%20%20%20%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%236b7280%22%20opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Cpolygon%20points%3D%2224%2C31%2031%2C45%2017%2C45%22%20fill%3D%22hsl(170%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2238%22%20cy%3D%2252%22%20r%3D%228%22%20fill%3D%22hsl(170%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Crect%20x%3D%2243%22%20y%3D%2213%22%20width%3D%2218%22%20height%3D%2218%22%20fill%3D%22hsl(170%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Cpolygon%20points%3D%2222%2C32%2026%2C40%2018%2C40%22%20fill%3D%22hsl(170%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2236%22%20cy%3D%2250%22%20r%3D%225%22%20fill%3D%22hsl(170%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fsvg%3E"
+    },
+    {
+      "id": "codex-019ca8eb-ed77-72f3-a1da-a58c974760e4",
+      "title": "Turn the specs file [PRD for Spherical Earth Model.docx](specs/PRD for Spheri...",
+      "description": "I’ll convert the PRD `.docx` into Markdown, then draft a comparison against OpenGlobus, and finally generate `FEATURES.md` plus implementation blueprints. I’m starting by reading the `AGENTS.md` in...",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "- `npm run check` passed (`56/56` tests, lint clean).\n1. If you want, I can add a **custom feed adapter** so example ...",
+      "agents": [
+        {
+          "id": "codex-main",
+          "name": "Codex",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "createdAt": "2026-03-01T10:28:14.020Z",
+      "updatedAt": "2026-03-01T13:31:15.356Z",
+      "filePath": "/Users/matthias/.codex/sessions/2026/03/01/rollout-2026-03-01T11-22-40-019ca8eb-ed77-72f3-a1da-a58c974760e4.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "codex",
+      "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%20%20%20%20%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%2310b981%22%20opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Crect%20x%3D%229%22%20y%3D%2215%22%20width%3D%2214%22%20height%3D%2214%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Cpolygon%20points%3D%2222%2C22%2028%2C34%2016%2C34%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2228%22%20cy%3D%2234%22%20r%3D%225%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Crect%20x%3D%2230%22%20y%3D%2236%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fsvg%3E"
+    }
+  ],
+  "lastUpdated": "2026-03-11T18:44:57.183Z"
+}

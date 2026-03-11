@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --test tests/sphere-projection.test.js)",
+      "Bash(node --test tests/renderer.test.js)",
+      "Bash(node --test tests/*.test.js)",
+      "Read(//Users/matthias/.local/share/uv/tools/codespeak-cli/bin/**)",
+      "Bash(codespeak --help)",
+      "Bash(codespeak --version)",
+      "Read(//Users/matthias/.local/share/uv/tools/codespeak-cli/lib/**)"
+    ]
+  }
+}

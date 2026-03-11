@@ -1,0 +1,69 @@
+<h2>Rendering Approach: How should we achieve the realistic look?</h2>
+<p class="subtitle">The current globe uses Canvas 2D (pixel-by-pixel texture mapping at 38% opacity over a gradient). To get the quality in your reference, we need to decide the rendering strategy.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Migrate to WebGL / Three.js</h3>
+      <p><strong>Best visual quality.</strong> Real GPU-accelerated 3D sphere with proper texture mapping, atmospheric shaders, city lights layer, Fresnel edge glow, and smooth rotation. This is how the reference images are built.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Photo-realistic earth with multiple texture layers (day, night, clouds, bump)</li>
+          <li>Real atmospheric glow via shaders</li>
+          <li>GPU-accelerated — smooth even at high resolution</li>
+          <li>Aligns with PRD goal (WebGL with Three.js)</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Significant rewrite of the renderer (~500 lines)</li>
+          <li>Adds Three.js dependency (~150KB gzipped)</li>
+          <li>All existing Canvas 2D drawing code needs porting</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Enhanced Canvas 2D</h3>
+      <p><strong>Incremental improvement.</strong> Boost the existing renderer: full-opacity texture, better lighting simulation, painted atmospheric glow, composite night-lights layer. Stays in Canvas 2D.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>No new dependencies</li>
+          <li>Smaller diff — evolve existing code</li>
+          <li>Simpler mental model</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Still pixel-by-pixel — slow at high resolution</li>
+          <li>Can't achieve true atmospheric shader effects</li>
+          <li>Night/day blending will be approximate at best</li>
+          <li>PRD actually calls for WebGL — this defers that</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid: WebGL sphere + Canvas 2D overlays</h3>
+      <p><strong>Best of both.</strong> Use WebGL (Three.js) only for the sphere rendering (texture, atmosphere, lighting). Keep Canvas 2D for markers, paths, arcs, and callouts overlaid on top.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Photo-realistic sphere with shaders</li>
+          <li>Preserves all existing overlay code (markers, paths, regions)</li>
+          <li>Smaller migration surface — only sphere body changes</li>
+          <li>Callouts naturally work as HTML/Canvas overlays</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Two rendering contexts to coordinate</li>
+          <li>Still adds Three.js dependency</li>
+          <li>Slight alignment complexity between WebGL and Canvas layers</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 2rem; font-style: italic;">My recommendation: <strong>Option C (Hybrid)</strong> — gets the visual quality where it matters most (the earth itself) while preserving the working overlay system. The callout system you want is actually easier as HTML/Canvas overlays than as 3D objects.</p>

@@ -1,0 +1,40 @@
+create a prd with implementation blueprint for the following:
+
+- lightweight web component that features a spherical earth model with reasonable polygon complexity, 
+- that the user can rotate with touch and mouse and keyboard. - also allow to zoom in
+- allow to embed in pages 
+- provide fullscreen
+- make it responsive deaign to work on mobile and desktop browsets
+- multi-lingual
+
+
+- add support to add marker pins on the world with x,y,z
+- also allow to specify a lat/lon and optional elevation/altitude for marker placement
+
+- allow animations of the world
+- allow to bring a marker to center with an animated rotation/zoom combi
+
+- allow to move markers like airplanes
+- allow to define the marker visual with text (standard dot), image, or 3d asset
+
+- provide a callout functionality for markers
+
+- provide the option to display curved paths (like satellite or plane or boat paths)
+
+- provide the option for areas (on surface or elevated or even 3d)
+
+- allow to toggle a legende/key of all markers on the side/bottom of the globe
+
+
+- allow other planets than earth (preset our planets and moons, but allow to specify custom invented ones)
+
+- enable a system to define temporal timestamped movement paths for animations of all markers objects (like a plane flying) either start and endpoint
+
+- have a wysiwyg editor for content creators to create and manage markers, curves, regions and paths and animations
+
+- allow to import GIS data like openstreetmap world data for country borders
+
+- allow to export to obj, usdz or similar suitable file formats
+
+
+Also check if prior existing projects exist.

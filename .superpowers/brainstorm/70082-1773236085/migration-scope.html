@@ -1,0 +1,64 @@
+<h2>Migration Scope: What gets ported to Three.js?</h2>
+<p class="subtitle">We're moving the sphere rendering to Three.js. But the current Canvas 2D renderer also draws markers, paths, arcs, regions, and graticule. How much do we migrate?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Hybrid: Three.js sphere + HTML/CSS overlay for everything else</h3>
+      <p>Three.js renders only the earth (textures, atmosphere, lighting). Markers, callouts, paths, arcs, and regions are drawn as <strong>HTML/CSS elements</strong> positioned via <code>projectPointToClient()</code>. The existing projection math stays, just outputs to DOM instead of canvas.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Callouts are naturally HTML — easy styling, accessibility, i18n</li>
+          <li>Smallest migration — only sphere body changes</li>
+          <li>CSS animations for callout transitions</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Arcs/paths/regions as HTML are tricky (SVG overlay needed)</li>
+          <li>Two coordinate systems to sync</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hybrid: Three.js sphere + Canvas 2D overlay for lines, HTML for callouts</h3>
+      <p>Three layers: (1) Three.js WebGL canvas for the earth, (2) Canvas 2D overlay for paths/arcs/regions/graticule (existing drawing code), (3) HTML overlay for marker dots and callouts.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Existing path/arc/region drawing code reused as-is</li>
+          <li>Callouts as HTML — rich content, accessible</li>
+          <li>Clean separation of concerns</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Three render layers to coordinate</li>
+          <li>Slight complexity in z-ordering</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Full Three.js: everything in WebGL</h3>
+      <p>Port all rendering to Three.js: earth sphere, markers as 3D sprites/billboards, arcs/paths as <code>Line</code> geometry, regions as extruded meshes. Callouts use CSS2DRenderer (Three.js built-in HTML overlay).</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Single rendering pipeline — no sync issues</li>
+          <li>Better depth sorting (markers behind globe auto-hidden)</li>
+          <li>Future-proof for 3D marker models</li>
+          <li>Aligns with PRD's full Three.js vision</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Largest migration — most existing drawing code replaced</li>
+          <li>Callouts still use CSS2DRenderer (HTML), so we get HTML callouts anyway</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 2rem; font-style: italic;">My recommendation: <strong>Option C (Full Three.js)</strong> — since we're already adding the dependency, go all-in. Three.js's CSS2DRenderer gives us HTML callouts for free, depth sorting is automatic, and we avoid the complexity of syncing multiple render layers. This matches the PRD's original intent.</p>

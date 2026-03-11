@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Globe Rendering Comparison</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e6f0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+  h1 { font-size: 24px; color: #7eb8ff; margin-bottom: 8px; }
+  p { font-size: 14px; color: #8899bb; margin-bottom: 32px; max-width: 600px; text-align: center; line-height: 1.6; }
+  .cards { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  a.card { display: block; text-decoration: none; color: inherit; width: 320px; padding: 28px 24px; border: 1px solid #1d2a44; border-radius: 12px; background: #0d1a30; transition: border-color 0.2s, background 0.2s; }
+  a.card:hover { border-color: #3a6ab0; background: #111f3a; }
+  a.card h2 { font-size: 18px; margin-bottom: 8px; }
+  a.card p { font-size: 13px; color: #99aacc; text-align: left; margin-bottom: 0; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-bottom: 12px; }
+  .tag.canvas { background: rgba(255,153,68,0.2); color: #ff9944; }
+  .tag.three { background: rgba(68,187,255,0.2); color: #44bbff; }
+  .instructions { margin-top: 32px; font-size: 13px; color: #667799; max-width: 500px; line-height: 1.7; }
+  .instructions strong { color: #99aacc; }
+</style>
+</head>
+<body>
+  <h1>Globe Rendering: Memory Comparison</h1>
+  <p>Open each demo in its own tab, then take a heap snapshot in DevTools to compare memory footprint independently.</p>
+
+  <div class="cards">
+    <a class="card" href="demo-canvas2d-v2.html" target="_blank">
+      <span class="tag canvas">Canvas 2D</span>
+      <h2>Canvas 2D (Antialiased)</h2>
+      <p>Pixel-by-pixel texture projection with bilinear sampling. Renders at 2x and downscales for antialiasing. CPU-bound, zero dependencies.</p>
+    </a>
+    <a class="card" href="demo-threejs-v2.html" target="_blank">
+      <span class="tag three">Three.js + WebGL</span>
+      <h2>Three.js (Day/Night/Atmos)</h2>
+      <p>GPU-accelerated sphere with day/night texture blending, Fresnel atmospheric glow, and MSAA antialiasing. Uses custom GLSL shaders.</p>
+    </a>
+  </div>
+
+  <div class="instructions">
+    <strong>How to compare:</strong><br>
+    1. Open each link in a separate tab<br>
+    2. Wait for globe to start rotating<br>
+    3. DevTools → Memory → Take Heap Snapshot<br>
+    4. Compare retained sizes<br>
+    5. Check Activity Monitor for CPU usage per tab
+  </div>
+</body>
+</html>

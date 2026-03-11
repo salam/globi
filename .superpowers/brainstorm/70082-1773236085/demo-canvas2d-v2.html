@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Globe Demo — Canvas 2D (Antialiased)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e6f0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+  h1 { font-size: 18px; margin-bottom: 4px; color: #ff9944; }
+  .subtitle { font-size: 13px; color: #8899bb; margin-bottom: 16px; }
+  canvas { border: 1px solid #1d2a44; border-radius: 12px; }
+  #stats { margin-top: 12px; font-size: 13px; color: #99aacc; font-family: monospace; white-space: pre-line; min-height: 60px; }
+</style>
+</head>
+<body>
+<h1>Canvas 2D Globe (Antialiased)</h1>
+<p class="subtitle">Renders at 2x resolution, downscales for antialiasing. Open DevTools → Memory → Heap Snapshot.</p>
+<canvas id="globe" width="1200" height="1200" style="width:600px;height:600px;"></canvas>
+<div id="stats">Loading texture...</div>
+
+<script>
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+// Render at 2x for antialiasing, CSS displays at 600x600
+const W = canvas.width, H = canvas.height;
+const CX = W / 2, CY = H / 2, R = 540; // 270 * 2
+const DEG = Math.PI / 180;
+
+let texData = null, tw = 0, th = 0, centerLon = 0;
+let frameCount = 0, fpsAccum = 0, lastFps = performance.now();
+
+const img = new Image();
+img.onload = () => {
+  tw = img.naturalWidth; th = img.naturalHeight;
+  const off = document.createElement('canvas');
+  off.width = tw; off.height = th;
+  const oc = off.getContext('2d');
+  oc.drawImage(img, 0, 0);
+  texData = oc.getImageData(0, 0, tw, th);
+  document.getElementById('stats').textContent = `Texture: ${tw}×${th} — starting render...`;
+  requestAnimationFrame(loop);
+};
+img.onerror = () => {
+  document.getElementById('stats').textContent = 'Texture load failed';
+};
+img.src = 'day_2k.jpg';
+
+function render() {
+  const t0 = performance.now();
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, W, H);
+  if (!texData) return 0;
+
+  // Step=1 for full resolution (antialiased via 2x supersampling)
+  const step = 2;
+  const outW = Math.ceil((R * 2) / step);
+  const outH = Math.ceil((R * 2) / step);
+  const imageData = ctx.createImageData(outW, outH);
+  const out = imageData.data;
+  const pix = texData.data;
+  const clat = 20 * DEG, sinCL = Math.sin(clat), cosCL = Math.cos(clat);
+  const clonRad = centerLon * DEG;
+
+  for (let oy = 0; oy < outH; oy++) {
+    const ny = (CY - (CY - R + oy * step)) / R;
+    const nySq = ny * ny;
+    for (let ox = 0; ox < outW; ox++) {
+      const nx = ((CX - R + ox * step) - CX) / R;
+      const rhoSq = nx * nx + nySq;
+      if (rhoSq > 1) continue;
+      const rho = Math.sqrt(rhoSq);
+      let lat, lon;
+      if (rho < 1e-10) { lat = 20; lon = centerLon; }
+      else {
+        const c = Math.asin(rho), cosC = Math.cos(c), sinC = Math.sin(c);
+        lat = Math.asin(cosC * sinCL + (ny * sinC * cosCL) / rho) * (180 / Math.PI);
+        lon = centerLon + Math.atan2(nx * sinC, rho * cosCL * cosC - ny * sinCL * sinC) * (180 / Math.PI);
+      }
+
+      // Bilinear texture sampling for smoother output
+      const u = ((lon + 180) % 360 + 360) % 360 / 360;
+      const v = (90 - lat) / 180;
+      const txf = u * (tw - 1);
+      const tyf = v * (th - 1);
+      const tx0 = Math.floor(txf), ty0 = Math.floor(tyf);
+      const tx1 = Math.min(tw - 1, tx0 + 1), ty1 = Math.min(th - 1, ty0 + 1);
+      const fx = txf - tx0, fy = tyf - ty0;
+
+      const i00 = (ty0 * tw + tx0) * 4;
+      const i10 = (ty0 * tw + tx1) * 4;
+      const i01 = (ty1 * tw + tx0) * 4;
+      const i11 = (ty1 * tw + tx1) * 4;
+
+      const nz = Math.sqrt(Math.max(0, 1 - rhoSq));
+      const shade = 0.15 + 0.85 * Math.max(0, -0.42 * nx + 0.32 * ny + 0.85 * nz);
+      const di = (oy * outW + ox) * 4;
+
+      for (let ch = 0; ch < 3; ch++) {
+        const val = (1-fx)*(1-fy)*pix[i00+ch] + fx*(1-fy)*pix[i10+ch]
+                  + (1-fx)*fy*pix[i01+ch] + fx*fy*pix[i11+ch];
+        out[di + ch] = val * shade;
+      }
+      out[di + 3] = 255;
+    }
+  }
+
+  const offC = document.createElement('canvas');
+  offC.width = outW; offC.height = outH;
+  const oc = offC.getContext('2d');
+  oc.putImageData(imageData, 0, 0);
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.clip();
+  // imageSmoothingEnabled for the downscale
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(offC, CX - R, CY - R, R * 2, R * 2);
+  ctx.restore();
+
+  // Atmospheric edge glow
+  const glow = ctx.createRadialGradient(CX, CY, R * 0.88, CX, CY, R * 1.12);
+  glow.addColorStop(0, 'rgba(100,180,255,0)');
+  glow.addColorStop(0.6, 'rgba(100,180,255,0.12)');
+  glow.addColorStop(1, 'rgba(100,180,255,0)');
+  ctx.beginPath(); ctx.arc(CX, CY, R * 1.12, 0, Math.PI * 2);
+  ctx.fillStyle = glow; ctx.fill();
+
+  // Rim
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(140,200,255,0.3)'; ctx.lineWidth = 3; ctx.stroke();
+
+  return performance.now() - t0;
+}
+
+function loop(now) {
+  const ft = render();
+  centerLon += 0.15;
+  frameCount++; fpsAccum += ft;
+  if (now - lastFps > 1000) {
+    const fps = (frameCount / ((now - lastFps) / 1000)).toFixed(1);
+    const avg = (fpsAccum / frameCount).toFixed(1);
+    document.getElementById('stats').textContent =
+      `FPS: ${fps}  |  Frame: ${avg} ms\nTexture: ${tw}×${th}  |  Render: ${W}×${H} → display 600×600`;
+    frameCount = 0; fpsAccum = 0; lastFps = now;
+  }
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

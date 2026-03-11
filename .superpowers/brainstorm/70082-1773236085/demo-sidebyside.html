@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Globe Comparison — Canvas 2D vs Three.js</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e6f0; font-family: system-ui, sans-serif; padding: 20px; }
+  h1 { font-size: 20px; text-align: center; margin-bottom: 4px; color: #7eb8ff; }
+  .page-subtitle { font-size: 13px; text-align: center; color: #8899bb; margin-bottom: 20px; }
+  .row { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; align-items: center; }
+  .col h2 { font-size: 16px; margin-bottom: 8px; }
+  .col h2.canvas-label { color: #ff9944; }
+  .col h2.three-label { color: #44bbff; }
+  canvas, .gl-container { border: 1px solid #1d2a44; border-radius: 12px; overflow: hidden; }
+  .gl-container { width: 600px; height: 600px; }
+  .stats { margin-top: 10px; font-size: 12px; color: #99aacc; font-family: monospace; white-space: pre-line; text-align: center; min-height: 60px; }
+</style>
+</head>
+<body>
+<h1>Canvas 2D vs Three.js — Side by Side</h1>
+<p class="page-subtitle">Open DevTools → Memory → Take Heap Snapshot to compare. Both use the same NASA 2K day texture.</p>
+
+<div class="row">
+  <!-- Canvas 2D Column -->
+  <div class="col">
+    <h2 class="canvas-label">Canvas 2D</h2>
+    <canvas id="c2d" width="600" height="600"></canvas>
+    <div class="stats" id="stats-c2d">Loading texture...</div>
+  </div>
+
+  <!-- Three.js Column -->
+  <div class="col">
+    <h2 class="three-label">Three.js (Day + Night + Atmosphere)</h2>
+    <div class="gl-container" id="gl-container"></div>
+    <div class="stats" id="stats-gl">Loading Three.js + textures...</div>
+  </div>
+</div>
+
+<!-- ==================== CANVAS 2D ==================== -->
+<script>
+(function() {
+  const canvas = document.getElementById('c2d');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const CX = W / 2, CY = H / 2, R = 270;
+  const DEG = Math.PI / 180;
+  const TEX_URL = 'day_2k.jpg';
+
+  let texData = null, tw = 0, th = 0, centerLon = 0;
+  let frameCount = 0, fpsAccum = 0, lastFps = performance.now();
+
+  const img = new Image();
+  img.onload = () => {
+    tw = img.naturalWidth; th = img.naturalHeight;
+    const off = document.createElement('canvas');
+    off.width = tw; off.height = th;
+    const oc = off.getContext('2d');
+    oc.drawImage(img, 0, 0);
+    texData = oc.getImageData(0, 0, tw, th);
+    requestAnimationFrame(loop);
+  };
+  img.onerror = () => {
+    document.getElementById('stats-c2d').textContent = 'Texture load failed (CORS)';
+  };
+  img.src = TEX_URL;
+
+  function render() {
+    const t0 = performance.now();
+    ctx.fillStyle = '#0a0e1a';
+    ctx.fillRect(0, 0, W, H);
+    if (!texData) return 0;
+
+    const step = 2;
+    const outW = Math.ceil((R * 2) / step);
+    const outH = Math.ceil((R * 2) / step);
+    const imageData = ctx.createImageData(outW, outH);
+    const out = imageData.data;
+    const pix = texData.data;
+    const clat = 20 * DEG, sinCL = Math.sin(clat), cosCL = Math.cos(clat);
+
+    for (let oy = 0; oy < outH; oy++) {
+      const ny = (CY - (CY - R + oy * step)) / R;
+      const nySq = ny * ny;
+      for (let ox = 0; ox < outW; ox++) {
+        const nx = ((CX - R + ox * step) - CX) / R;
+        const rhoSq = nx * nx + nySq;
+        if (rhoSq > 1) continue;
+        const rho = Math.sqrt(rhoSq);
+        let lat, lon;
+        if (rho < 1e-10) { lat = 20; lon = centerLon; }
+        else {
+          const c = Math.asin(rho), cosC = Math.cos(c), sinC = Math.sin(c);
+          lat = Math.asin(cosC * sinCL + (ny * sinC * cosCL) / rho) * (180 / Math.PI);
+          lon = centerLon + Math.atan2(nx * sinC, rho * cosCL * cosC - ny * sinCL * sinC) * (180 / Math.PI);
+        }
+        const u = ((lon + 180) % 360 + 360) % 360 / 360;
+        const v = (90 - lat) / 180;
+        const tx = Math.min(tw - 1, Math.max(0, Math.round(u * (tw - 1))));
+        const ty = Math.min(th - 1, Math.max(0, Math.round(v * (th - 1))));
+        const si = (ty * tw + tx) * 4, di = (oy * outW + ox) * 4;
+        const nz = Math.sqrt(Math.max(0, 1 - rhoSq));
+        const shade = 0.15 + 0.85 * Math.max(0, -0.42 * nx + 0.32 * ny + 0.85 * nz);
+        out[di] = pix[si] * shade;
+        out[di+1] = pix[si+1] * shade;
+        out[di+2] = pix[si+2] * shade;
+        out[di+3] = 255;
+      }
+    }
+
+    const offC = document.createElement('canvas');
+    offC.width = outW; offC.height = outH;
+    const oc = offC.getContext('2d');
+    oc.putImageData(imageData, 0, 0);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.clip();
+    ctx.drawImage(offC, CX - R, CY - R, R * 2, R * 2);
+    ctx.restore();
+
+    const glow = ctx.createRadialGradient(CX, CY, R * 0.92, CX, CY, R * 1.08);
+    glow.addColorStop(0, 'rgba(100,180,255,0)');
+    glow.addColorStop(0.5, 'rgba(100,180,255,0.15)');
+    glow.addColorStop(1, 'rgba(100,180,255,0)');
+    ctx.beginPath(); ctx.arc(CX, CY, R * 1.08, 0, Math.PI * 2);
+    ctx.fillStyle = glow; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(140,200,255,0.35)'; ctx.lineWidth = 2; ctx.stroke();
+
+    return performance.now() - t0;
+  }
+
+  function loop(now) {
+    const ft = render();
+    centerLon += 0.15;
+    frameCount++; fpsAccum += ft;
+    if (now - lastFps > 1000) {
+      const fps = (frameCount / ((now - lastFps) / 1000)).toFixed(1);
+      const avg = (fpsAccum / frameCount).toFixed(1);
+      document.getElementById('stats-c2d').textContent =
+        `FPS: ${fps}  |  Frame: ${avg} ms\nTexture: ${tw}×${th}  |  Step: 2px`;
+      frameCount = 0; fpsAccum = 0; lastFps = now;
+    }
+    requestAnimationFrame(loop);
+  }
+})();
+</script>
+
+<!-- ==================== THREE.JS ==================== -->
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const container = document.getElementById('gl-container');
+const W = 600, H = 600;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(W, H);
+renderer.setPixelRatio(1);
+renderer.setClearColor(0x0a0e1a, 1);
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(0, 0, 3);
+
+const ambient = new THREE.AmbientLight(0x222244, 0.4);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(-5, 3, 8);
+scene.add(sun);
+
+const loader = new THREE.TextureLoader();
+const TEX_DAY = 'day_2k.jpg';
+const TEX_NIGHT = 'night_2k.jpg';
+
+let loadCount = 0, dayTex, nightTex, earth;
+
+function onLoad() {
+  loadCount++;
+  document.getElementById('stats-gl').textContent = `Loaded ${loadCount}/2 textures...`;
+  if (loadCount >= 2) buildEarth();
+}
+
+dayTex = loader.load(TEX_DAY, onLoad);
+dayTex.colorSpace = THREE.SRGBColorSpace;
+nightTex = loader.load(TEX_NIGHT, onLoad);
+nightTex.colorSpace = THREE.SRGBColorSpace;
+
+function buildEarth() {
+  const geo = new THREE.SphereGeometry(1, 64, 64);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      dayTexture: { value: dayTex },
+      nightTexture: { value: nightTex },
+      sunDirection: { value: new THREE.Vector3(-0.42, 0.32, 0.85).normalize() },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      void main() {
+        vUv = uv;
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D dayTexture;
+      uniform sampler2D nightTexture;
+      uniform vec3 sunDirection;
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      void main() {
+        vec3 n = normalize(vNormal);
+        float NdotL = dot(n, sunDirection);
+        float dayFactor = smoothstep(-0.15, 0.25, NdotL);
+        vec4 day = texture2D(dayTexture, vUv);
+        vec4 night = texture2D(nightTexture, vUv);
+        vec3 color = mix(night.rgb * 1.4, day.rgb, dayFactor);
+        vec3 viewDir = normalize(-vPosition);
+        float fresnel = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
+        color += vec3(0.25, 0.45, 0.8) * fresnel * 0.35;
+        color += vec3(0.02, 0.03, 0.06) * (1.0 - dayFactor);
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `,
+  });
+
+  earth = new THREE.Mesh(geo, mat);
+  scene.add(earth);
+
+  // Atmosphere
+  const atmosGeo = new THREE.SphereGeometry(1.06, 64, 64);
+  const atmosMat = new THREE.ShaderMaterial({
+    uniforms: {
+      sunDirection: { value: new THREE.Vector3(-0.42, 0.32, 0.85).normalize() },
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 sunDirection;
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      void main() {
+        vec3 n = normalize(vNormal);
+        vec3 v = normalize(-vPosition);
+        float fresnel = pow(1.0 - max(dot(v, n), 0.0), 2.5);
+        float sunFacing = max(0.0, dot(n, sunDirection));
+        float intensity = fresnel * (0.5 + 0.5 * sunFacing);
+        vec3 c = mix(vec3(0.15, 0.3, 0.7), vec3(0.4, 0.7, 1.0), sunFacing);
+        gl_FragColor = vec4(c, intensity * 0.65);
+      }
+    `,
+    transparent: true,
+    side: THREE.BackSide,
+    depthWrite: false,
+  });
+  scene.add(new THREE.Mesh(atmosGeo, atmosMat));
+
+  requestAnimationFrame(loop);
+}
+
+let frameCount = 0, fpsAccum = 0, lastFps = performance.now();
+
+function loop(now) {
+  const t0 = performance.now();
+  if (earth) earth.rotation.y += 0.002;
+  renderer.render(scene, camera);
+  const ft = performance.now() - t0;
+  frameCount++; fpsAccum += ft;
+
+  if (now - lastFps > 1000) {
+    const fps = (frameCount / ((now - lastFps) / 1000)).toFixed(1);
+    const avg = (fpsAccum / frameCount).toFixed(1);
+    const info = renderer.info;
+    document.getElementById('stats-gl').textContent =
+      `FPS: ${fps}  |  Frame: ${avg} ms\nTextures: ${info.memory.textures}  |  Geometries: ${info.memory.geometries}\nDraw calls: ${info.render.calls}  |  Triangles: ${info.render.triangles}`;
+    frameCount = 0; fpsAccum = 0; lastFps = now;
+  }
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
