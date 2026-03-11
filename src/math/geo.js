@@ -18,7 +18,7 @@ export function latLonToCartesian(lat, lon, radius = 1, alt = 0) {
   return {
     x: r * cosLat * Math.cos(lonRad),
     y: r * Math.sin(latRad),
-    z: r * cosLat * Math.sin(lonRad),
+    z: -r * cosLat * Math.sin(lonRad),
   };
 }
 
@@ -26,7 +26,7 @@ export function cartesianToLatLon(x, y, z) {
   const radius = Math.sqrt(x * x + y * y + z * z) || 1;
   return {
     lat: toDegrees(Math.asin(y / radius)),
-    lon: toDegrees(Math.atan2(z, x)),
+    lon: toDegrees(Math.atan2(-z, x)),
     radius,
   };
 }

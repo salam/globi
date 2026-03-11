@@ -131,7 +131,7 @@ export class ThreeGlobeRenderer {
     const dLon = Number(deltaLon ?? 0);
     const dLat = Number(deltaLat ?? 0);
 
-    this.#centerLon = normalizeLongitude(this.#centerLon - dLon);
+    this.#centerLon = normalizeLongitude(this.#centerLon + dLon);
     this.#centerLat = clampLatitude(this.#centerLat + dLat);
     this.#applyGlobeRotation();
     this.#dirty = true;
@@ -575,12 +575,11 @@ export class ThreeGlobeRenderer {
   /** Apply the current centerLon/centerLat as globe group Euler angles. */
   #applyGlobeRotation() {
     if (!this.#globeGroup) return;
-    // latLonToCartesian puts (0,0) on the +X axis.
-    // Camera sits on the +Z axis. To bring (centerLat, centerLon) to +Z:
-    //   YXZ order: first Y rotation by (centerLon − 90°), then X rotation by centerLat.
+    // latLonToCartesian puts (0,0) on +X with z negated for Three.js UV alignment.
+    // Camera at +Z. YXZ: Y by -(centerLon+90°), then X by centerLat.
     this.#globeGroup.rotation.set(
       this.#centerLat * DEG_TO_RAD,
-      (this.#centerLon - 90) * DEG_TO_RAD,
+      -(this.#centerLon + 90) * DEG_TO_RAD,
       0,
       'YXZ'
     );

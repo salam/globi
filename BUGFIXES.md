@@ -10,3 +10,4 @@
 - [✔️] BUG5b - Callout marker labels and leader lines always use hardcoded golden color (#f6b73c) instead of using each marker's assigned color.
 - [✔️] BUG6 - ISS orbit path has no segment between the last history sample (~10 min ago) and the current live ISS position, leaving a visible gap.
 - [✔️] BUG7 - Globe rotation formula incorrect: flyTo and search fly-to center on the wrong geographic location (~90° longitude offset, inverted latitude). Euler YXZ angles used (−centerLat, centerLon, 0) instead of correct (+centerLat, centerLon−90°, 0).
+- [✔️] BUG8 - Globe texture and all markers rendered mirrored (east/west flipped). The latLonToCartesian z-component sign did not match Three.js SphereGeometry UV convention; negated z and updated rotation formula from (centerLon−90°) to −(centerLon+90°).
