@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  Color,
   DirectionalLight,
   Euler,
   Group,
@@ -15,7 +16,11 @@ import {
 } from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-import { createEarthMesh, createAtmosphereMesh } from './earthBuilder.js';
+import { createEarthMesh, createBodyMesh, createAtmosphereMesh } from './earthBuilder.js';
+import { createRingMesh } from './ringBuilder.js';
+import { resolveTexturePaths, shouldUpgradeTexture } from './textureLoader.js';
+import { getSunDirectionForBody } from '../math/orbital.js';
+import { resolvePlanetConfig } from '../scene/celestial.js';
 import { createGraticule } from './graticuleBuilder.js';
 import { MarkerManager } from './markerManager.js';
 import { ArcPathManager } from './arcPathManager.js';
@@ -28,6 +33,10 @@ import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
 import { latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
 
 const DEG_TO_RAD = Math.PI / 180;
+
+function hexToColor(hex) {
+  return new Color(hex || '#ffffff');
+}
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 4;
 const CAMERA_BASE_DISTANCE = 3;
@@ -49,8 +58,11 @@ export class ThreeGlobeRenderer {
 
   // --- Globe hierarchy ---
   #globeGroup = null;
-  #earthMesh = null;
+  #bodyMesh = null;
   #atmosphereMesh = null;
+  #ringMesh = null;
+  #obliquityGroup = null;
+  #currentBodyId = null;
   #graticule = null;
   #markerGroup = null;
   #arcGroup = null;
@@ -234,21 +246,34 @@ export class ThreeGlobeRenderer {
     dirLight.position.set(-5, 3, 8);
     scene.add(dirLight);
 
-    // --- Globe group (rotates) ---
+    // --- Obliquity wrapper group (physical tilt, doesn't change with user panning) ---
+    const obliquityGroup = new Group();
+    this.#obliquityGroup = obliquityGroup;
+    scene.add(obliquityGroup);
+
+    // --- Globe group (user panning rotates this group) ---
     const globeGroup = new Group();
     this.#globeGroup = globeGroup;
-    scene.add(globeGroup);
+    obliquityGroup.add(globeGroup);
 
-    // --- Earth mesh ---
-    const earthMesh = createEarthMesh({
+    // --- Body mesh (determined by planet config) ---
+    const planet = options.initialScene?.planet ?? {};
+    const resolvedPlanet = resolvePlanetConfig(planet);
+    this.#currentBodyId = resolvedPlanet.id;
+
+    const shaderMode = resolvedPlanet.id === 'earth' ? 'dayNight'
+      : resolvedPlanet.id === 'venus' ? 'venusAtmosphere'
+      : 'single';
+
+    const bodyMesh = createBodyMesh({
+      shaderMode,
       sunDirection: this.#sunDirection,
-      nightLayer: true,
+      rimColor: resolvedPlanet.atmosphere
+        ? hexToColor(resolvedPlanet.atmosphere.scatterColor)
+        : new Color(0.3, 0.5, 1.0),
     });
-    this.#earthMesh = earthMesh;
-    globeGroup.add(earthMesh);
-
-    // Load default day texture for Earth
-    this.#loadTexture('assets/earth_day_2k.jpg', 'dayTexture');
+    this.#bodyMesh = bodyMesh;
+    globeGroup.add(bodyMesh);
 
     // --- Graticule ---
     const graticule = createGraticule();
@@ -289,10 +314,30 @@ export class ThreeGlobeRenderer {
       })
       .catch(() => {});
 
-    // --- Atmosphere mesh (outside globe group — does not rotate) ---
-    const atmosphereMesh = createAtmosphereMesh({ sunDirection: this.#sunDirection });
-    this.#atmosphereMesh = atmosphereMesh;
-    scene.add(atmosphereMesh);
+    // --- Atmosphere mesh (inside globeGroup so it tilts with obliquity) ---
+    if (resolvedPlanet.atmosphere?.enabled) {
+      const atmosphereMesh = createAtmosphereMesh({
+        sunDirection: this.#sunDirection,
+        atmosphereColor: hexToColor(resolvedPlanet.atmosphere.scatterColor),
+        thickness: resolvedPlanet.atmosphere.thickness,
+        density: resolvedPlanet.atmosphere.density,
+        scaleHeightNorm: resolvedPlanet.atmosphere.scaleHeight / 50,
+      });
+      this.#atmosphereMesh = atmosphereMesh;
+      globeGroup.add(atmosphereMesh);
+    }
+
+    // --- Ring mesh ---
+    if (resolvedPlanet.rings) {
+      const ringMesh = createRingMesh(resolvedPlanet);
+      if (ringMesh) {
+        this.#ringMesh = ringMesh;
+        globeGroup.add(ringMesh);
+      }
+    }
+
+    // --- Apply obliquity tilt ---
+    obliquityGroup.rotation.x = (resolvedPlanet.obliquity ?? 0) * DEG_TO_RAD;
 
     // --- Apply initial globe rotation ---
     this.#applyGlobeRotation();
@@ -383,10 +428,17 @@ export class ThreeGlobeRenderer {
 
     // Update textures from planet config
     const planet = scene.planet ?? {};
-    this.#updateTextures(planet);
+    const resolvedPlanet = resolvePlanetConfig(planet);
+
+    // Detect body change — teardown old meshes and rebuild
+    if (resolvedPlanet.id !== this.#currentBodyId && this.#globeGroup) {
+      this.#rebuildBody(resolvedPlanet);
+    }
+
+    this.#updateTextures(resolvedPlanet);
 
     // Update sun direction uniform
-    this.#updateSunDirection(planet);
+    this.#updateSunDirection(resolvedPlanet);
 
     // Update idle rotation speed
     if (typeof planet.rotationSpeed === 'number') {
@@ -492,7 +544,7 @@ export class ThreeGlobeRenderer {
    * against the earth mesh. Returns { lat, lon } or null if off-globe.
    */
   screenToLatLon(clientX, clientY) {
-    if (!this.#webglRenderer || !this.#camera || !this.#earthMesh) {
+    if (!this.#webglRenderer || !this.#camera || !this.#bodyMesh) {
       return null;
     }
 
@@ -503,7 +555,7 @@ export class ThreeGlobeRenderer {
 
     const raycaster = new Raycaster();
     raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.#camera);
-    const hits = raycaster.intersectObject(this.#earthMesh);
+    const hits = raycaster.intersectObject(this.#bodyMesh);
     if (hits.length === 0) return null;
 
     const worldPoint = hits[0].point.clone();
@@ -555,13 +607,17 @@ export class ThreeGlobeRenderer {
     this.#geoLabelManager?.dispose();
 
     // Dispose Three.js objects
-    if (this.#earthMesh) {
-      this.#earthMesh.geometry?.dispose();
-      this.#earthMesh.material?.dispose();
+    if (this.#bodyMesh) {
+      this.#bodyMesh.geometry?.dispose();
+      this.#bodyMesh.material?.dispose();
     }
     if (this.#atmosphereMesh) {
       this.#atmosphereMesh.geometry?.dispose();
       this.#atmosphereMesh.material?.dispose();
+    }
+    if (this.#ringMesh) {
+      this.#ringMesh.geometry?.dispose();
+      this.#ringMesh.material?.dispose();
     }
     if (this.#graticule) {
       this.#graticule.geometry?.dispose();
@@ -596,13 +652,16 @@ export class ThreeGlobeRenderer {
     this.#scene = null;
     this.#camera = null;
     this.#globeGroup = null;
-    this.#earthMesh = null;
+    this.#bodyMesh = null;
     this.#atmosphereMesh = null;
     this.#graticule = null;
     this.#markerGroup = null;
     this.#arcGroup = null;
     this.#regionGroup = null;
     this.#calloutGroup = null;
+    this.#ringMesh = null;
+    this.#obliquityGroup = null;
+    this.#currentBodyId = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -635,22 +694,94 @@ export class ThreeGlobeRenderer {
     this.#camera.position.set(0, 0, CAMERA_BASE_DISTANCE / this.#zoom);
   }
 
-  /** Update earth mesh textures from planet config (E3, E4). */
+  #rebuildBody(planet) {
+    // Teardown old body mesh
+    if (this.#bodyMesh) {
+      this.#globeGroup.remove(this.#bodyMesh);
+      this.#bodyMesh.geometry?.dispose();
+      this.#bodyMesh.material?.dispose();
+      this.#bodyMesh = null;
+    }
+
+    // Teardown old atmosphere
+    if (this.#atmosphereMesh) {
+      this.#globeGroup.remove(this.#atmosphereMesh);
+      this.#atmosphereMesh.geometry?.dispose();
+      this.#atmosphereMesh.material?.dispose();
+      this.#atmosphereMesh = null;
+    }
+
+    // Teardown old ring
+    if (this.#ringMesh) {
+      this.#globeGroup.remove(this.#ringMesh);
+      this.#ringMesh.geometry?.dispose();
+      this.#ringMesh.material?.dispose();
+      this.#ringMesh = null;
+    }
+
+    // Determine shader mode
+    const shaderMode = planet.id === 'earth' ? 'dayNight'
+      : planet.id === 'venus' ? 'venusAtmosphere'
+      : 'single';
+
+    // Rebuild body mesh
+    const bodyMesh = createBodyMesh({
+      shaderMode,
+      sunDirection: this.#sunDirection,
+      rimColor: planet.atmosphere
+        ? hexToColor(planet.atmosphere.scatterColor)
+        : new Color(0.3, 0.5, 1.0),
+    });
+    this.#bodyMesh = bodyMesh;
+    this.#globeGroup.add(bodyMesh);
+
+    // Rebuild atmosphere (if applicable)
+    if (planet.atmosphere?.enabled) {
+      const atmosphereMesh = createAtmosphereMesh({
+        sunDirection: this.#sunDirection,
+        atmosphereColor: hexToColor(planet.atmosphere.scatterColor),
+        thickness: planet.atmosphere.thickness,
+        density: planet.atmosphere.density,
+        scaleHeightNorm: planet.atmosphere.scaleHeight / 50,
+      });
+      this.#atmosphereMesh = atmosphereMesh;
+      this.#globeGroup.add(atmosphereMesh);
+    }
+
+    // Rebuild ring (if applicable)
+    if (planet.rings) {
+      const ringMesh = createRingMesh(planet);
+      if (ringMesh) {
+        this.#ringMesh = ringMesh;
+        this.#globeGroup.add(ringMesh);
+      }
+    }
+
+    // Update obliquity on the outer group
+    if (this.#obliquityGroup) {
+      this.#obliquityGroup.rotation.x = (planet.obliquity ?? 0) * DEG_TO_RAD;
+    }
+
+    // Track current body
+    this.#currentBodyId = planet.id;
+  }
+
+  /** Update body mesh textures from planet config. */
   #updateTextures(planet) {
-    if (!this.#earthMesh) return;
-    const mat = this.#earthMesh.material;
+    if (!this.#bodyMesh) return;
+    const mat = this.#bodyMesh.material;
     if (!mat?.uniforms) return;
 
-    const dayUri = planet?.dayTextureUri ?? planet?.textureUri;
-    const nightUri = planet?.nightTextureUri;
+    const paths = resolveTexturePaths(planet);
 
-    if (dayUri) {
-      const tex = this.#loadTexture(dayUri, 'dayTexture');
-      if (tex) mat.uniforms.dayTexture.value = tex;
+    if (paths.surface) {
+      this.#loadTexture(paths.surface, 'dayTexture');
     }
-    if (nightUri) {
-      const tex = this.#loadTexture(nightUri, 'nightTexture');
-      if (tex) mat.uniforms.nightTexture.value = tex;
+    if (paths.night) {
+      this.#loadTexture(paths.night, 'nightTexture');
+    }
+    if (paths.atmosphereOverlay) {
+      this.#loadTexture(paths.atmosphereOverlay, 'atmosphereTexture');
     }
   }
 
@@ -668,9 +799,9 @@ export class ThreeGlobeRenderer {
       (loadedTex) => {
         loadedTex.colorSpace = SRGBColorSpace;
         this.#loadedTextures.set(uri, loadedTex);
-        if (this.#earthMesh?.material?.uniforms?.[uniformName]) {
-          this.#earthMesh.material.uniforms[uniformName].value = loadedTex;
-          this.#earthMesh.material.needsUpdate = true;
+        if (this.#bodyMesh?.material?.uniforms?.[uniformName]) {
+          this.#bodyMesh.material.uniforms[uniformName].value = loadedTex;
+          this.#bodyMesh.material.needsUpdate = true;
         }
         this.#dirty = true;
       },
@@ -687,18 +818,23 @@ export class ThreeGlobeRenderer {
     return tex;
   }
 
-  /** Update sun direction uniform on earth and atmosphere meshes. */
+  /** Update sun direction uniform on body and atmosphere meshes. */
   #updateSunDirection(planet) {
-    const camera = this.getCameraState();
-    const sunVec = getSunLightVector(camera, planet?.lightingTimestamp);
-    const v = new Vector3(sunVec.x, sunVec.y, sunVec.z);
-    this.#sunDirection.copy(v);
+    if (planet.lightingMode !== 'sun') {
+      // Fixed lighting — use default direction
+      const v = new Vector3(-5, 3, 8).normalize();
+      this.#sunDirection.copy(v);
+    } else {
+      const dir = getSunDirectionForBody(planet, planet.lightingTimestamp);
+      const v = new Vector3(dir.x, dir.y, dir.z);
+      this.#sunDirection.copy(v);
+    }
 
-    if (this.#earthMesh?.material?.uniforms?.sunDirection) {
-      this.#earthMesh.material.uniforms.sunDirection.value = v;
+    if (this.#bodyMesh?.material?.uniforms?.sunDirection) {
+      this.#bodyMesh.material.uniforms.sunDirection.value.copy(this.#sunDirection);
     }
     if (this.#atmosphereMesh?.material?.uniforms?.sunDirection) {
-      this.#atmosphereMesh.material.uniforms.sunDirection.value = v;
+      this.#atmosphereMesh.material.uniforms.sunDirection.value.copy(this.#sunDirection);
     }
   }
 
