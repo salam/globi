@@ -71,7 +71,7 @@ test('CalloutManager leader line uses marker color', () => {
   assert.equal(m1.line.material.color.getHexString(), '0072b2');
 });
 
-test('CalloutManager filterCallouts shows only matching IDs', () => {
+test('CalloutManager filterCallouts highlights matches and dims non-matches', () => {
   const manager = new CalloutManager();
   const group = new Group();
   manager.update(group, [
@@ -80,16 +80,20 @@ test('CalloutManager filterCallouts shows only matching IDs', () => {
     { id: 'm3', lat: 30, lon: 30, alt: 0, name: { en: 'Gamma' }, calloutMode: 'always' },
   ], 'en');
   const data = manager.getCalloutData();
-  // Filter to only m1
+  // Filter to only m1 — all stay visible, non-matches are dimmed
   manager.filterCallouts(['m1']);
-  assert.equal(data.get('m1').visible, true);
-  assert.equal(data.get('m2').visible, false);
-  assert.equal(data.get('m3').visible, false);
-  // Reset
-  manager.filterCallouts(null);
   assert.equal(data.get('m1').visible, true);
   assert.equal(data.get('m2').visible, true);
   assert.equal(data.get('m3').visible, true);
+  // Match keeps full opacity, non-matches get dimmed
+  assert.ok(data.get('m1').line.material.opacity > 0.5);
+  assert.ok(data.get('m2').line.material.opacity < 0.2);
+  assert.ok(data.get('m3').line.material.opacity < 0.2);
+  // Reset restores full opacity
+  manager.filterCallouts(null);
+  assert.ok(data.get('m1').line.material.opacity > 0.5);
+  assert.ok(data.get('m2').line.material.opacity > 0.5);
+  assert.ok(data.get('m3').line.material.opacity > 0.5);
 });
 
 test('CalloutManager hover mode starts hidden', () => {

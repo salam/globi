@@ -151,23 +151,32 @@ export class CalloutManager {
 
   filterCallouts(matchingIds) {
     if (!matchingIds) {
-      // null/undefined = reset, show all 'always' callouts
+      // null/undefined = reset, restore all 'always' callouts to full opacity
       for (const [id, data] of this.#calloutData) {
         const show = data.mode === 'always';
         data.line.visible = show;
+        data.line.material.opacity = LEADER_OPACITY;
         data.visible = show;
         const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
-        if (css2d) css2d.visible = show;
+        if (css2d) {
+          css2d.visible = show;
+          if (css2d.element) css2d.element.style.opacity = '1';
+        }
       }
       return;
     }
     const ids = new Set(matchingIds);
     for (const [id, data] of this.#calloutData) {
-      const show = ids.has(id);
-      data.line.visible = show;
-      data.visible = show;
+      const match = ids.has(id);
+      // Keep all visible, but dim non-matches to 20%
+      data.line.visible = true;
+      data.line.material.opacity = match ? LEADER_OPACITY : LEADER_OPACITY * 0.2;
+      data.visible = true;
       const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
-      if (css2d) css2d.visible = show;
+      if (css2d) {
+        css2d.visible = true;
+        if (css2d.element) css2d.element.style.opacity = match ? '1' : '0.2';
+      }
     }
   }
 
