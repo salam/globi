@@ -523,12 +523,12 @@ export class ThreeGlobeRenderer {
   /** Apply the current centerLon/centerLat as globe group Euler angles. */
   #applyGlobeRotation() {
     if (!this.#globeGroup) return;
-    // Rotate globe: Y-axis for longitude, X-axis for latitude
-    // centerLon increases going east → globe rotates in +Y
-    // centerLat increases going north → globe rotates in +X
+    // latLonToCartesian puts (0,0) on the +X axis.
+    // Camera sits on the +Z axis. To bring (centerLat, centerLon) to +Z:
+    //   YXZ order: first Y rotation by (centerLon − 90°), then X rotation by centerLat.
     this.#globeGroup.rotation.set(
-      -this.#centerLat * DEG_TO_RAD,
-      this.#centerLon * DEG_TO_RAD,
+      this.#centerLat * DEG_TO_RAD,
+      (this.#centerLon - 90) * DEG_TO_RAD,
       0,
       'YXZ'
     );
@@ -650,12 +650,29 @@ export class ThreeGlobeRenderer {
     }
   }
 
+  /** Elapsed time accumulator for animations (seconds). */
+  #elapsedTime = 0;
+  #lastFrameTime = 0;
+
   /** Per-frame logic: idle rotation, callout visibility, conditional render. */
   #frame() {
+    // Track elapsed time for animations
+    const now = performance.now() / 1000;
+    if (this.#lastFrameTime > 0) {
+      this.#elapsedTime += now - this.#lastFrameTime;
+    }
+    this.#lastFrameTime = now;
+
     // Idle rotation
     if (this.#rotationSpeed !== 0 && this.#globeGroup) {
       this.#centerLon = normalizeLongitude(this.#centerLon + this.#rotationSpeed);
       this.#applyGlobeRotation();
+      this.#dirty = true;
+    }
+
+    // Animate marker pulse rings
+    if (this.#markerManager.hasPulseAnimations()) {
+      this.#markerManager.animate(this.#elapsedTime);
       this.#dirty = true;
     }
 

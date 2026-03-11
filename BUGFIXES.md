@@ -8,3 +8,5 @@
 - [✔️] BUG4 - Earth surface texture is not projected onto the sphere; it is drawn as a flat 2D overlay that does not rotate with the camera and has no occlusion (backface hiding).
 - [✔️] BUG5 - Compass HUD at bottom-right is not clickable; clicking should reset globe to initial position (north at top, lat=0, lon=0). Also, compass lacked pointer-events.
 - [✔️] BUG5b - Callout marker labels and leader lines always use hardcoded golden color (#f6b73c) instead of using each marker's assigned color.
+- [✔️] BUG6 - ISS orbit path has no segment between the last history sample (~10 min ago) and the current live ISS position, leaving a visible gap.
+- [✔️] BUG7 - Globe rotation formula incorrect: flyTo and search fly-to center on the wrong geographic location (~90° longitude offset, inverted latitude). Euler YXZ angles used (−centerLat, centerLon, 0) instead of correct (+centerLat, centerLon−90°, 0).

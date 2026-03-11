@@ -837,7 +837,7 @@ export class GlobeViewerElement extends HTMLElement {
     this.#drag.y = event.clientY;
     this.#drag.ts = now;
 
-    this.#controller.panBy(dx * 0.18, -dy * 0.18);
+    this.#controller.panBy(dx * 0.18, dy * 0.18);
     this.#updateNavigationHud();
   }
 
@@ -875,7 +875,7 @@ export class GlobeViewerElement extends HTMLElement {
         return;
       }
 
-      this.#controller.panBy(vx * 7, -vy * 7);
+      this.#controller.panBy(vx * 7, vy * 7);
       this.#updateNavigationHud();
       this.#inertiaFrame = requestAnimationFrame(tick);
     };
