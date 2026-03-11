@@ -50,6 +50,96 @@
 
 ---
 
+## Review Errata — Must-Follow Fixes
+
+The following corrections override the code snippets in the tasks below. Implementing agents MUST apply these fixes:
+
+### E1: Task 8 — Use Line2/LineMaterial instead of Line/LineBasicMaterial
+
+The spec requires fat lines via `LineGeometry` + `LineMaterial` from `three/addons/lines/`. The plan's Task 8 incorrectly uses basic `Line`. Replace with:
+
+```js
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+```
+
+Use `Line2` with `LineGeometry.setPositions(vertices)` and `LineMaterial({ color, linewidth: strokeWidth, dashed, dashSize, gapSize })`. `LineMaterial` requires `resolution` uniform set to `new Vector2(width, height)`.
+
+### E2: Task 9 — Use earcut for polygon triangulation
+
+The fan triangulation in Task 9 only works for convex polygons. Add `earcut` dependency (`npm install earcut`) and use it:
+
+```js
+import earcut from 'earcut';
+// Project 3D ring to 2D for earcut, then use returned indices
+```
+
+Also implement extruded regions per spec: duplicate vertices at `radius = 1 + altitude`, connect with side faces, apply `capColor`/`sideColor`.
+
+### E3: Task 10 — Fix projectPointToClient broken import
+
+The `require_geo()` lazy import returns a Promise, not a module. Replace with static import at top of file:
+
+```js
+import { latLonToCartesian } from '../math/geo.js';
+```
+
+### E4: Task 10 — Add texture load failure fallback
+
+`TextureLoader.load()` needs an error callback. On failure, set earth material to a solid `baseColor` and emit `textureError` event on the web component container:
+
+```js
+this.#textureLoader.load(uri, onLoad, undefined, (err) => {
+  this.#container?.dispatchEvent(new CustomEvent('textureError', { detail: { uri } }));
+});
+```
+
+### E5: Task 13 — Use git rm for deletion
+
+Replace `rm src/renderer/canvasGlobeRenderer.js` with `git rm src/renderer/canvasGlobeRenderer.js` so the deletion is staged.
+
+### E6: Task 7 — Implement collision avoidance
+
+The `CalloutManager` must implement the spec's collision avoidance algorithm:
+
+1. Project all label positions to screen coordinates
+2. Sort by angular position around globe center (clockwise from 12 o'clock)
+3. For overlapping bounding boxes, increase extension distance by 0.1 (max 3 levels: 0.25, 0.35, 0.45)
+4. Beyond 3 levels, offset perpendicular to radial direction by ±label height
+
+### E7: Task 7 + 10 — Wire hover/click callout modes
+
+`"hover"` mode: attach `pointerenter`/`pointerleave` listeners on CSS2D label div and marker sprite to call `showCallout`/`hideCallout`.
+`"click"` mode: attach `click` listener — toggle visibility, dismiss on click elsewhere.
+Wire these in `ThreeGlobeRenderer` after creating CSS2D labels.
+
+### E8: Tasks 5, 8, 9 — Add proper test files
+
+Create `tests/graticule-builder.test.js`, `tests/arc-path-manager.test.js`, and `tests/region-manager.test.js` with create/update/remove cycle tests (not just CLI one-liners).
+
+### E9: Task 3 — Support other celestial bodies
+
+`createEarthMesh` and `createAtmosphereMesh` must accept options:
+
+- `nightLayer: false` — skip night texture (for non-Earth bodies)
+- `atmosphereColor` — derived from `planet.baseColor` instead of hardcoded blue
+- `atmosphere: false` — skip atmosphere mesh entirely
+
+### E10: Task 7 + 10 — Fix backface culling with globe rotation
+
+Markers/callouts are children of the globe group and rotate with it. The `updateVisibility` method must apply the globe's rotation quaternion to surface normals before computing the dot product with camera direction:
+
+```js
+const rotatedNormal = data.surfacePosition.clone().normalize()
+  .applyQuaternion(globeQuaternion);
+const facing = rotatedNormal.dot(camDir);
+```
+
+Pass the globe quaternion to `updateVisibility(cameraPosition, globeQuaternion)`.
+
+---
+
 ## Chunk 1: Foundation — Schema, Dependencies, Earth Sphere
 
 ### Task 1: Add Three.js dependency
