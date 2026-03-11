@@ -212,6 +212,8 @@ const TEMPLATE = `
       width: 34px;
       height: 34px;
       position: relative;
+      pointer-events: auto;
+      cursor: pointer;
     }
 
     .compass-arrow {
@@ -380,6 +382,13 @@ export class GlobeViewerElement extends HTMLElement {
 
     this.#celestialSelect.addEventListener('change', () => {
       this.setPlanetPreset(this.#celestialSelect.value);
+    });
+
+    this.#compass.addEventListener('click', () => {
+      if (this.#controller) {
+        this.#controller.flyTo({ lat: 0, lon: 0 }, { zoom: 1 });
+        this.#updateNavigationHud();
+      }
     });
 
     this.addEventListener('keydown', (event) => {
