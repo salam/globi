@@ -1,3 +1,7 @@
+## Release 1.6 (Wed, Mar 11 00:00)
+
+- Added ArcPathManager for rendering great-circle arcs and multi-point paths on the globe using fat lines (Three.js `Line2`), with support for configurable stroke width, color, and dash patterns.
+
 ## Release 1.5 (Wed, Mar 11 00:00)
 
 - Added CalloutManager for rendering leader lines (WebGL `THREE.Line`) from marker surface points, with label positioning, backface culling, visibility modes (`always`, `hover`, `click`, `none`), and `showCallout`/`hideCallout` for event-driven display.
