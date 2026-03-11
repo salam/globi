@@ -31,6 +31,7 @@ In `threeGlobeRenderer.js`, after `createEarthMesh()`, immediately load `assets/
 - If a scene later provides `planet.textureUri`, it overrides the default.
 - Night texture remains optional (no default).
 - The path is resolved relative to the component's base URL.
+- **Error handling:** If the default texture fails to load, the existing `#loadTexture` error path fires a `textureError` CustomEvent. The globe continues rendering with the null texture (same as current behavior) — no additional fallback needed.
 
 ### Files modified
 
@@ -68,14 +69,23 @@ class BorderManager {
    - `transparent: true`
    - `depthWrite: false`
 
+**Create-once, toggle-visibility pattern:**
+
+- `update()` creates the line geometry **once** on the first call with valid GeoJSON data.
+- Subsequent `update()` calls only toggle `group.visible` based on the `show` flag — no geometry rebuild.
+- `dispose()` destroys the geometry and material.
+- This avoids rebuilding ~9000 line segments on every `renderScene()` call. (Unlike `RegionManager` which rebuilds on every update because regions change per-scene; borders are static.)
+
 **Data loading:**
-- `threeGlobeRenderer.js` fetches `assets/ne_110m_countries.geojson` once at init (lazy, non-blocking)
-- Caches the parsed GeoJSON
-- Passes to `borderManager.update()` when data arrives and on each `renderScene()`
+
+- `threeGlobeRenderer.js` fetches `assets/ne_110m_countries.geojson` once during `init()`, non-blocking via `fetch()`.
+- The globe renders immediately; borders appear when the fetch completes.
+- The parsed GeoJSON is cached. On first `renderScene()` after data arrives, `borderManager.update()` builds the geometry. Subsequent calls only toggle visibility.
 
 ### Schema changes
 
-- `planet.showBorders` (boolean, default `true`) added to `src/scene/schema.js`
+- `planet.showBorders` (boolean, default `true`) added to `src/scene/schema.js` normalization.
+- `resolvePlanetConfig()` in `src/scene/celestial.js` updated to explicitly default `showBorders` to `true` when absent.
 
 ### Editor changes
 
@@ -106,8 +116,10 @@ For each label:
 ### Curved strip geometry
 
 A series of small quads along a great-circle arc centered on the label's lat/lon:
+
 - Each quad is tangent to the sphere surface at altitude offset 0.003
-- Arc length is proportional to text width
+- Arc length in degrees: continent labels ~30°, ocean labels ~25° (tuned per label if needed)
+- Canvas font size: continents 48px, oceans 40px (rendered on a power-of-two canvas, then mapped to the strip)
 - A `heading` parameter (degrees) controls the text's orientation on the surface
 - Characters curve naturally because the mesh follows the sphere
 
@@ -157,9 +169,12 @@ class GeoLabelManager {
 - Backface hidden naturally by sphere occlusion (text faces outward)
 - Font: system sans-serif via Canvas2D (no external font dependency)
 
+**Create-once, toggle-visibility pattern:** Same as `borderManager` — geometry is created once, `update()` toggles `group.visible`. `dispose()` destroys canvas textures and mesh geometry.
+
 ### Schema changes
 
-- `planet.showLabels` (boolean, default `true`) added to `src/scene/schema.js`
+- `planet.showLabels` (boolean, default `true`) added to `src/scene/schema.js` normalization.
+- `resolvePlanetConfig()` in `src/scene/celestial.js` updated to explicitly default `showLabels` to `true` when absent.
 
 ### Editor changes
 
@@ -174,8 +189,9 @@ class GeoLabelManager {
 
 | File | Change |
 |------|--------|
-| `src/renderer/threeGlobeRenderer.js` | Load default texture at init; integrate border + label managers |
-| `src/scene/schema.js` | Add `planet.showBorders`, `planet.showLabels` |
+| `src/renderer/threeGlobeRenderer.js` | Load default texture at init; add `#borderGroup` and `#geoLabelGroup` Groups (following existing `#markerGroup`/`#arcGroup` pattern); integrate border + label managers in `renderScene()` and `destroy()` |
+| `src/scene/schema.js` | Add `planet.showBorders`, `planet.showLabels` normalization |
+| `src/scene/celestial.js` | Default `showBorders` and `showLabels` to `true` in `resolvePlanetConfig()` |
 | `editor/index.html` | Add toggle checkboxes |
 | `editor/app.js` | Wire toggles to scene |
 
@@ -195,6 +211,17 @@ class GeoLabelManager {
 - **geo-label-manager.test.js:** Verify curved mesh strip creation for all 12 labels. Verify correct positions. Verify toggle removes meshes. Verify canvas text rendering produces expected dimensions.
 - **Existing tests:** Must remain passing. Schema changes are backwards-compatible (new fields default to `true`).
 - **On-device:** Open editor → see earth texture + borders + labels immediately without loading an example.
+
+### Altitude layering
+
+Surface layers are offset to prevent Z-fighting:
+
+| Layer      | Altitude offset    | Purpose              |
+| ---------- | ------------------ | -------------------- |
+| Graticule  | 0.001              | Lat/lon grid         |
+| Borders    | 0.002              | Country outlines     |
+| Geo labels | 0.003              | Ocean/continent text |
+| Markers    | 0.0+ (entity alt)  | Data points          |
 
 ### Performance
 
