@@ -11,7 +11,7 @@ const HAS_ATMO_OVERLAY = new Set(['venus']);
 
 // Known ring texture paths for bodies with rings
 const RING_TEXTURES = {
-  saturn: 'assets/textures/saturn/2k_ring_alpha.png',
+  saturn: '/assets/textures/saturn/2k_ring_alpha.png',
 };
 
 /**
@@ -34,7 +34,7 @@ export function resolveTexturePaths(planetConfig) {
     };
   }
 
-  const base = `assets/textures/${id}`;
+  const base = `/assets/textures/${id}`;
   const isEarth = id === 'earth';
   const surfaceName = isEarth ? 'day' : 'surface';
   const has8k = HAS_8K.has(id);
@@ -46,7 +46,7 @@ export function resolveTexturePaths(planetConfig) {
     nightHi: (has8k && HAS_NIGHT.has(id)) ? `${base}/8k_night.jpg` : null,
     atmosphereOverlay: HAS_ATMO_OVERLAY.has(id) ? `${base}/2k_atmosphere.jpg` : null,
     ring: planetConfig.rings?.textureUri
-      ? `assets/${planetConfig.rings.textureUri}`
+      ? `/assets/${planetConfig.rings.textureUri}`
       : (RING_TEXTURES[id] || null),
   };
 }
