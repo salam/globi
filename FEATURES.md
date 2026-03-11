@@ -26,6 +26,10 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Add rotation, zoom, pan, and inertial camera behavior for mouse/touch/keyboard.
 - [x] Add fullscreen toggle and ESC listener.
 - [x] Make renderer responsive to container size changes.
+- [x] Migrate rendering from Canvas 2D to Three.js WebGL with GPU-accelerated shaders.
+- [x] Add day/night texture blending with city lights and Fresnel atmospheric glow.
+- [x] Add spatially anchored callout labels with leader lines (CSS2DRenderer for selectable/accessible text).
+- [x] Add `calloutMode` (always/hover/click/none) and `calloutLabel` (localized) to marker schema.
 
 ## Scene Data Model
 - [x] Define versioned schema for `Marker`, `Path`, `Arc`, `Region`, `Animation`.

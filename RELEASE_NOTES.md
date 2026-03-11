@@ -1,3 +1,16 @@
+## Release 2.0 (Tue, Mar 11 19:00)
+
+* Upgraded globe rendering from Canvas 2D to Three.js WebGL for GPU-accelerated 60 FPS performance
+* Added realistic day/night earth textures with city lights blending and GLSL shaders
+* Added Fresnel atmospheric glow effect around the globe
+* Added spatially anchored callout labels with golden leader lines radiating from marker positions
+* Callout text is selectable, copy-pastable, and screen-reader accessible (real HTML via CSS2DRenderer)
+* Added `calloutMode` per marker: `"always"` / `"hover"` / `"click"` / `"none"` (default: `"always"`)
+* Added `calloutLabel` for localized callout text (falls back to marker `name`)
+* Arcs and paths now render as fat lines with configurable stroke width
+* Regions use earcut triangulation for correct rendering of concave polygons
+* Deleted the old Canvas 2D renderer (no backward compatibility)
+
 ## Release 1.7 (Wed, Mar 11 00:00)
 
 - Added `ThreeGlobeRenderer` — full Three.js-based globe renderer integrating EarthBuilder, GraticuleBuilder, MarkerManager, ArcPathManager, RegionManager, and CalloutManager into a unified render pipeline with rAF loop, dirty-flag optimization, WebGL texture loading with error events, hit-testing via Raycaster, and CSS2D callout labels.
