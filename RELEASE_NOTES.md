@@ -1,3 +1,7 @@
+## Release 1.5 (Wed, Mar 11 00:00)
+
+- Added EarthBuilder module for Three.js-based globe rendering with realistic day/night texture blending, Fresnel rim lighting, and atmospheric glow shell.
+
 ## Release 1.4 (Mon, Mar 2 14:00)
 
 - Fixed earth surface texture to be properly projected onto the sphere surface with correct rotation, occlusion, and spherical distortion (BUG4).
