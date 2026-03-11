@@ -1,9 +1,16 @@
+## Release 2.1 (Tue, Mar 11 23:00)
+
+* Callout labels and leader lines now match each marker's color instead of using a fixed golden color
+* Clicking a marker or callout label always opens the inspect popup (no need to enable inspect mode first)
+* Compass click resets the globe to its initial position (north at top, centered at lat=0, lon=0)
+* Added fulltext search bar: type to filter markers by name, description, or ID; single match flies to and centers the marker; multiple matches hide non-matching callouts
+
 ## Release 2.0 (Tue, Mar 11 19:00)
 
 * Upgraded globe rendering from Canvas 2D to Three.js WebGL for GPU-accelerated 60 FPS performance
 * Added realistic day/night earth textures with city lights blending and GLSL shaders
 * Added Fresnel atmospheric glow effect around the globe
-* Added spatially anchored callout labels with golden leader lines radiating from marker positions
+* Added spatially anchored callout labels with leader lines colored per marker
 * Callout text is selectable, copy-pastable, and screen-reader accessible (real HTML via CSS2DRenderer)
 * Added `calloutMode` per marker: `"always"` / `"hover"` / `"click"` / `"none"` (default: `"always"`)
 * Added `calloutLabel` for localized callout text (falls back to marker `name`)

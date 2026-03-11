@@ -44,12 +44,14 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [ ] Implement region layer (GeoJSON polygon/multipolygon with extrusion).
 
 ## Interaction and UI
-- [ ] Add marker picking, tooltip/callout rendering, and focus management.
+- [x] Add marker picking, tooltip/callout rendering, and focus management.
 - [x] Implement `flyTo`/"center marker" API and camera transition presets.
 - [x] Build legend panel with filtering and click-to-focus behavior.
 - [x] Add keyboard-first interaction paths for accessibility.
 - [x] Add inspect-mode selection events for click-to-edit workflows.
 - [x] Anchor inspect panel to selected marker position and keep it aligned during camera movement.
+- [x] Clicking a marker or callout always triggers the inspect popup (no inspect-mode toggle needed).
+- [x] Add fulltext search: single match flies to marker, multiple matches filter callouts to show only hits.
 
 ## Animation System
 - [x] Build keyframe timeline engine for position/rotation/scale.
