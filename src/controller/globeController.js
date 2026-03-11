@@ -1,6 +1,6 @@
 import { AnimationEngine } from '../animation/engine.js';
 import { createTranslator } from '../i18n/index.js';
-import { CanvasGlobeRenderer } from '../renderer/canvasGlobeRenderer.js';
+import { ThreeGlobeRenderer } from '../renderer/threeGlobeRenderer.js';
 import { createEmptyScene } from '../scene/schema.js';
 import { SceneStore } from '../scene/store.js';
 import { sanitizeHtml } from '../security/sanitize.js';
@@ -45,7 +45,7 @@ export class GlobeController {
   constructor(options = {}) {
     const scene = options.initialScene ?? createEmptyScene(options.locale ?? 'en');
 
-    this.#renderer = options.renderer ?? new CanvasGlobeRenderer();
+    this.#renderer = options.renderer ?? new ThreeGlobeRenderer();
     this.#store = new SceneStore(scene);
     this.#animationEngine = new AnimationEngine();
     this.#emitter = new Emitter();
@@ -135,20 +135,17 @@ export class GlobeController {
 
   flyTo(target, options = {}) {
     this.#renderer.flyTo(target, options);
-    this.#renderer.renderScene(this.#scene);
   }
 
   panBy(deltaLon, deltaLat) {
     if (typeof this.#renderer.panBy === 'function') {
       this.#renderer.panBy(deltaLon, deltaLat);
-      this.#renderer.renderScene(this.#scene);
     }
   }
 
   zoomBy(deltaScale) {
     if (typeof this.#renderer.zoomBy === 'function') {
       this.#renderer.zoomBy(deltaScale);
-      this.#renderer.renderScene(this.#scene);
     }
   }
 
@@ -179,7 +176,6 @@ export class GlobeController {
 
   resize(width, height) {
     this.#renderer.resize(width, height);
-    this.#renderer.renderScene(this.#scene);
   }
 
   destroy() {
