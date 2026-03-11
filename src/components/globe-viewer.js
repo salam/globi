@@ -360,8 +360,6 @@ export class GlobeViewerElement extends HTMLElement {
     pointerId: null,
     x: 0,
     y: 0,
-    vx: 0,
-    vy: 0,
     ts: 0,
     travel: 0,
   };
@@ -370,7 +368,6 @@ export class GlobeViewerElement extends HTMLElement {
   #legendItems = new Map();
   #activeSearchIds = null;
   #legendPeekTimeout = 0;
-  #inertiaFrame = 0;
   #focusFrame = 0;
   constructor() {
     super();
@@ -484,10 +481,6 @@ export class GlobeViewerElement extends HTMLElement {
 
   disconnectedCallback() {
     this._resizeObserver?.disconnect();
-    if (this.#inertiaFrame) {
-      cancelAnimationFrame(this.#inertiaFrame);
-      this.#inertiaFrame = 0;
-    }
     this.#stopFocusAnimation();
     this.#controller?.destroy();
   }
