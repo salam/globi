@@ -2,7 +2,7 @@ import { GlobeController } from '../controller/globeController.js';
 import { getCelestialPreset, listCelestialPresets } from '../scene/celestial.js';
 import { mergeViewerUiConfig, resolveViewerUiConfig, VIEWER_CONTROL_STYLE_ICON } from '../scene/viewerUi.js';
 import { interpolateCameraState } from './cameraTween.js';
-import { computeIdlePanDelta } from './idleRotation.js';
+
 import { getLegendSymbol } from './legendSymbol.js';
 import { computeNorthArrowRotation, computeScaleBar } from './navigationHud.js';
 import { resolveNavigationHudVisibility } from './viewerUiInteractions.js';
@@ -346,9 +346,6 @@ export class GlobeViewerElement extends HTMLElement {
   };
   #inertiaFrame = 0;
   #focusFrame = 0;
-  #idleFrame = 0;
-  #idleLastTs = 0;
-
   constructor() {
     super();
     this.#root = this.attachShadow({ mode: 'open' });
@@ -420,7 +417,6 @@ export class GlobeViewerElement extends HTMLElement {
     this.#renderLegend(currentScene);
     this.#syncCelestialSelection(currentScene.planet?.id);
     this.#updateNavigationHud();
-    this.#startIdleRotation();
 
     const theme = this.getAttribute('theme');
     if (theme === 'light' || theme === 'dark') {
@@ -444,7 +440,6 @@ export class GlobeViewerElement extends HTMLElement {
       this.#inertiaFrame = 0;
     }
     this.#stopFocusAnimation();
-    this.#stopIdleRotation();
     this.#controller?.destroy();
   }
 
@@ -594,46 +589,6 @@ export class GlobeViewerElement extends HTMLElement {
     }
     cancelAnimationFrame(this.#focusFrame);
     this.#focusFrame = 0;
-  }
-
-  #startIdleRotation() {
-    if (!this.#controller || this.#idleFrame) {
-      return;
-    }
-    this.#idleLastTs = performance.now();
-
-    const tick = (now) => {
-      if (!this.#controller) {
-        this.#idleFrame = 0;
-        return;
-      }
-
-      const elapsedMs = Math.max(0, now - this.#idleLastTs);
-      this.#idleLastTs = now;
-
-      const canIdleRotate = !this.#drag.active && !this.#inertiaFrame && !this.#focusFrame;
-      if (canIdleRotate) {
-        const scene = this.#currentScene ?? this.#controller.getScene();
-        const deltaLon = computeIdlePanDelta(scene?.planet?.rotationSpeed, elapsedMs);
-        if (Math.abs(deltaLon) > 0) {
-          this.#controller.panBy(deltaLon, 0);
-          this.#updateNavigationHud();
-        }
-      }
-
-      this.#idleFrame = requestAnimationFrame(tick);
-    };
-
-    this.#idleFrame = requestAnimationFrame(tick);
-  }
-
-  #stopIdleRotation() {
-    if (!this.#idleFrame) {
-      return;
-    }
-    cancelAnimationFrame(this.#idleFrame);
-    this.#idleFrame = 0;
-    this.#idleLastTs = 0;
   }
 
   #animateFocusTo(target, options = {}) {
