@@ -55,6 +55,22 @@ test('CalloutManager updateVisibility hides backfacing callouts', () => {
   // That's correct — equator at lon=0 is exactly on the edge
 });
 
+test('CalloutManager leader line uses marker color', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  manager.update(group, [
+    { id: 'm1', lat: 10, lon: 10, alt: 0, name: { en: 'A' }, calloutMode: 'always', color: '#0072B2' },
+    { id: 'm2', lat: 20, lon: 20, alt: 0, name: { en: 'B' }, calloutMode: 'always' },
+  ], 'en');
+  const data = manager.getCalloutData();
+  const m1 = data.get('m1');
+  const m2 = data.get('m2');
+  assert.equal(m1.color, '#0072B2');
+  assert.equal(m2.color, '#f6b73c');
+  // Verify leader line material uses the marker color
+  assert.equal(m1.line.material.color.getHexString(), '0072b2');
+});
+
 test('CalloutManager hover mode starts hidden', () => {
   const manager = new CalloutManager();
   const group = new Group();

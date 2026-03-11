@@ -8,8 +8,16 @@ import {
 import { latLonToCartesian } from '../math/geo.js';
 
 const LEADER_LENGTH = 0.25;
-const LEADER_COLOR = 0xf6b73c;
+const LEADER_COLOR_DEFAULT = '#f6b73c';
 const LEADER_OPACITY = 0.7;
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export class CalloutManager {
   #group = null;
@@ -38,6 +46,8 @@ export class CalloutManager {
       const direction = surfaceVec.clone().normalize();
       const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
 
+      const markerColor = marker.color || LEADER_COLOR_DEFAULT;
+
       // Leader line
       const lineGeo = new BufferGeometry();
       lineGeo.setAttribute('position', new Float32BufferAttribute([
@@ -45,7 +55,7 @@ export class CalloutManager {
         labelPos.x, labelPos.y, labelPos.z,
       ], 3));
       const lineMat = new LineBasicMaterial({
-        color: LEADER_COLOR,
+        color: markerColor,
         transparent: true,
         opacity: LEADER_OPACITY,
         depthWrite: false,
@@ -61,7 +71,7 @@ export class CalloutManager {
       group.add(line);
       this.#calloutData.set(marker.id, {
         marker, label, line, labelPosition: labelPos,
-        surfacePosition: surfaceVec, mode,
+        surfacePosition: surfaceVec, mode, color: markerColor,
         visible: mode === 'always',
       });
     }
@@ -76,14 +86,17 @@ export class CalloutManager {
       div.setAttribute('role', 'status');
       div.setAttribute('aria-label', data.label);
       div.setAttribute('tabindex', '0');
+      const c = data.color || LEADER_COLOR_DEFAULT;
+      const rgba12 = hexToRgba(c, 0.12);
+      const rgba40 = hexToRgba(c, 0.4);
       div.style.cssText = `
-        color: #f6b73c;
+        color: ${c};
         font-size: 12px;
         font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
         font-weight: 600;
         padding: 2px 8px;
-        background: rgba(246, 183, 60, 0.12);
-        border: 1px solid rgba(246, 183, 60, 0.4);
+        background: ${rgba12};
+        border: 1px solid ${rgba40};
         border-radius: 4px;
         pointer-events: auto;
         cursor: default;
