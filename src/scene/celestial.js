@@ -140,6 +140,8 @@ function clonePreset(preset) {
     ...preset,
     lightingMode: 'fixed',
     lightingTimestamp: '',
+    showBorders: true,
+    showLabels: true,
   };
 }
 
@@ -199,6 +201,8 @@ export function resolvePlanetConfig(input) {
       lightingTimestamp: (typeof planet.lightingTimestamp === 'string' || typeof planet.lightingTimestamp === 'number')
         ? planet.lightingTimestamp
         : '',
+      showBorders: planet.showBorders !== false,
+      showLabels: planet.showLabels !== false,
     };
   }
 
@@ -222,5 +226,7 @@ export function resolvePlanetConfig(input) {
     lightingTimestamp: (typeof planet.lightingTimestamp === 'string' || typeof planet.lightingTimestamp === 'number')
       ? planet.lightingTimestamp
       : '',
+    showBorders: planet.showBorders !== false,
+    showLabels: planet.showLabels !== false,
   };
 }

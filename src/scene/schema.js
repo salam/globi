@@ -218,6 +218,13 @@ export function validateScene(sceneInput) {
     }
   }
 
+  if (scene.planet.showBorders !== undefined && typeof scene.planet.showBorders !== 'boolean') {
+    errors.push('planet.showBorders must be a boolean');
+  }
+  if (scene.planet.showLabels !== undefined && typeof scene.planet.showLabels !== 'boolean') {
+    errors.push('planet.showLabels must be a boolean');
+  }
+
   const rawMarkers = Array.isArray(rawScene.markers) ? rawScene.markers : [];
   scene.markers.forEach((marker, index) => {
     const pointer = `markers[${index}]`;

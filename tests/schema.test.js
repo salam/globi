@@ -109,6 +109,20 @@ test('validateScene rejects invalid viewerUi values', () => {
   assert.ok(result.errors.some((error) => error.includes('viewerUi.showBodySelector')));
 });
 
+test('normalizeScene defaults showBorders and showLabels to true', () => {
+  const normalized = normalizeScene({});
+  assert.equal(normalized.planet.showBorders, true);
+  assert.equal(normalized.planet.showLabels, true);
+});
+
+test('validateScene accepts showBorders and showLabels booleans', () => {
+  const scene = createEmptyScene();
+  scene.planet.showBorders = false;
+  scene.planet.showLabels = false;
+  const result = validateScene(scene);
+  assert.equal(result.valid, true);
+});
+
 test('validateScene accepts text markers as a valid visual type', () => {
   const scene = createEmptyScene();
   scene.markers.push({

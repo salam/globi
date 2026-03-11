@@ -6,6 +6,7 @@ import {
   listCelestialPresets,
   getCelestialPreset,
   isCelestialPresetId,
+  resolvePlanetConfig,
 } from '../src/scene/celestial.js';
 
 const EXPECTED_IDS = [
@@ -46,4 +47,20 @@ test('isCelestialPresetId returns true only for supported ids', () => {
   assert.equal(isCelestialPresetId('mars'), true);
   assert.equal(isCelestialPresetId('unknown-world'), false);
   assert.ok(CELESTIAL_PRESET_IDS.includes('moon'));
+});
+
+test('resolvePlanetConfig defaults showBorders and showLabels to true', () => {
+  const earth = resolvePlanetConfig('earth');
+  assert.equal(earth.showBorders, true);
+  assert.equal(earth.showLabels, true);
+
+  const custom = resolvePlanetConfig({ id: 'myplanet' });
+  assert.equal(custom.showBorders, true);
+  assert.equal(custom.showLabels, true);
+});
+
+test('resolvePlanetConfig preserves explicit showBorders/showLabels false', () => {
+  const planet = resolvePlanetConfig({ id: 'earth', showBorders: false, showLabels: false });
+  assert.equal(planet.showBorders, false);
+  assert.equal(planet.showLabels, false);
 });
