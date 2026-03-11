@@ -1,5 +1,9 @@
 # FAQ
 
+## Where do the planet textures come from?
+
+Surface textures for Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and the Moon come from [Solar System Scope](https://www.solarsystemscope.com/textures/) under the CC-BY 4.0 license. Textures for Io, Europa, Ganymede, and Titan come from NASA/JPL mission data (public domain). Full attribution is in `assets/textures/CREDITS.md`.
+
 ## Is this only for Earth?
 No. Earth is the default, and you can toggle built-in presets for all 8 planets plus 5 popular moons (`moon`, `io`, `europa`, `ganymede`, `titan`). You can still set custom planet values manually.
 

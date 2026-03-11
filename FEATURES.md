@@ -19,6 +19,15 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Fix compass HUD visibility defaults and make Viewer UI control changes reliable across browsers (`input` + `change` handling).
 - [x] Simplify compass UI to arrow-only and keep the arrow north-oriented.
 
+## Celestial Bodies
+
+- [x] Realistic surface textures for all 13 celestial bodies (NASA/ESA sources)
+- [x] Per-body atmosphere rendering (none/thin/medium/thick/deep)
+- [x] Time-accurate axial tilt and seasonal lighting
+- [x] Ring systems for Saturn, Jupiter, Uranus, Neptune
+- [x] Progressive texture loading (2K → 8K on zoom)
+- [x] Body-switching with automatic teardown/rebuild
+
 ## Core Globe
 - [x] Implement `<globe-viewer>` web component bootstrap (init, destroy, resize).
 - [x] Render textured spherical Earth with configurable planet presets.

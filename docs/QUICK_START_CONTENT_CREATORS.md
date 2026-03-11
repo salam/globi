@@ -14,7 +14,8 @@ Then open:
 
 ## 2) Build your scene
 Use the left panel in this order:
-1. Choose `Celestial body` (defaults to Earth)
+
+1. Choose `Celestial body` (defaults to Earth; 13 bodies supported: all 8 planets plus Moon, Io, Europa, Ganymede, and Titan — each with realistic surface textures, correct atmosphere, and axial tilt)
 2. Add markers (places, people, events, or text labels on the globe)
 3. Add arcs (connections between two places)
 4. Add paths (multi-point routes)

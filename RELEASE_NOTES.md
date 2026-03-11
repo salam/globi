@@ -1,3 +1,16 @@
+# Release Notes
+
+## Version 1.x.x (Tue, Mar 11 2026)
+
+* Realistic surfaces for all 13 celestial bodies sourced from NASA/JPL and Solar System Scope
+* Per-body atmosphere rendering with correct color, thickness, and density
+* Accurate axial tilt (obliquity) — Uranus appears nearly sideways
+* Time-accurate sun lighting based on orbital mechanics for any body
+* Ring systems for Saturn (textured), Jupiter, Uranus, and Neptune (faint)
+* Progressive texture upgrade from 2K to 8K resolution on zoom
+* Seamless body-switching: switch planets without page reload
+* Texture download script (`tools/download-textures.sh`) for local asset management
+
 ## Release 2.5 (Wed, Mar 12 08:00)
 
 * Default earth texture now loads automatically for proper surface rendering (no more low-poly artifacts)
