@@ -1,12 +1,44 @@
 {
   "conversations": [
     {
-      "id": "07286ba3-2f6d-4442-a21e-6cbe5db61caf",
-      "title": "Make it more production-quality 3D effects. I want to have a better texture f...",
+      "id": "ddc6c238-48b2-4c06-83d1-647c733311e2",
+      "title": "The different bodies should also have different surfaces, and the correct atm...",
       "description": "▸",
-      "category": "user-story",
+      "category": "feature",
+      "status": "needs-input",
+      "lastMessage": "| 7: Docs | 11-12 | FEATURES.md, RELEASE_NOTES.md, visual testing |\nReady to execute?",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": true,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git restore --staged :/ && git add \"docs/superpowers/plans/2026-03-11-realist...",
+        "outputHint": "[main 2983926] docs: add implementation plan for realistic celestial bodies\n 1 file changed, 1793 in...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T21:09:29.208Z",
+      "updatedAt": "2026-03-11T23:18:33.448Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/ddc6c238-48b2-4c06-83d1-647c733311e2.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code"
+    },
+    {
+      "id": "8f5b1969-1865-4a57-922f-ca5e93e1af41",
+      "title": "In all modes and examples: Improve the country outlines on the planet. The su...",
+      "description": "▸ Let me start by understanding the current state of the globe rendering and then brainstorm improvements.",
+      "category": "feature",
       "status": "in-review",
-      "lastMessage": "---\nDoes this design look right so far? Any sections you'd like me to adjust before I write the spec doc?",
+      "lastMessage": "[...] review for Task 1 also confirmed full compliance. Ready for on-device visual testing whenever you open the editor.",
       "agents": [
         {
           "id": "claude-main",
@@ -18,17 +50,117 @@
       "gitBranch": "main",
       "hasError": false,
       "isInterrupted": false,
-      "hasQuestion": true,
+      "hasQuestion": false,
       "isRateLimited": false,
       "lastActivity": {
-        "toolName": "Write",
-        "summary": ".../70082-1773236085/migration-scope.html",
-        "outputHint": "File created successfully at: /Users/matthias/Development/globi/.superpowers/brainstorm/70082-177323...",
+        "toolName": "Bash",
+        "summary": "node --test 2>&1 | tail -5",
+        "outputHint": "5 lines of output",
+        "status": "completed"
+      },
+      "referencedImage": "/Users/matthias/Development/globi/assets/earth_day_2k.jpg",
+      "createdAt": "2026-03-11T20:55:42.492Z",
+      "updatedAt": "2026-03-11T21:54:43.017Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/8f5b1969-1865-4a57-922f-ca5e93e1af41.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "07286ba3-2f6d-4442-a21e-6cbe5db61caf",
+      "title": "Make it more production-quality 3D effects. I want to have a better texture f...",
+      "description": "▸",
+      "category": "user-story",
+      "status": "in-review",
+      "lastMessage": "[...] gitude) first then X (latitude), which decouples them exactly — every location now centers precisely at (0, 0, 1).",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git restore --staged :/ && git add src/renderer/threeGlobeRenderer.js && git ...",
+        "outputHint": "[main d978e09] fix: correct globe centering by using XYZ Euler order instead of YXZ\n 1 file changed,...",
         "status": "completed"
       },
       "createdAt": "2026-03-11T13:26:19.723Z",
-      "updatedAt": "2026-03-11T18:44:56.778Z",
+      "updatedAt": "2026-03-11T21:40:10.096Z",
       "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/07286ba3-2f6d-4442-a21e-6cbe5db61caf.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "c7babcd5-f5fb-4412-be30-79e1b4179cb1",
+      "title": "Grap-draging should work the way that where the mouse down or touch happens i...",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] omputes a fresh delta from the actual post-rotation state instead of accumulating error from the stale grab point.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "npm test 2>&1 | tail -10",
+        "outputHint": "10 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T20:56:35.960Z",
+      "updatedAt": "2026-03-11T21:39:14.277Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/c7babcd5-f5fb-4412-be30-79e1b4179cb1.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "4e11e50c-2235-4b1d-ac2e-1356dadcaa60",
+      "title": "The example with the ISS has no segment between the last 10 mins and the curr...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] ove the dot marker. No external model download needed — it's lightweight and always available.\n128/128 tests pass.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/RELEASE_NOTES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/RELEASE_NOTES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T20:52:00.185Z",
+      "updatedAt": "2026-03-11T20:56:31.853Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/4e11e50c-2235-4b1d-ac2e-1356dadcaa60.jsonl",
       "workspacePath": "/Users/matthias/Development/globi",
       "provider": "claude-code",
       "previousStatus": "in-review"
@@ -153,5 +285,5 @@
       "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%20%20%20%20%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%2310b981%22%20opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Crect%20x%3D%229%22%20y%3D%2215%22%20width%3D%2214%22%20height%3D%2214%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Cpolygon%20points%3D%2222%2C22%2028%2C34%2016%2C34%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2228%22%20cy%3D%2234%22%20r%3D%225%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Crect%20x%3D%2230%22%20y%3D%2236%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fsvg%3E"
     }
   ],
-  "lastUpdated": "2026-03-11T18:44:57.183Z"
+  "lastUpdated": "2026-03-11T23:18:34.236Z"
 }

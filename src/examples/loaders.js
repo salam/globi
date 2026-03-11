@@ -327,6 +327,7 @@ function normalizeIssMarker(current) {
     visualType: 'dot',
     category: 'iss',
     color: '#f5d547',
+    pulse: true,
   };
 }
 
@@ -602,6 +603,10 @@ export async function loadIssRealtimeExample(options = {}) {
     lon: Number(entry.longitude),
     alt: Math.max(0, Number(entry.altitude) / 6371),
   }));
+  // Append current live position so the path reaches the ISS marker (BUG6)
+  if (pathPoints.length >= 1) {
+    pathPoints.push({ lat: marker.lat, lon: marker.lon, alt: marker.alt });
+  }
 
   return {
     ...createEmptyScene(locale),

@@ -33,7 +33,7 @@ Both layers are stacked inside the `<globe-viewer>` shadow DOM `.stage` element.
 - `init()` starts the loop
 - Each frame: render WebGL scene + CSS2D overlay
 - `renderScene(scene)` is called by the controller when scene data changes — it marks the scene dirty and updates Three.js objects (meshes, sprites, labels) on the next frame
-- The existing idle rotation rAF loop in `globe-viewer.js` calls `panBy()` which sets a dirty flag; the renderer's own loop picks it up
+- Idle rotation moves into the renderer: `ThreeGlobeRenderer` accepts a `rotationSpeed` config and applies it each frame. The idle rotation rAF loop in `globe-viewer.js` is removed.
 - `destroy()` stops the loop
 
 This replaces the current imperative "render on every change" model with a continuous loop, which Three.js requires for smooth animation and CSS2D positioning updates.
@@ -130,7 +130,7 @@ Marker gains two new fields — `calloutMode` and `calloutLabel`:
 
 - `callout` (existing) — HTML content shown in the inspect panel on click. Unchanged.
 - `calloutMode` (new) — controls the spatial callout label visibility. Default: `'always'`.
-- `calloutLabel` (new) — localized text for the spatial label. Default: uses `marker.name`. Resolved via `scene.locale`, falling back to `en`.
+- `calloutLabel` (new) — localized text for the spatial label. Resolved via `scene.locale`, falling back to `en`. If empty/omitted, `CalloutManager` falls back to `marker.name` at render time (not in schema normalization, since name may change independently).
 
 ### Schema Changes (`src/scene/schema.js`)
 

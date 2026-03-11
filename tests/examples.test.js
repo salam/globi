@@ -152,14 +152,19 @@ test('loadIssRealtimeExample builds ISS marker and orbit path from API responses
   const historyMarkers = scene.markers.filter((entry) => entry.category === 'iss-history');
 
   assert.equal(Boolean(currentMarker), true);
+  assert.equal(currentMarker.pulse, true, 'ISS current marker should have pulse enabled');
   assert.equal(historyMarkers.length, 3);
   assert.ok(historyMarkers.every((entry) => entry.visualType === 'dot'));
   assert.ok(historyMarkers.every((entry) => entry.id.startsWith('iss-history-')));
   assert.ok(historyMarkers.every((entry) => entry.callout.includes('Time:')));
   assert.ok(historyMarkers.every((entry) => entry.description.en.includes('ISS position at')));
+  // BUG6: orbit path must include the current live position as the final point
   assert.equal(scene.paths.length, 1);
-  assert.equal(scene.paths[0].points.length, 3);
+  assert.equal(scene.paths[0].points.length, 4); // 3 history + 1 current
   assert.equal(scene.paths[0].id, 'iss-recent-orbit');
+  const lastPoint = scene.paths[0].points[scene.paths[0].points.length - 1];
+  assert.equal(lastPoint.lat, currentMarker.lat);
+  assert.equal(lastPoint.lon, currentMarker.lon);
   assert.equal(scene.regions.length, 2);
   assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
 });

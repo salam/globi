@@ -900,11 +900,14 @@ export class GlobeViewerElement extends HTMLElement {
         const deltaLat = this.#drag.grabLatLon.lat - currentLatLon.lat;
         this.#controller.panBy(deltaLon, deltaLat);
 
-        // If we were off-disk and came back, re-anchor to avoid jump
-        if (this.#drag.wasOffDisk) {
-          this.#drag.grabLatLon = this.#controller.screenToLatLon(event.clientX, event.clientY);
-          this.#drag.wasOffDisk = false;
+        // Re-anchor grab point after each panBy to prevent feedback loop.
+        // The panBy rotation is an approximation (non-linear projection),
+        // so re-anchoring eliminates accumulated error each frame.
+        const reanchored = this.#controller.screenToLatLon(event.clientX, event.clientY);
+        if (reanchored) {
+          this.#drag.grabLatLon = reanchored;
         }
+        this.#drag.wasOffDisk = false;
       } else {
         // Off-disk fallback: zoom-scaled screen deltas
         this.#drag.wasOffDisk = true;
