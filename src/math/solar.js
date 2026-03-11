@@ -107,3 +107,5 @@ export function getSunLightVector(camera = {}, dateInput = new Date()) {
     z: projected.depth,
   });
 }
+
+export { getSunDirectionForBody } from './orbital.js';
