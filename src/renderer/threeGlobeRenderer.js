@@ -22,6 +22,7 @@ import { ArcPathManager } from './arcPathManager.js';
 import { RegionManager } from './regionManager.js';
 import { CalloutManager } from './calloutManager.js';
 import { BorderManager } from './borderManager.js';
+import { GeoLabelManager } from './geoLabelManager.js';
 import { getSunLightVector } from '../math/solar.js';
 import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
 import { latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
@@ -64,6 +65,8 @@ export class ThreeGlobeRenderer {
   #borderManager = new BorderManager();
   #borderGroup = null;
   #borderGeoJson = null;
+  #geoLabelManager = new GeoLabelManager();
+  #geoLabelGroup = null;
 
   // --- Camera state (derived from globe rotation) ---
   #centerLon = 0;
@@ -268,6 +271,9 @@ export class ThreeGlobeRenderer {
     this.#borderGroup = new Group();
     globeGroup.add(this.#borderGroup);
 
+    this.#geoLabelGroup = new Group();
+    globeGroup.add(this.#geoLabelGroup);
+
     // Async GeoJSON fetch for country borders
     fetch('assets/ne_110m_countries.geojson')
       .then(r => r.ok ? r.json() : null)
@@ -368,6 +374,11 @@ export class ThreeGlobeRenderer {
     if (this.#borderGroup && this.#borderGeoJson) {
       const showBorders = (scene.planet ?? {}).showBorders !== false;
       this.#borderManager.update(this.#borderGroup, this.#borderGeoJson, { show: showBorders });
+    }
+
+    if (this.#geoLabelGroup) {
+      const showLabels = (scene.planet ?? {}).showLabels !== false;
+      this.#geoLabelManager.update(this.#geoLabelGroup, { showLabels });
     }
 
     // Update textures from planet config
@@ -541,6 +552,7 @@ export class ThreeGlobeRenderer {
     this.#regionManager?.dispose();
     this.#calloutManager?.dispose();
     this.#borderManager?.dispose();
+    this.#geoLabelManager?.dispose();
 
     // Dispose Three.js objects
     if (this.#earthMesh) {
