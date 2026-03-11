@@ -1,3 +1,11 @@
+## Release 2.5 (Wed, Mar 12 08:00)
+
+* Default earth texture now loads automatically for proper surface rendering (no more low-poly artifacts)
+* Added country border outlines from Natural Earth 110m data — white political boundary lines overlaid on the globe
+* Added curved ocean and continent labels rendered directly on the globe surface for orientation
+* New editor toggles: "Show country borders" and "Show geo labels" in the Viewer UI section
+* Borders and labels can be toggled per-scene via `planet.showBorders` and `planet.showLabels` config flags
+
 ## Release 2.4 (Wed, Mar 12 06:00)
 
 * Surface-grab drag rotation — grabbing the globe now feels like physically turning a ball; the point under your finger stays anchored to the cursor

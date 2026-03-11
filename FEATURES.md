@@ -33,6 +33,10 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Add day/night texture blending with city lights and Fresnel atmospheric glow.
 - [x] Add spatially anchored callout labels with leader lines (CSS2DRenderer for selectable/accessible text).
 - [x] Add `calloutMode` (always/hover/click/none) and `calloutLabel` (localized) to marker schema.
+- [x] Load default earth texture at init for proper surface rendering.
+- [x] Add country border outlines from Natural Earth 110m GeoJSON (white line overlay).
+- [x] Add curved ocean and continent labels rendered on the globe surface.
+- [x] Add `showBorders` and `showLabels` planet config flags with editor toggles.
 
 ## Scene Data Model
 - [x] Define versioned schema for `Marker`, `Path`, `Arc`, `Region`, `Animation`.
