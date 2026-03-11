@@ -301,6 +301,19 @@ export class ThreeGlobeRenderer {
               }
             });
           }
+          // Clicking a callout label triggers inspect for the marker
+          div.addEventListener('click', () => {
+            const markerData = this.#markerManager.getMarkerMap()?.get(id);
+            if (markerData && this.#container) {
+              const marker = markerData.marker;
+              const anchorPos = this.#worldToClient(markerData.object.position);
+              const event = new CustomEvent('calloutClick', {
+                bubbles: true,
+                detail: { kind: 'marker', id, entity: marker, anchor: anchorPos },
+              });
+              this.#container.dispatchEvent(event);
+            }
+          });
         }
       }
     }
@@ -416,6 +429,11 @@ export class ThreeGlobeRenderer {
    * @param {{ lat: number, lon: number, alt?: number }} point
    * @returns {{ clientX: number, clientY: number, visible: boolean } | null}
    */
+  filterCallouts(matchingIds) {
+    this.#calloutManager.filterCallouts(matchingIds);
+    this.#dirty = true;
+  }
+
   projectPointToClient(point) {
     if (!this.#camera || !this.#webglRenderer) {
       return null;

@@ -71,6 +71,27 @@ test('CalloutManager leader line uses marker color', () => {
   assert.equal(m1.line.material.color.getHexString(), '0072b2');
 });
 
+test('CalloutManager filterCallouts shows only matching IDs', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  manager.update(group, [
+    { id: 'm1', lat: 10, lon: 10, alt: 0, name: { en: 'Alpha' }, calloutMode: 'always' },
+    { id: 'm2', lat: 20, lon: 20, alt: 0, name: { en: 'Beta' }, calloutMode: 'always' },
+    { id: 'm3', lat: 30, lon: 30, alt: 0, name: { en: 'Gamma' }, calloutMode: 'always' },
+  ], 'en');
+  const data = manager.getCalloutData();
+  // Filter to only m1
+  manager.filterCallouts(['m1']);
+  assert.equal(data.get('m1').visible, true);
+  assert.equal(data.get('m2').visible, false);
+  assert.equal(data.get('m3').visible, false);
+  // Reset
+  manager.filterCallouts(null);
+  assert.equal(data.get('m1').visible, true);
+  assert.equal(data.get('m2').visible, true);
+  assert.equal(data.get('m3').visible, true);
+});
+
 test('CalloutManager hover mode starts hidden', () => {
   const manager = new CalloutManager();
   const group = new Group();

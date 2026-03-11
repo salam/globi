@@ -156,6 +156,12 @@ export class GlobeController {
     return this.#renderer.hitTest(clientX, clientY, options);
   }
 
+  filterCallouts(matchingIds) {
+    if (typeof this.#renderer.filterCallouts === 'function') {
+      this.#renderer.filterCallouts(matchingIds);
+    }
+  }
+
   projectPointToClient(point) {
     if (typeof this.#renderer.projectPointToClient !== 'function') {
       return null;

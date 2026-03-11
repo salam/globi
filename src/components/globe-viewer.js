@@ -105,6 +105,24 @@ const TEMPLATE = `
       background: rgba(246, 183, 60, 0.28);
     }
 
+    .search-input {
+      border: 1px solid #355183;
+      background: rgba(10, 23, 50, 0.8);
+      color: inherit;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 13px;
+      min-width: 120px;
+      max-width: 200px;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: #5b8dcf;
+    }
+    .search-input::placeholder {
+      color: rgba(200, 215, 240, 0.5);
+    }
+
     .legend {
       position: absolute;
       bottom: 12px;
@@ -287,6 +305,7 @@ const TEMPLATE = `
 
   <div class="stage" part="stage"></div>
   <div class="controls">
+    <input class="search-input" type="search" placeholder="Search markers…" aria-label="Search markers" />
     <select class="celestial-select"></select>
     <button class="fullscreen control-button" type="button"></button>
     <button class="legend-toggle control-button" type="button"></button>
@@ -346,6 +365,8 @@ export class GlobeViewerElement extends HTMLElement {
     ts: 0,
     travel: 0,
   };
+  #searchInput;
+  #searchDebounce = 0;
   #inertiaFrame = 0;
   #focusFrame = 0;
   constructor() {
@@ -365,6 +386,12 @@ export class GlobeViewerElement extends HTMLElement {
     this.#fullscreenButton = this.#root.querySelector('.fullscreen');
     this.#legendButton = this.#root.querySelector('.legend-toggle');
     this.#inspectButton = this.#root.querySelector('.inspect-toggle');
+    this.#searchInput = this.#root.querySelector('.search-input');
+
+    this.#searchInput.addEventListener('input', () => {
+      clearTimeout(this.#searchDebounce);
+      this.#searchDebounce = setTimeout(() => this.#onSearch(this.#searchInput.value), 180);
+    });
 
     this.#legendButton.addEventListener('click', () => {
       this.#legendVisible = !this.#legendVisible;
@@ -416,6 +443,16 @@ export class GlobeViewerElement extends HTMLElement {
       this.#syncCelestialSelection(scene.planet?.id);
       this.#updateNavigationHud();
       dispatchCustomEvent(this, 'sceneChange', scene);
+    });
+
+    this.#stage.addEventListener('calloutClick', (event) => {
+      const detail = event.detail;
+      if (detail) {
+        dispatchCustomEvent(this, 'inspectSelect', detail);
+        if (detail.kind === 'marker') {
+          dispatchCustomEvent(this, 'markerClick', detail.entity);
+        }
+      }
     });
 
     this.#renderCelestialOptions();
@@ -589,6 +626,37 @@ export class GlobeViewerElement extends HTMLElement {
     }
     if (this.#scaleLabel) {
       this.#scaleLabel.textContent = scale.label;
+    }
+  }
+
+  #onSearch(query) {
+    if (!this.#controller) return;
+    const scene = this.#currentScene ?? this.#controller.getScene();
+    const markers = scene?.markers ?? [];
+    const q = (query ?? '').trim().toLowerCase();
+
+    if (!q) {
+      // Reset: show all callouts
+      this.#controller.filterCallouts(null);
+      dispatchCustomEvent(this, 'searchResults', { query: '', matches: [] });
+      return;
+    }
+
+    const matches = markers.filter((m) => {
+      const locale = scene.locale ?? 'en';
+      const name = (m.name?.[locale] ?? m.name?.en ?? '').toLowerCase();
+      const desc = (m.description?.[locale] ?? m.description?.en ?? '').toLowerCase();
+      const id = (m.id ?? '').toLowerCase();
+      return name.includes(q) || desc.includes(q) || id.includes(q);
+    });
+
+    const matchIds = matches.map((m) => m.id);
+    this.#controller.filterCallouts(matchIds);
+    dispatchCustomEvent(this, 'searchResults', { query: q, matches });
+
+    if (matches.length === 1) {
+      const marker = matches[0];
+      this.#animateFocusTo({ lat: marker.lat, lon: marker.lon }, { durationMs: 700 });
     }
   }
 
@@ -780,9 +848,9 @@ export class GlobeViewerElement extends HTMLElement {
     this.#drag.active = false;
     this.#stage.releasePointerCapture?.(event.pointerId);
     const isClick = this.#drag.travel < 6;
-    if (isClick && this.#inspectMode) {
-      this.inspectAt(event.clientX, event.clientY);
-      return;
+    if (isClick) {
+      const hit = this.inspectAt(event.clientX, event.clientY);
+      if (hit || this.#inspectMode) return;
     }
     if (!isClick) {
       this.#startInertia();

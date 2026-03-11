@@ -149,6 +149,28 @@ export class CalloutManager {
     if (css2d) css2d.visible = false;
   }
 
+  filterCallouts(matchingIds) {
+    if (!matchingIds) {
+      // null/undefined = reset, show all 'always' callouts
+      for (const [id, data] of this.#calloutData) {
+        const show = data.mode === 'always';
+        data.line.visible = show;
+        data.visible = show;
+        const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+        if (css2d) css2d.visible = show;
+      }
+      return;
+    }
+    const ids = new Set(matchingIds);
+    for (const [id, data] of this.#calloutData) {
+      const show = ids.has(id);
+      data.line.visible = show;
+      data.visible = show;
+      const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+      if (css2d) css2d.visible = show;
+    }
+  }
+
   getCalloutData() {
     return this.#calloutData;
   }
