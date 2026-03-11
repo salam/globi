@@ -14,6 +14,9 @@ test('ThreeGlobeRenderer exports the expected public API', () => {
   assert.equal(typeof renderer.getCameraState, 'function');
   assert.equal(typeof renderer.resize, 'function');
   assert.equal(typeof renderer.destroy, 'function');
+  assert.equal(typeof renderer.screenToLatLon, 'function');
+  assert.equal(typeof renderer.pauseIdleRotation, 'function');
+  assert.equal(typeof renderer.resumeIdleRotation, 'function');
 });
 
 test('getCameraState returns default center and zoom', () => {
@@ -53,6 +56,12 @@ test('flyTo sets camera to target coordinates', () => {
 test('screenToLatLon is a function on the renderer', () => {
   const renderer = new ThreeGlobeRenderer();
   assert.equal(typeof renderer.screenToLatLon, 'function');
+});
+
+test('screenToLatLon returns null when renderer is not initialized', () => {
+  const renderer = new ThreeGlobeRenderer();
+  const result = renderer.screenToLatLon(100, 200);
+  assert.equal(result, null);
 });
 
 test('destroy is callable without init', () => {
