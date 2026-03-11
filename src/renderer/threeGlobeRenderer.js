@@ -97,6 +97,28 @@ export class ThreeGlobeRenderer {
     };
   }
 
+  /**
+   * Pause idle rotation by saving the current speed and setting it to zero.
+   * Safe to call multiple times — only the first call saves the speed.
+   */
+  pauseIdleRotation() {
+    if (this.#savedRotationSpeed === null) {
+      this.#savedRotationSpeed = this.#rotationSpeed;
+      this.#rotationSpeed = 0;
+    }
+  }
+
+  /**
+   * Resume idle rotation by restoring the previously saved speed.
+   * No-op if idle rotation is not currently paused.
+   */
+  resumeIdleRotation() {
+    if (this.#savedRotationSpeed !== null) {
+      this.#rotationSpeed = this.#savedRotationSpeed;
+      this.#savedRotationSpeed = null;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Public API — navigation
   // ---------------------------------------------------------------------------
@@ -546,6 +568,9 @@ export class ThreeGlobeRenderer {
 
   /** Idle rotation speed in deg/frame (set from planet.rotationSpeed). */
   #rotationSpeed = IDLE_ROTATION_SPEED_DEFAULT;
+
+  /** Saved rotation speed while idle rotation is paused (null = not paused). */
+  #savedRotationSpeed = null;
 
   /** Apply the current centerLon/centerLat as globe group Euler angles. */
   #applyGlobeRotation() {

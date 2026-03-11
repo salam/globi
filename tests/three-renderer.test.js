@@ -59,3 +59,9 @@ test('destroy is callable without init', () => {
   const renderer = new ThreeGlobeRenderer();
   assert.doesNotThrow(() => renderer.destroy());
 });
+
+test('pauseIdleRotation and resumeIdleRotation are functions', () => {
+  const renderer = new ThreeGlobeRenderer();
+  assert.equal(typeof renderer.pauseIdleRotation, 'function');
+  assert.equal(typeof renderer.resumeIdleRotation, 'function');
+});
