@@ -367,6 +367,9 @@ export class GlobeViewerElement extends HTMLElement {
   };
   #searchInput;
   #searchDebounce = 0;
+  #legendItems = new Map();
+  #activeSearchIds = null;
+  #legendPeekTimeout = 0;
   #inertiaFrame = 0;
   #focusFrame = 0;
   constructor() {
@@ -636,8 +639,10 @@ export class GlobeViewerElement extends HTMLElement {
     const q = (query ?? '').trim().toLowerCase();
 
     if (!q) {
-      // Reset: show all callouts
+      // Reset: show all callouts and legend items
+      this.#activeSearchIds = null;
       this.#controller.filterCallouts(null);
+      this.#updateLegendFilter(null);
       dispatchCustomEvent(this, 'searchResults', { query: '', matches: [] });
       return;
     }
@@ -651,13 +656,64 @@ export class GlobeViewerElement extends HTMLElement {
     });
 
     const matchIds = matches.map((m) => m.id);
+    this.#activeSearchIds = matchIds;
     this.#controller.filterCallouts(matchIds);
+    this.#updateLegendFilter(matchIds);
     dispatchCustomEvent(this, 'searchResults', { query: q, matches });
 
     if (matches.length === 1) {
       const marker = matches[0];
       this.#animateFocusTo({ lat: marker.lat, lon: marker.lon }, { durationMs: 700 });
     }
+  }
+
+  #updateLegendFilter(matchingIds) {
+    if (!matchingIds) {
+      // Reset all legend items to full opacity and normal weight
+      for (const [, row] of this.#legendItems) {
+        row.style.opacity = '1';
+        row.querySelector('.legend-label').style.fontWeight = '';
+      }
+      return;
+    }
+    const ids = new Set(matchingIds);
+    let firstMatch = null;
+    for (const [id, row] of this.#legendItems) {
+      const match = ids.has(id);
+      row.style.opacity = match ? '1' : '0.2';
+      row.querySelector('.legend-label').style.fontWeight = match ? '700' : '';
+      if (match && !firstMatch) firstMatch = row;
+    }
+    // Scroll legend to first matching item
+    if (firstMatch && this.#legend) {
+      firstMatch.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  #peekLegendItem(markerId) {
+    if (!this.#activeSearchIds) return;
+    const ids = new Set(this.#activeSearchIds);
+    if (ids.has(markerId)) return; // already highlighted
+
+    // Temporarily undim this legend item
+    const row = this.#legendItems.get(markerId);
+    if (row) {
+      row.style.opacity = '1';
+      row.querySelector('.legend-label').style.fontWeight = '700';
+    }
+
+    // Temporarily undim callout
+    const peekIds = [...this.#activeSearchIds, markerId];
+    this.#controller.filterCallouts(peekIds);
+
+    // Restore after 2 seconds
+    clearTimeout(this.#legendPeekTimeout);
+    this.#legendPeekTimeout = setTimeout(() => {
+      if (this.#activeSearchIds) {
+        this.#controller.filterCallouts(this.#activeSearchIds);
+        this.#updateLegendFilter(this.#activeSearchIds);
+      }
+    }, 2000);
   }
 
   #stopFocusAnimation() {
@@ -716,7 +772,11 @@ export class GlobeViewerElement extends HTMLElement {
     const locale = scene.locale;
     const markers = scene.markers ?? [];
 
-    this.#legend.innerHTML = '';
+    // Clear legend by removing all children (safe DOM method)
+    while (this.#legend.firstChild) {
+      this.#legend.removeChild(this.#legend.firstChild);
+    }
+    this.#legendItems.clear();
     for (const marker of markers) {
       const row = document.createElement('button');
       row.className = 'legend-item';
@@ -738,8 +798,10 @@ export class GlobeViewerElement extends HTMLElement {
       row.addEventListener('click', () => {
         this.#animateFocusTo({ lat: marker.lat, lon: marker.lon }, { durationMs: 800 });
         dispatchCustomEvent(this, 'markerClick', marker);
+        this.#peekLegendItem(marker.id);
       });
       this.#legend.appendChild(row);
+      this.#legendItems.set(marker.id, row);
     }
   }
 

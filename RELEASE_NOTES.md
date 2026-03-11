@@ -1,3 +1,16 @@
+## Release 2.3 (Tue, Mar 11 23:30)
+
+* Search now dims non-matching legend/key items to 20% opacity instead of leaving them at full brightness
+* Matching legend items are shown in bold for quick scanning
+* Legend auto-scrolls to the first search hit
+* Clicking a dimmed legend item temporarily undims it and its callout for 2 seconds
+
+## Release 2.2 (Wed, Mar 12 03:00)
+
+* Fixed ISS orbit path gap: the trail now connects all the way from the last history sample to the current live position (BUG6)
+* Added pulsating ring animation around the current ISS marker for better visibility
+* Added a simple procedural 3D ISS model (body + solar panel arrays) that hovers above the dot marker
+
 ## Release 2.1 (Tue, Mar 11 23:00)
 
 * Callout labels and leader lines now match each marker's color instead of using a fixed golden color
