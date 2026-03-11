@@ -58,6 +58,10 @@ function normalizeMarker(marker = {}) {
     movements: Array.isArray(marker.movements) ? marker.movements.map(normalizeMovement) : [],
     category: marker.category ?? 'default',
     color: marker.color ?? '',
+    calloutMode: ['always', 'hover', 'click', 'none'].includes(marker.calloutMode)
+      ? marker.calloutMode
+      : 'always',
+    calloutLabel: normalizeLocalizedText(marker.calloutLabel),
   };
 }
 
@@ -180,6 +184,7 @@ function validateLocalizedText(value, pointer, errors) {
 }
 
 export function validateScene(sceneInput) {
+  const rawScene = ensureObject(sceneInput, {});
   const scene = normalizeScene(sceneInput);
   const errors = [];
   const ids = new Set();
@@ -213,6 +218,7 @@ export function validateScene(sceneInput) {
     }
   }
 
+  const rawMarkers = Array.isArray(rawScene.markers) ? rawScene.markers : [];
   scene.markers.forEach((marker, index) => {
     const pointer = `markers[${index}]`;
     validateEntityId(marker.id, pointer, ids, errors);
@@ -221,6 +227,10 @@ export function validateScene(sceneInput) {
     validatePoint(marker, pointer, errors);
     if (!['dot', 'image', 'model', 'text'].includes(marker.visualType)) {
       errors.push(`${pointer}.visualType must be one of dot|image|model|text`);
+    }
+    const rawCalloutMode = rawMarkers[index]?.calloutMode;
+    if (rawCalloutMode !== undefined && !['always', 'hover', 'click', 'none'].includes(rawCalloutMode)) {
+      errors.push(`${pointer}.calloutMode must be one of always|hover|click|none`);
     }
   });
 
