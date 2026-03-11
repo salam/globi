@@ -21,6 +21,7 @@ import { MarkerManager } from './markerManager.js';
 import { ArcPathManager } from './arcPathManager.js';
 import { RegionManager } from './regionManager.js';
 import { CalloutManager } from './calloutManager.js';
+import { BorderManager } from './borderManager.js';
 import { getSunLightVector } from '../math/solar.js';
 import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
 import { latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
@@ -60,6 +61,9 @@ export class ThreeGlobeRenderer {
   #arcPathManager = new ArcPathManager();
   #regionManager = new RegionManager();
   #calloutManager = new CalloutManager();
+  #borderManager = new BorderManager();
+  #borderGroup = null;
+  #borderGeoJson = null;
 
   // --- Camera state (derived from globe rotation) ---
   #centerLon = 0;
@@ -261,6 +265,24 @@ export class ThreeGlobeRenderer {
     this.#calloutGroup = new Group();
     globeGroup.add(this.#calloutGroup);
 
+    this.#borderGroup = new Group();
+    globeGroup.add(this.#borderGroup);
+
+    // Async GeoJSON fetch for country borders
+    fetch('assets/ne_110m_countries.geojson')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          this.#borderGeoJson = data;
+          if (this.#lastScene) {
+            const show = this.#lastScene.planet?.showBorders !== false;
+            this.#borderManager.update(this.#borderGroup, data, { show });
+            this.#dirty = true;
+          }
+        }
+      })
+      .catch(() => {});
+
     // --- Atmosphere mesh (outside globe group — does not rotate) ---
     const atmosphereMesh = createAtmosphereMesh({ sunDirection: this.#sunDirection });
     this.#atmosphereMesh = atmosphereMesh;
@@ -341,6 +363,11 @@ export class ThreeGlobeRenderer {
           });
         }
       }
+    }
+
+    if (this.#borderGroup && this.#borderGeoJson) {
+      const showBorders = (scene.planet ?? {}).showBorders !== false;
+      this.#borderManager.update(this.#borderGroup, this.#borderGeoJson, { show: showBorders });
     }
 
     // Update textures from planet config
@@ -513,6 +540,7 @@ export class ThreeGlobeRenderer {
     this.#arcPathManager?.dispose();
     this.#regionManager?.dispose();
     this.#calloutManager?.dispose();
+    this.#borderManager?.dispose();
 
     // Dispose Three.js objects
     if (this.#earthMesh) {
