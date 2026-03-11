@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createEarthMesh, createAtmosphereMesh } from '../src/renderer/earthBuilder.js';
+import { createEarthMesh, createBodyMesh, createAtmosphereMesh } from '../src/renderer/earthBuilder.js';
 import { Mesh, ShaderMaterial, BackSide } from 'three';
 
 test('createEarthMesh returns a Mesh with ShaderMaterial', () => {
@@ -41,4 +41,35 @@ test('createEarthMesh accepts nightLayer false to skip night texture uniform usa
 test('createAtmosphereMesh accepts custom atmosphereColor', () => {
   const atmos = createAtmosphereMesh({ atmosphereColor: [1.0, 0.3, 0.1] });
   assert.ok(atmos.material.uniforms.atmosphereColor);
+});
+
+test('createBodyMesh with shaderMode "single" has single-texture uniforms', () => {
+  const body = createBodyMesh({ shaderMode: 'single' });
+  assert.ok(body instanceof Mesh);
+  assert.ok('dayTexture' in body.material.uniforms);
+  assert.ok('sunDirection' in body.material.uniforms);
+});
+
+test('createBodyMesh with shaderMode "venusAtmosphere" has atmosphereTexture uniform', () => {
+  const body = createBodyMesh({ shaderMode: 'venusAtmosphere' });
+  assert.ok('atmosphereTexture' in body.material.uniforms);
+  assert.ok('atmosphereTextureBlend' in body.material.uniforms);
+});
+
+test('createAtmosphereMesh with custom thickness changes geometry radius', () => {
+  const thin = createAtmosphereMesh({ thickness: 0.03 });
+  const thick = createAtmosphereMesh({ thickness: 0.15 });
+  assert.ok(thin.geometry.parameters.radius < thick.geometry.parameters.radius);
+});
+
+test('createAtmosphereMesh with density uniform', () => {
+  const atmos = createAtmosphereMesh({ density: 0.25 });
+  assert.ok('atmosphereDensity' in atmos.material.uniforms);
+  assert.equal(atmos.material.uniforms.atmosphereDensity.value, 0.25);
+});
+
+test('createBodyMesh shaderMode "dayNight" is backward compatible with createEarthMesh', () => {
+  const body = createBodyMesh({ shaderMode: 'dayNight' });
+  assert.ok('dayTexture' in body.material.uniforms);
+  assert.ok('nightTexture' in body.material.uniforms);
 });
