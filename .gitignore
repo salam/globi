@@ -218,3 +218,18 @@ durations.svg
 
 # Superpowers brainstorm sessions
 .superpowers/
+
+# Celestial body textures (downloaded via tools/download-textures.sh)
+assets/textures/mercury/
+assets/textures/venus/
+assets/textures/earth/
+assets/textures/mars/
+assets/textures/jupiter/
+assets/textures/saturn/
+assets/textures/uranus/
+assets/textures/neptune/
+assets/textures/moon/
+assets/textures/io/
+assets/textures/europa/
+assets/textures/ganymede/
+assets/textures/titan/
