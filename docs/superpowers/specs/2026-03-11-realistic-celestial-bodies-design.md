@@ -98,9 +98,12 @@ assets/
 - Only the selected body's textures are loaded — one body per page, ever
 - Initial load: 2K texture(s)
 - Progressive upgrade: when zoom > 2.0, lazy-load 8K variant and swap seamlessly via `TextureLoader`
+- If no 8K variant exists for a body (Uranus, Neptune, Io, Europa, Ganymede, Titan), stay at 2K — no upgrade attempt, no 404
 - Texture cache persists across zoom levels — 2K stays in memory as fallback
 - On load failure: fall back to existing `baseColor` gradient shader
+- On ring texture load failure: render ring with solid `color` fallback from ring config
 - `textureUri` in scene config still overrides preset texture paths (custom textures take priority)
+- Mobile/low-VRAM consideration: `maxTextureResolution` config option (default `8192`). Set to `2048` on devices with limited GPU memory. Progressive upgrade skipped when max is already met.
 
 ### Download Script
 
@@ -174,6 +177,25 @@ Extend `src/scene/celestial.js` presets with accurate physical parameters from t
 
 Negative sidereal rotation indicates retrograde rotation (Venus, Uranus).
 
+### Config Resolution: `resolvePlanetConfig()`
+
+The existing `resolvePlanetConfig()` must be extended to merge the new fields. Rules:
+
+- **Presets:** All new fields come pre-populated from the preset registry (no user action needed)
+- **Custom bodies:** New fields default to sensible values: `obliquity: 0`, `orbitalPeriod: 365.26`, `siderealRotation: 24`, `atmosphere: null`, `rings: null`
+- **Scene overrides:** Any field from the scene config overrides the preset. For nested objects (`atmosphere`, `rings`), a shallow merge is applied — partial overrides are allowed (e.g. override just `atmosphere.scatterColor`)
+- **Validation:** `obliquity` range 0–360°, `orbitalPeriod` > 0, `siderealRotation` ≠ 0, `rings.innerRadius` < `rings.outerRadius`, `atmosphere.density` 0–1
+
+### Moon/Satellite Sun Direction
+
+For moons (Moon, Io, Europa, Ganymede, Titan), the sun direction depends on the **parent planet's** orbital position, not the moon's own orbit. The `orbitalPeriod` and `meanLongitudeJ2000` fields for moons refer to their orbit around the parent. To compute the sun direction for a moon:
+
+1. Compute the parent planet's heliocentric ecliptic longitude at the given timestamp
+2. The sun direction relative to the moon ≈ the sun direction relative to the parent (moons are close enough to their parent that the parallax is negligible at educational accuracy)
+3. Apply the moon's own obliquity and sidereal rotation for body-fixed orientation
+
+The `parentId` field already exists in celestial presets and links moons to their parent planet config.
+
 ---
 
 ## 3. Atmosphere Rendering
@@ -206,9 +228,32 @@ uniform float sunIntensity;        // brightness on sun-facing side
 | Thick | Venus, Titan | 1.12–1.15 | 0.85–0.9 | Dense opaque shell, almost hides surface at grazing angles |
 | Deep | Jupiter, Saturn | 1.08 | 0.4 | Subtle haze over cloud tops, no hard edge |
 
+### Shader Uniforms (continued)
+
+Venus gets an additional atmosphere texture uniform:
+
+```glsl
+uniform sampler2D atmosphereTexture; // Venus atmosphere overlay (equirectangular)
+uniform float atmosphereTextureBlend; // 0.0 = no overlay, 1.0 = full overlay
+```
+
+For all other bodies, `atmosphereTextureBlend` is 0.0 and the uniform is unused.
+
+### Surface Shader: Earth vs Non-Earth Bodies
+
+The current `earthBuilder.js` has two fragment shaders: day/night blending (requires both `dayTexture` and `nightTexture`) and day-only. For non-Earth bodies:
+
+- **Bodies with only a surface texture** (all except Earth): Use a new `BODY_FRAG_SINGLE` shader — single texture sampled, lit by `sunDirection` with Lambert diffuse (`max(0.0, dot(normal, sunDirection))`), ambient fill on dark side (0.05), and Fresnel rim from atmosphere color. This is simpler than Earth's day/night blending.
+- **Earth:** Continues to use the existing day/night blending shader unchanged.
+- **Venus:** Uses `BODY_FRAG_SINGLE` with surface dimming (`* 0.3`) plus the atmosphere texture overlay blended on top (`mix(surface, atmosphereTex, atmosphereTextureBlend)`).
+
+The shader selection is driven by a `shaderMode` enum derived from body config: `'dayNight'` (Earth), `'single'` (most bodies), `'venusAtmosphere'` (Venus).
+
 ### Shader Changes
 
 Modify `earthBuilder.js`:
+- Add `BODY_FRAG_SINGLE` shader for non-Earth bodies (Lambert diffuse + optional Fresnel rim)
+- Add `BODY_FRAG_VENUS` shader variant with atmosphere texture overlay
 - Replace hardcoded atmosphere constants with body-driven uniforms
 - Density falloff: `exp(-altitude / scaleHeightNorm)` instead of `pow(fresnel, 2.0)`
 - Sun-side brightness weighted by `atmosphereDensity` for thick atmospheres
@@ -216,7 +261,11 @@ Modify `earthBuilder.js`:
 
 ### Venus Special Case
 
-Venus's dense atmosphere obscures its surface. The surface texture is dimmed (multiplied by ~0.3) and the Venus atmosphere overlay texture is blended on top.
+Venus's dense atmosphere obscures its surface. The surface texture is dimmed (multiplied by ~0.3) and the Venus atmosphere overlay texture (`2k_atmosphere.jpg`) is blended on top using `atmosphereTextureBlend: 0.85`. This produces the characteristic veiled golden appearance.
+
+### Atmosphere Mesh Placement
+
+The atmosphere mesh moves **inside `globeGroup`** so that it tilts with the body when obliquity is applied. Currently it sits outside `globeGroup` in the scene root — this must change so the atmosphere glow rotates with the planet.
 
 ---
 
@@ -237,28 +286,58 @@ Generalizes sun direction computation for any body.
  * Compute the sun direction vector in body-fixed coordinates
  * for any celestial body at a given timestamp.
  *
+ * Returns a plain { x, y, z } object (not THREE.Vector3) to keep
+ * the math layer free of Three.js dependencies. The renderer wraps
+ * the result in a Vector3 before passing it to shader uniforms.
+ *
  * Uses a simplified Keplerian orbital model (mean anomaly + obliquity).
  * Accuracy: within a few degrees — educational, not navigational.
  */
-getSunDirectionForBody(bodyConfig, timestamp) → THREE.Vector3
+getSunDirectionForBody(bodyConfig, timestamp) → { x, y, z }
 ```
 
+### Coordinate System
+
+The returned `{ x, y, z }` is in **body-fixed ecliptic coordinates**:
+
+- The vector points from the body's center toward the sun
+- It is already rotated by the body's obliquity and current sidereal rotation angle
+- The renderer converts this to a `THREE.Vector3` and passes it directly as the `sunDirection` uniform
+
+This replaces the current `getSunLightVector(camera, centerLat, centerLon, timestamp)` approach. The old function computed the sun direction relative to the camera view — the new function computes it relative to the body, and the renderer handles the camera transform. For backward compatibility, `solar.js` re-exports a wrapper that calls `getSunDirectionForBody()` with Earth's config.
+
 ### Algorithm (Simplified Keplerian)
+
+For planets:
 
 1. **Mean anomaly** — position in orbit from `orbitalPeriod` + `meanLongitudeJ2000`
 2. **Ecliptic longitude** — approximate heliocentric position on the ecliptic plane
 3. **Axial tilt transform** — rotate sun vector by `obliquity`, accounting for pole orientation
 4. **Sidereal rotation** — rotate by spin angle at the given timestamp
 
+For moons (detected via `parentId !== null`):
+
+1. Look up the parent planet's config from the preset registry
+2. Compute the parent's heliocentric ecliptic longitude (step 1–2 above for the parent)
+3. Use the parent's sun direction as the moon's sun direction (negligible parallax at this scale)
+4. Apply the moon's own obliquity and sidereal rotation for body-fixed orientation
+
 ### Integration
 
-- `solar.js` re-exports from `orbital.js` for backward compatibility
-- `earthBuilder.js` receives `sunDirection` from `orbital.js` instead of computing internally
-- `threeGlobeRenderer.js` calls `getSunDirectionForBody(planet, timestamp)` per frame when `lightingMode: 'sun'`
+- `solar.js` re-exports a backward-compatible wrapper from `orbital.js`
+- `earthBuilder.js` receives `sunDirection` from the renderer (which calls `orbital.js`)
+- `threeGlobeRenderer.js` calls `getSunDirectionForBody(planet, timestamp)` per frame when `lightingMode: 'sun'`, wraps result in `THREE.Vector3`
 
-### Globe Mesh Orientation
+### Globe Mesh Orientation & Obliquity
 
-The globe mesh receives a base rotation offset matching the body's obliquity, applied before user panning. When you first load Mars, it appears tilted 25.19° relative to the ecliptic.
+Obliquity is applied to **`globeGroup`** as a base rotation offset (around the local X axis in Three.js space, i.e. `globeGroup.rotation.x += obliquity * DEG_TO_RAD`), applied **before** user panning. This means:
+
+- The body mesh, rings, markers, arcs, regions, callouts, and graticule all tilt together (correct)
+- The atmosphere mesh is now inside `globeGroup` (moved from scene root), so it tilts too
+- User panning math in `#applyGlobeRotation()` is unaffected — it applies on top of the base obliquity offset
+- When you first load Mars, you see it physically tilted 25.19° relative to the ecliptic
+
+Ring orientation: the ring mesh is a child of `globeGroup`, so it inherits the obliquity tilt automatically. No additional rotation needed on the ring itself — its local orientation is flat (equatorial plane = XZ plane in local space).
 
 ### Accuracy Target
 
@@ -331,26 +410,43 @@ rings: {
 | `assets/textures/CREDITS.md` | Attribution for all texture sources |
 | `tools/download-textures.sh` | One-time texture download script |
 
+### Rename: `#earthMesh` → `#bodyMesh`
+
+The private field `#earthMesh` in `threeGlobeRenderer.js` is renamed to `#bodyMesh` throughout (15+ references). This is a straightforward find-and-replace refactor. All internal references update; no public API changes.
+
 ### Scene Hierarchy
 
 ```
 globeGroup
 ├── bodyMesh          (renamed from earthMesh)
+├── atmosphereMesh    (MOVED from scene root into globeGroup — tilts with body)
 ├── ringMesh          (NEW — only for bodies with rings config)
 ├── graticule
 ├── markerGroup
 ├── arcGroup
 ├── regionGroup
 └── calloutGroup
-atmosphereMesh        (upgraded per-body shader)
 ```
+
+### Runtime Body-Switching Flow
+
+When `renderScene()` receives a new `scene.planet` config with a different body ID:
+
+1. **Teardown:** Dispose old `bodyMesh` geometry/material/textures, old `ringMesh` (if any), old `atmosphereMesh` (if any). Remove all three from `globeGroup`.
+2. **Rebuild:** Call `earthBuilder.buildBody(newPlanetConfig)` to create new body mesh + atmosphere mesh. Call `ringBuilder.buildRing(newPlanetConfig)` if rings config exists. Add new meshes to `globeGroup`.
+3. **Reconfigure:** Apply new obliquity offset to `globeGroup.rotation.x`. Update `sunDirection` uniform via `orbital.js`. Load new 2K texture(s) via `textureLoader`.
+4. **Existing layers preserved:** Markers, arcs, regions, callouts, graticule are untouched — they remain in `globeGroup` and work on any body.
+
+### Disposal
+
+`destroy()` must dispose: `#bodyMesh`, `#atmosphereMesh`, `#ringMesh` (if present). All three are explicitly cleaned up with `.geometry.dispose()`, `.material.dispose()`, and texture `.dispose()`.
 
 ### Backward Compatibility
 
 - Existing scenes with `planet: { id: 'earth' }` work identically
 - `textureUri` override in scene config still takes priority over preset paths
 - `lightingMode: 'fixed'` unchanged
-- `solar.js` import paths continue to work via re-export
+- `solar.js` import paths continue to work via re-export from `orbital.js`
 
 ---
 
