@@ -610,7 +610,10 @@ In `src/scene/viewerUi.js`:
 showProjectionToggle: true,
 ```
 
-2. The normalize, resolve, and validate functions already handle unknown boolean fields generically (they iterate over the default keys). Verify this by reading the code — if they do, no further changes needed. If they don't, add `showProjectionToggle` to each function's field list.
+2. The normalize, resolve, and validate functions **explicitly enumerate each field** — they do NOT iterate over defaults generically. You must add `showProjectionToggle` to all three functions:
+   - In `normalizeViewerUiConfig()`: add `showProjectionToggle: input.showProjectionToggle ?? defaults.showProjectionToggle`
+   - In `resolveViewerUiConfig()`: add boolean coercion for `showProjectionToggle` (same pattern as other boolean fields)
+   - In `validateViewerUiConfig()`: add type check for `showProjectionToggle` (same pattern as other boolean fields)
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -756,6 +759,8 @@ Also create `src/renderer/flatMapTextureProjector.js`:
 - `invalidate()`: clear cache
 - `destroy()`: null refs
 
+**Note:** `FlatMapTextureProjector` uses `OffscreenCanvas` which is unavailable in Node.js. It is NOT unit-tested — it is only verified via the browser integration checklist (Task 15 Step 4). The `FlatMapRenderer` guards texture projection behind `if (this.#textureImage)` checks, so unit tests that never call `init()` or load textures will not hit DOM APIs.
+
 Import and integrate texture projector into `FlatMapRenderer#render()` — draw texture before graticule.
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -808,6 +813,16 @@ test('controller – setProjection back to globe', () => {
 test('controller – scene with projection triggers setProjection', () => {
   const controller = new GlobeController({ renderer: new MockRenderer() });
   controller.setScene({ projection: 'equirectangular', markers: [] });
+  assert.equal(controller.getProjection(), 'equirectangular');
+});
+
+test('controller – switching between flat projections', () => {
+  const controller = new GlobeController({ renderer: new MockRenderer() });
+  controller.setProjection('azimuthalEquidistant');
+  assert.equal(controller.getProjection(), 'azimuthalEquidistant');
+  controller.setProjection('orthographic');
+  assert.equal(controller.getProjection(), 'orthographic');
+  controller.setProjection('equirectangular');
   assert.equal(controller.getProjection(), 'equirectangular');
 });
 ```
@@ -908,7 +923,7 @@ Fetch `assets/ne_110m_countries.geojson` asynchronously in init or first renderS
 
 - [ ] **Step 2: Implement `#renderBorders()`**
 
-Project GeoJSON polygon ring coordinates. Only show on Earth. Anti-meridian break detection: if consecutive projected px differ by > canvas width/2, break the path.
+Project GeoJSON polygon ring coordinates. Only show on Earth. Anti-meridian break detection: perform the break check in **pixel space** — if consecutive pixel x-coordinates differ by more than `canvas width / 2`, insert a `moveTo` break. This threshold works correctly at all zoom levels because the projection-to-pixel scaling is already applied. (The spec's "more than pi" criterion is in projection-coordinate space; `canvas width / 2` is the equivalent in pixel space at the default scale.)
 
 - [ ] **Step 3: Test in browser**
 
@@ -1067,13 +1082,15 @@ getScaleAtCenter() {
   const scale = this.#getScale();
   // 1 pixel in projection units
   const projDelta = 1 / scale;
-  // For azimuthal equidistant, projection units = radians of great-circle distance
-  // So 1 pixel ≈ projDelta radians ≈ projDelta * planetRadius km
-  const planetRadius = this.#scene?.planet?.radius || 1;
+  // planet.radius is in Earth-radii (Earth=1, Mars=0.532, etc.)
+  // Verify by checking src/scene/celestial.js — each preset has radius in Earth-radii
+  const planetRadius = this.#scene?.planet?.radius ?? 1;
   const earthRadiusKm = 6371;
   return projDelta * planetRadius * earthRadiusKm;
 }
 ```
+
+Note: Verify that `scene.planet.radius` exists and uses Earth-radii units by reading `src/scene/celestial.js` before implementing.
 
 - [ ] **Step 2: Wire scale bar in globe-viewer.js**
 
