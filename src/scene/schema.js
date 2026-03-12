@@ -1,6 +1,7 @@
 import { resolvePlanetConfig } from './celestial.js';
 import { getDefaultViewerUiConfig, normalizeViewerUiConfig, validateViewerUiConfig } from './viewerUi.js';
 import { greatCircleDistanceDegrees, latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
+import { VALID_THEMES } from '../renderer/themePalette.js';
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
 
 export const VALID_PROJECTIONS = ['globe', 'azimuthalEquidistant', 'orthographic', 'equirectangular'];
@@ -11,7 +12,7 @@ export function createEmptyScene(locale = 'en') {
   return {
     version: SCENE_SCHEMA_VERSION,
     locale,
-    theme: 'dark',
+    theme: 'photo',
     planet: resolvePlanetConfig('earth'),
     viewerUi: getDefaultViewerUiConfig(),
     markers: [],
@@ -252,9 +253,9 @@ export function clusterMarkers(markers, config) {
 
 export function normalizeScene(input) {
   const scene = ensureObject(input, {});
-  const theme = scene.theme === 'light' || scene.theme === 'dark'
-    ? scene.theme
-    : 'dark';
+  let theme = scene.theme;
+  if (theme === 'dark' || theme === 'light') theme = 'photo';
+  if (!VALID_THEMES.includes(theme)) theme = 'photo';
   const projection = VALID_PROJECTIONS.includes(scene.projection) ? scene.projection : 'globe';
   const result = {
     version: Number(scene.version ?? SCENE_SCHEMA_VERSION),
@@ -330,8 +331,9 @@ export function validateScene(sceneInput) {
     errors.push('locale must be a non-empty string');
   }
 
-  if (!['light', 'dark'].includes(scene.theme)) {
-    errors.push('theme must be one of light|dark');
+  const ACCEPTED_THEMES = [...VALID_THEMES, 'dark', 'light'];
+  if (rawScene.theme !== undefined && !ACCEPTED_THEMES.includes(rawScene.theme)) {
+    errors.push('theme must be one of ' + VALID_THEMES.join('|'));
   }
 
   if (rawScene.projection !== undefined && !VALID_PROJECTIONS.includes(rawScene.projection)) {

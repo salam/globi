@@ -15,7 +15,7 @@ test('createEmptyScene creates a valid baseline scene', () => {
 
   assert.equal(scene.version, SCENE_SCHEMA_VERSION);
   assert.equal(scene.locale, 'de');
-  assert.equal(scene.theme, 'dark');
+  assert.equal(scene.theme, 'photo');
   assert.equal(scene.planet.id, 'earth');
   assert.equal(scene.planet.label, 'Earth');
   assert.equal(result.valid, true);
@@ -28,7 +28,7 @@ test('normalizeScene applies earth defaults when planet data is missing', () => 
   assert.equal(normalized.planet.id, 'earth');
   assert.equal(normalized.planet.label, 'Earth');
   assert.equal(normalized.planet.lightingMode, 'fixed');
-  assert.equal(normalized.theme, 'dark');
+  assert.equal(normalized.theme, 'photo');
   assert.ok(normalized.planet.radius > 0.9);
 });
 
@@ -280,4 +280,47 @@ test('validateScene – accepts all valid projections', () => {
     const projErrors = errors.filter(e => e.includes('projection'));
     assert.equal(projErrors.length, 0, `projection '${p}' should be valid`);
   }
+});
+
+test('createEmptyScene default theme is photo', () => {
+  const scene = createEmptyScene();
+  assert.equal(scene.theme, 'photo');
+});
+
+test('normalizeScene maps legacy dark to photo', () => {
+  const normalized = normalizeScene({ theme: 'dark' });
+  assert.equal(normalized.theme, 'photo');
+});
+
+test('normalizeScene maps legacy light to photo', () => {
+  const normalized = normalizeScene({ theme: 'light' });
+  assert.equal(normalized.theme, 'photo');
+});
+
+test('normalizeScene passes through all valid theme values', () => {
+  for (const theme of ['photo', 'wireframe-shaded', 'wireframe-flat', 'grayscale-shaded', 'grayscale-flat']) {
+    const normalized = normalizeScene({ theme });
+    assert.equal(normalized.theme, theme);
+  }
+});
+
+test('normalizeScene defaults unknown theme to photo', () => {
+  const normalized = normalizeScene({ theme: 'neon' });
+  assert.equal(normalized.theme, 'photo');
+});
+
+test('validateScene accepts all valid themes including legacy', () => {
+  for (const theme of ['photo', 'wireframe-shaded', 'wireframe-flat', 'grayscale-shaded', 'grayscale-flat', 'dark', 'light']) {
+    const scene = createEmptyScene();
+    scene.theme = theme;
+    const result = validateScene(scene);
+    const themeErrors = result.errors.filter(e => e.includes('theme'));
+    assert.equal(themeErrors.length, 0, `theme '${theme}' should be accepted`);
+  }
+});
+
+test('validateScene rejects invalid theme', () => {
+  const scene = createEmptyScene();
+  const result = validateScene({ ...scene, theme: 'neon' });
+  assert.equal(result.scene.theme, 'photo');
 });
