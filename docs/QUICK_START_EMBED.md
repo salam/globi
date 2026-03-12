@@ -68,10 +68,18 @@ Optional lighting mode:
 - `setPlanet({ id: 'earth', lightingMode: 'sun' })` for sun-position-based lighting
 - `setPlanet({ id: 'earth', lightingMode: 'fixed' })` for fixed studio lighting
 
+Flat map projection mode:
+
+- `<globe-viewer projection="azimuthalEquidistant">` starts in flat map mode
+- Available projections: `globe` (default), `azimuthalEquidistant`, `orthographic`, `equirectangular`
+- Or set programmatically via scene JSON: `{ projection: 'azimuthalEquidistant' }`
+- A toggle button in the toolbar switches between globe and flat map
+
 Viewer UI options:
 - `setViewerUi({ controlStyle: 'text' })` or `setViewerUi({ controlStyle: 'icon' })`
 - `setViewerUi({ showBodySelector: false, showFullscreenButton: false })`
 - `setViewerUi({ showLegendButton: true, showInspectButton: true, showCompass: true, showScale: true })`
+- `setViewerUi({ showProjectionToggle: false })` hides the globe/map toggle button
 - These values are also part of scene JSON at `viewerUi`.
 
 Available built-ins:

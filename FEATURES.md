@@ -50,6 +50,23 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Add curved ocean and continent labels rendered on the globe surface.
 - [x] Add `showBorders` and `showLabels` planet config flags with editor toggles.
 
+## Flat Map Projection
+
+- [x] Azimuthal Equidistant projection (default flat map mode)
+- [x] Orthographic and Equirectangular projections (extensible registry)
+- [x] 2D canvas renderer with full feature parity (markers, arcs, paths, regions, borders, labels, callouts)
+- [x] UI toggle button to switch between globe and flat map
+- [x] `projection` HTML attribute for programmatic control
+- [x] `scene.projection` field in scene schema
+- [x] Instant mode switching with preserved center and zoom
+- [x] Texture re-projection with low-res drag optimization
+- [x] Anti-meridian break detection for polylines
+- [x] Zoom-into-cursor behavior in flat map mode
+- [x] Scale bar works in flat map mode (km per pixel at projection center)
+- [x] All 13 celestial bodies supported
+- [x] Graticule grid lines, borders (Earth only), geo labels per body
+- [x] `showProjectionToggle` viewer UI config option
+
 ## Data Source Attribution
 - [x] Scene-level `dataSources[]` array with id, name, shortName, url, description, license
 - [x] Per-entity `sourceId` field on markers, paths, arcs, and regions
@@ -139,6 +156,7 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Strait filter for civil shipping example (9 shipping straits)
 - [x] Time range filter (from/to date inputs) for military vessel examples
 - [x] Marker `timestamp` field for time-based filtering
+- [x] Legend groups markers into sections by filter categories (alphabetical within each section)
 
 ## Remaining Gaps
 - [ ] Replace placeholder USDZ export with production-grade USD/USDZ packaging.

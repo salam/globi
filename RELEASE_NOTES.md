@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 1.x.x (Wed, Mar 12 2026, evening)
+
+* New flat map projection mode — switch between 3D globe and 2D map with a single click
+* Three projection types: Azimuthal Equidistant (default), Orthographic, and Equirectangular
+* Toggle button in the viewer toolbar or set `projection` attribute programmatically
+* Full feature parity: markers, arcs, paths, regions, borders, labels, callouts all render on the flat map
+* Zoom-into-cursor for intuitive web-map-style navigation
+* Texture re-projection with low-res drag mode for smooth panning
+* Scale bar adapts to flat map mode
+* Works with all 13 celestial bodies
+* New `showProjectionToggle` viewer UI option and `scene.projection` schema field
+
 ## Version 1.x.x (Thu, Mar 12 2026)
 
 * Data source attribution label at bottom-right of the globe viewer — shows abbreviated source names (e.g. NE · RC · ISS) with an attribution icon
@@ -28,6 +40,8 @@
 * Body-specific landmark labels: each planet/moon shows its own geographic features (Olympus Mons on Mars, Great Red Spot on Jupiter, Sea of Tranquility on the Moon, etc.)
 * Earth borders automatically hidden when viewing non-Earth bodies
 * "Unload All" option in the example dropdown clears all markers, paths, arcs, and regions
+* Legend now groups markers by filter sections (e.g. "UN Members", "NATO Members") with alphabetical sorting within each section
+* Scenes without filters show a flat alphabetically sorted legend
 * Switching to a different planetary body automatically unloads any loaded example (examples are Earth-specific)
 * Ring textures now load and display correctly for Saturn
 * Fixed texture path resolution for all bodies (absolute URL paths)
