@@ -249,6 +249,13 @@ export class GlobeController {
     return this.#activeRenderer.getCameraState();
   }
 
+  getScaleAtCenter() {
+    if (typeof this.#activeRenderer.getScaleAtCenter === 'function') {
+      return this.#activeRenderer.getScaleAtCenter();
+    }
+    return null;
+  }
+
   resize(width, height) {
     this.#activeRenderer.resize(width, height);
   }

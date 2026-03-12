@@ -185,6 +185,15 @@ export class FlatMapRenderer {
     };
   }
 
+  getScaleAtCenter() {
+    if (!this.#canvas || !this.#canvas.width) return null;
+    const scale = this.#getScale();
+    const projDelta = 1 / scale;
+    const planetRadius = this.#scene?.planet?.radius ?? 1;
+    const earthRadiusKm = 6371;
+    return projDelta * planetRadius * earthRadiusKm;
+  }
+
   resize(w, h) {
     if (!this.#canvas) return;
     this.#canvas.width = w * this.#dpr;

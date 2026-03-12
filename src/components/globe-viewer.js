@@ -5,7 +5,7 @@ import { interpolateCameraState } from './cameraTween.js';
 
 import { getLegendSymbol } from './legendSymbol.js';
 import { groupMarkersByFilter } from './legendGrouping.js';
-import { computeNorthArrowRotation, computeScaleBar } from './navigationHud.js';
+import { computeNorthArrowRotation, computeScaleBar, chooseScaleKilometers } from './navigationHud.js';
 import { AttributionManager } from '../renderer/attributionManager.js';
 import { resolveNavigationHudVisibility } from './viewerUiInteractions.js';
 
@@ -997,13 +997,24 @@ export class GlobeViewerElement extends HTMLElement {
     const scene = this.#currentScene ?? this.#controller.getScene();
     const width = Math.max(1, this.#stage?.clientWidth || this.clientWidth || 800);
     const height = Math.max(1, this.#stage?.clientHeight || this.clientHeight || 500);
-    const scale = computeScaleBar({
-      width,
-      height,
-      zoom: camera.zoom,
-      planetRadiusRatio: scene?.planet?.radius ?? 1,
-      targetPixels: 96,
-    });
+
+    const flatMapKmPerPx = this.#controller.getScaleAtCenter?.();
+    let scale;
+    if (flatMapKmPerPx != null) {
+      const targetPx = 96;
+      const targetKm = flatMapKmPerPx * targetPx;
+      const km = chooseScaleKilometers(targetKm);
+      const px = km / flatMapKmPerPx;
+      scale = { kilometers: km, pixels: px, label: `${km} km` };
+    } else {
+      scale = computeScaleBar({
+        width,
+        height,
+        zoom: camera.zoom,
+        planetRadiusRatio: scene?.planet?.radius ?? 1,
+        targetPixels: 96,
+      });
+    }
 
     if (this.#scaleBar) {
       const pixels = Math.max(18, Math.round(scale.pixels));
