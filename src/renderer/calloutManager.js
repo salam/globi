@@ -23,6 +23,8 @@ export class CalloutManager {
   #group = null;
   #calloutData = new Map();
   #css2dObjects = [];
+  #clusterBadgeIds = new Set();
+  #expandedClusters = new Set();
 
   resolveLabel(marker, locale) {
     const label = marker.calloutLabel?.[locale] ?? marker.calloutLabel?.en ?? '';
@@ -34,6 +36,67 @@ export class CalloutManager {
     this.#group = group;
     this.#clear();
 
+    // First pass: collect cluster info for large clusters (4+)
+    const largeClusterCenters = new Map(); // clusterId -> { center, count, color }
+    for (const marker of markers) {
+      const mode = marker.calloutMode ?? 'always';
+      if (mode === 'none') continue;
+      const label = this.resolveLabel(marker, locale);
+      if (!label) continue;
+
+      const clusterId = marker._clusterId;
+      const clusterSize = marker._clusterSize ?? 1;
+      if (clusterId && clusterSize >= 4) {
+        if (!largeClusterCenters.has(clusterId)) {
+          largeClusterCenters.set(clusterId, {
+            center: marker._clusterCenter,
+            count: clusterSize,
+            color: marker.color || LEADER_COLOR_DEFAULT,
+          });
+        }
+      }
+    }
+
+    // Create one leader line per large cluster (from cluster center)
+    for (const [clusterId, info] of largeClusterCenters) {
+      const { center, count, color } = info;
+      const surfacePos = latLonToCartesian(center.lat ?? 0, center.lon ?? 0, 1, 0);
+      const surfaceVec = new Vector3(surfacePos.x, surfacePos.y, surfacePos.z);
+      const direction = surfaceVec.clone().normalize();
+      const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
+
+      const lineGeo = new BufferGeometry();
+      lineGeo.setAttribute('position', new Float32BufferAttribute([
+        surfaceVec.x, surfaceVec.y, surfaceVec.z,
+        labelPos.x, labelPos.y, labelPos.z,
+      ], 3));
+      const lineMat = new LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: LEADER_OPACITY,
+        depthWrite: false,
+      });
+      const line = new Line(lineGeo, lineMat);
+      line.userData = { clusterId, isLeaderLine: true };
+      group.add(line);
+
+      // Register badge entry keyed by clusterId
+      this.#calloutData.set(clusterId, {
+        marker: null,
+        label: `${count} markers`,
+        line,
+        labelPosition: labelPos,
+        surfacePosition: surfaceVec,
+        mode: 'always',
+        color,
+        visible: true,
+        _isBadge: true,
+        _badgeClusterId: clusterId,
+        _badgeCount: count,
+      });
+      this.#clusterBadgeIds.add(clusterId);
+    }
+
     for (const marker of markers) {
       const mode = marker.calloutMode ?? 'always';
       if (mode === 'none') continue;
@@ -41,36 +104,81 @@ export class CalloutManager {
       const label = this.resolveLabel(marker, locale);
       if (!label) continue;
 
+      const clusterId = marker._clusterId;
+      const clusterSize = marker._clusterSize ?? 1;
+      const isLargeCluster = clusterId && clusterSize >= 4;
+      const isSmallCluster = clusterId && clusterSize >= 2 && clusterSize <= 3;
+
+      // For large clusters: individual markers get no leader line, invisible by default
+      if (isLargeCluster) {
+        const surfacePos = latLonToCartesian(marker.lat ?? 0, marker.lon ?? 0, 1, marker.alt ?? 0);
+        const surfaceVec = new Vector3(surfacePos.x, surfacePos.y, surfacePos.z);
+        const direction = surfaceVec.clone().normalize();
+        const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
+        const markerColor = marker.color || LEADER_COLOR_DEFAULT;
+
+        this.#calloutData.set(marker.id, {
+          marker, label, line: null, labelPosition: labelPos,
+          surfacePosition: surfaceVec, mode, color: markerColor,
+          visible: false,
+        });
+        continue;
+      }
+
       const surfacePos = latLonToCartesian(marker.lat ?? 0, marker.lon ?? 0, 1, marker.alt ?? 0);
       const surfaceVec = new Vector3(surfacePos.x, surfacePos.y, surfacePos.z);
       const direction = surfaceVec.clone().normalize();
-      const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
+
+      // For small clusters: use cluster center for leader line origin (index 0 only),
+      // non-index-0 members share the cluster's leader via the index-0 entry
+      let lineOrigin = surfaceVec;
+      if (isSmallCluster) {
+        const centerPos = latLonToCartesian(
+          marker._clusterCenter.lat ?? 0,
+          marker._clusterCenter.lon ?? 0,
+          1, 0,
+        );
+        lineOrigin = new Vector3(centerPos.x, centerPos.y, centerPos.z);
+      }
+
+      const labelPos = lineOrigin.clone().normalize()
+        .multiplyScalar(lineOrigin.length() + LEADER_LENGTH)
+        .add(lineOrigin.clone().normalize().multiplyScalar(LEADER_LENGTH));
+      // Simpler: label goes along the normal of the surface position
+      const labelPosSimple = surfaceVec.clone().add(
+        surfaceVec.clone().normalize().multiplyScalar(LEADER_LENGTH),
+      );
 
       const markerColor = marker.color || LEADER_COLOR_DEFAULT;
 
-      // Leader line
-      const lineGeo = new BufferGeometry();
-      lineGeo.setAttribute('position', new Float32BufferAttribute([
-        surfaceVec.x, surfaceVec.y, surfaceVec.z,
-        labelPos.x, labelPos.y, labelPos.z,
-      ], 3));
-      const lineMat = new LineBasicMaterial({
-        color: markerColor,
-        transparent: true,
-        opacity: LEADER_OPACITY,
-        depthWrite: false,
-      });
-      const line = new Line(lineGeo, lineMat);
-      line.userData = { markerId: marker.id, calloutMode: mode, isLeaderLine: true };
+      let line = null;
+      // Only create a leader line for the first member of a small cluster (or solo markers)
+      if (!isSmallCluster || marker._clusterIndex === 0) {
+        const lineStart = isSmallCluster ? lineOrigin : surfaceVec;
+        const lineGeo = new BufferGeometry();
+        lineGeo.setAttribute('position', new Float32BufferAttribute([
+          lineStart.x, lineStart.y, lineStart.z,
+          labelPosSimple.x, labelPosSimple.y, labelPosSimple.z,
+        ], 3));
+        const lineMat = new LineBasicMaterial({
+          color: markerColor,
+          transparent: true,
+          opacity: LEADER_OPACITY,
+          depthWrite: false,
+        });
+        line = new Line(lineGeo, lineMat);
+        line.userData = { markerId: marker.id, calloutMode: mode, isLeaderLine: true };
 
-      // 'always' starts visible, 'hover'/'click' start hidden
-      if (mode !== 'always') {
-        line.visible = false;
+        // 'always' starts visible, 'hover'/'click' start hidden
+        if (mode !== 'always') {
+          line.visible = false;
+        }
+
+        group.add(line);
       }
 
-      group.add(line);
       this.#calloutData.set(marker.id, {
-        marker, label, line, labelPosition: labelPos,
+        marker, label, line, labelPosition: labelPosSimple,
         surfacePosition: surfaceVec, mode, color: markerColor,
         visible: mode === 'always',
       });
@@ -80,8 +188,24 @@ export class CalloutManager {
   createCSS2DLabels(CSS2DObject) {
     const labels = [];
     for (const [id, data] of this.#calloutData) {
+      // Badge for large cluster
+      if (this.#clusterBadgeIds.has(id)) {
+        const div = document.createElement('div');
+        div.className = 'globe-callout-badge';
+        div.dataset.clusterId = id;
+        div.textContent = `${data._badgeCount} markers`;
+        const css2dObj = new CSS2DObject(div);
+        css2dObj.position.copy(data.labelPosition);
+        css2dObj.userData = { clusterId: id };
+        css2dObj.visible = true;
+        labels.push({ id, object: css2dObj, div });
+        this.#css2dObjects.push(css2dObj);
+        continue;
+      }
+
       const div = document.createElement('div');
       div.className = 'globe-callout-label';
+      div.dataset.markerId = id;
       div.textContent = data.label;
       div.setAttribute('role', 'status');
       div.setAttribute('aria-label', data.label);
@@ -103,10 +227,31 @@ export class CalloutManager {
         user-select: text;
         white-space: nowrap;
       `;
+
+      // Cascade offset for small clusters (2-3 markers)
+      const marker = data.marker;
+      if (marker && marker._clusterId && (marker._clusterSize ?? 1) <= 3 && (marker._clusterSize ?? 1) >= 2) {
+        const idx = marker._clusterIndex;
+        if (idx > 0) {
+          div.style.marginTop = `${idx * 20}px`;
+          div.style.marginLeft = `${idx * 4}px`;
+          div.style.opacity = `${1.0 - idx * 0.1}`;
+        }
+        // Reserve cascade slot for hover/click markers — slot is positioned but label is hidden
+        if (data.mode !== 'always') {
+          div.style.visibility = 'hidden';
+        }
+      }
+
       const css2dObj = new CSS2DObject(div);
       css2dObj.position.copy(data.labelPosition);
       css2dObj.userData = { markerId: id, calloutMode: data.mode };
-      if (data.mode !== 'always') css2dObj.visible = false;
+      // Large-cluster individual markers are hidden by default
+      const isLargeClusterMember = marker && marker._clusterId &&
+        (marker._clusterSize ?? 1) >= 4;
+      if (data.mode !== 'always' || isLargeClusterMember) {
+        css2dObj.visible = false;
+      }
       labels.push({ id, object: css2dObj, div });
       this.#css2dObjects.push(css2dObj);
     }
@@ -116,15 +261,18 @@ export class CalloutManager {
   updateVisibility(cameraPosition, globeQuaternion) {
     const camDir = cameraPosition.clone().normalize();
     for (const [id, data] of this.#calloutData) {
+      if (!data.surfacePosition) continue;
       const rotatedNormal = data.surfacePosition.clone().normalize()
         .applyQuaternion(globeQuaternion);
       const facing = rotatedNormal.dot(camDir);
       const frontFacing = facing > 0;
 
       if (data.mode === 'always') {
-        data.line.visible = frontFacing;
+        if (data.line) data.line.visible = frontFacing;
         data.visible = frontFacing;
-        const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+        const css2d = this.#css2dObjects.find(o =>
+          (o.userData?.markerId === id) || (o.userData?.clusterId === id),
+        );
         if (css2d) css2d.visible = frontFacing;
       }
       // hover/click modes are handled by showCallout/hideCallout
@@ -134,7 +282,7 @@ export class CalloutManager {
   showCallout(markerId) {
     const data = this.#calloutData.get(markerId);
     if (!data) return;
-    data.line.visible = true;
+    if (data.line) data.line.visible = true;
     data.visible = true;
     const css2d = this.#css2dObjects.find(o => o.userData?.markerId === markerId);
     if (css2d) css2d.visible = true;
@@ -143,7 +291,7 @@ export class CalloutManager {
   hideCallout(markerId) {
     const data = this.#calloutData.get(markerId);
     if (!data) return;
-    data.line.visible = false;
+    if (data.line) data.line.visible = false;
     data.visible = false;
     const css2d = this.#css2dObjects.find(o => o.userData?.markerId === markerId);
     if (css2d) css2d.visible = false;
@@ -154,8 +302,10 @@ export class CalloutManager {
       // null/undefined = reset, restore all 'always' callouts to full opacity
       for (const [id, data] of this.#calloutData) {
         const show = data.mode === 'always';
-        data.line.visible = show;
-        data.line.material.opacity = LEADER_OPACITY;
+        if (data.line) {
+          data.line.visible = show;
+          data.line.material.opacity = LEADER_OPACITY;
+        }
         data.visible = show;
         const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
         if (css2d) {
@@ -169,8 +319,10 @@ export class CalloutManager {
     for (const [id, data] of this.#calloutData) {
       const match = ids.has(id);
       // Keep all visible, but dim non-matches to 20%
-      data.line.visible = true;
-      data.line.material.opacity = match ? LEADER_OPACITY : LEADER_OPACITY * 0.2;
+      if (data.line) {
+        data.line.visible = true;
+        data.line.material.opacity = match ? LEADER_OPACITY : LEADER_OPACITY * 0.2;
+      }
       data.visible = true;
       const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
       if (css2d) {
@@ -184,12 +336,55 @@ export class CalloutManager {
     return this.#calloutData;
   }
 
+  // Task 6: Expand/collapse state management
+
+  isClusterExpanded(clusterId) {
+    return this.#expandedClusters.has(clusterId);
+  }
+
+  toggleCluster(clusterId) {
+    if (this.#expandedClusters.has(clusterId)) {
+      this.#expandedClusters.delete(clusterId);
+    } else {
+      this.#expandedClusters.add(clusterId);
+    }
+    this.#updateClusterVisibility(clusterId);
+  }
+
+  collapseAllClusters() {
+    const wasExpanded = [...this.#expandedClusters];
+    this.#expandedClusters.clear();
+    for (const cid of wasExpanded) {
+      this.#updateClusterVisibility(cid);
+    }
+  }
+
+  #updateClusterVisibility(clusterId) {
+    const expanded = this.#expandedClusters.has(clusterId);
+    const badge = this.#calloutData.get(clusterId);
+    if (badge) {
+      if (badge.line) badge.line.visible = !expanded;
+      badge.visible = !expanded;
+      const badgeCss2d = this.#css2dObjects.find(o => o.userData?.clusterId === clusterId);
+      if (badgeCss2d) badgeCss2d.visible = !expanded;
+    }
+    for (const [id, data] of this.#calloutData) {
+      if (data.marker?._clusterId === clusterId && (data.marker._clusterSize ?? 1) >= 4) {
+        const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+        if (css2d) css2d.visible = expanded;
+        data.visible = expanded;
+      }
+    }
+  }
+
   #clear() {
     if (this.#group) {
       for (const [, data] of this.#calloutData) {
-        this.#group.remove(data.line);
-        data.line.geometry.dispose();
-        data.line.material.dispose();
+        if (data.line) {
+          this.#group.remove(data.line);
+          data.line.geometry.dispose();
+          data.line.material.dispose();
+        }
       }
     }
     for (const obj of this.#css2dObjects) {
@@ -198,6 +393,8 @@ export class CalloutManager {
     }
     this.#calloutData.clear();
     this.#css2dObjects = [];
+    this.#clusterBadgeIds.clear();
+    this.#expandedClusters.clear();
   }
 
   dispose() {

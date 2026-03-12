@@ -96,6 +96,28 @@ test('CalloutManager filterCallouts highlights matches and dims non-matches', ()
   assert.ok(data.get('m3').line.material.opacity > 0.5);
 });
 
+test('CalloutManager CSS2D labels carry data-marker-id attribute', async () => {
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+  globalThis.document = dom.window.document;
+  try {
+    const manager = new CalloutManager();
+    const group = new Group();
+    manager.update(group, [
+      { id: 'pin1', lat: 10, lon: 20, alt: 0, name: { en: 'City' }, calloutMode: 'always' },
+      { id: 'pin2', lat: 30, lon: 40, alt: 0, name: { en: 'Town' }, calloutMode: 'hover' },
+    ], 'en');
+    // Minimal CSS2DObject stub
+    class FakeCSS2D { constructor(el) { this.element = el; this.position = new Vector3(); this.userData = {}; this.visible = true; } }
+    const labels = manager.createCSS2DLabels(FakeCSS2D);
+    assert.equal(labels.length, 2);
+    assert.equal(labels[0].div.dataset.markerId, 'pin1');
+    assert.equal(labels[1].div.dataset.markerId, 'pin2');
+  } finally {
+    delete globalThis.document;
+  }
+});
+
 test('CalloutManager hover mode starts hidden', () => {
   const manager = new CalloutManager();
   const group = new Group();
@@ -105,4 +127,164 @@ test('CalloutManager hover mode starts hidden', () => {
   const data = manager.getCalloutData();
   const entry = data.get('m1');
   assert.equal(entry.line.visible, false);
+});
+
+// Task 4: Cascade rendering for small clusters (2-3)
+
+test('CalloutManager renders cascade for 2-marker cluster', async () => {
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+  globalThis.document = dom.window.document;
+  try {
+    const manager = new CalloutManager();
+    const group = new Group();
+    manager.update(group, [
+      {
+        id: 'm1', lat: 10, lon: 20, alt: 0, name: { en: 'Alpha' },
+        calloutMode: 'always', _clusterId: 'cluster_0', _clusterIndex: 0,
+        _clusterSize: 2, _clusterCenter: { lat: 10.05, lon: 20.05 },
+      },
+      {
+        id: 'm2', lat: 10.1, lon: 20.1, alt: 0, name: { en: 'Beta' },
+        calloutMode: 'always', _clusterId: 'cluster_0', _clusterIndex: 1,
+        _clusterSize: 2, _clusterCenter: { lat: 10.05, lon: 20.05 },
+      },
+    ], 'en');
+    class FakeCSS2D {
+      constructor(el) { this.element = el; this.position = new Vector3(); this.userData = {}; this.visible = true; }
+    }
+    const labels = manager.createCSS2DLabels(FakeCSS2D);
+    assert.equal(labels.length, 2);
+    assert.ok(labels[1].div.style.marginTop);
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('CalloutManager renders solo markers normally when clustering is active', async () => {
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+  globalThis.document = dom.window.document;
+  try {
+    const manager = new CalloutManager();
+    const group = new Group();
+    manager.update(group, [
+      {
+        id: 'm1', lat: 10, lon: 20, alt: 0, name: { en: 'Solo' },
+        calloutMode: 'always', _clusterId: null, _clusterIndex: 0,
+        _clusterSize: 1, _clusterCenter: null,
+      },
+    ], 'en');
+    class FakeCSS2D {
+      constructor(el) { this.element = el; this.position = new Vector3(); this.userData = {}; this.visible = true; }
+    }
+    const labels = manager.createCSS2DLabels(FakeCSS2D);
+    assert.equal(labels.length, 1);
+    assert.equal(labels[0].div.style.marginTop, '');
+    const data = manager.getCalloutData().get('m1');
+    assert.ok(data.line);
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('CalloutManager reserves cascade slot for hover marker in small cluster', async () => {
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+  globalThis.document = dom.window.document;
+  try {
+    const manager = new CalloutManager();
+    const group = new Group();
+    manager.update(group, [
+      {
+        id: 'm1', lat: 10, lon: 20, alt: 0, name: { en: 'Always' },
+        calloutMode: 'always', _clusterId: 'cluster_0', _clusterIndex: 0,
+        _clusterSize: 2, _clusterCenter: { lat: 10.05, lon: 20.05 },
+      },
+      {
+        id: 'm2', lat: 10.1, lon: 20.1, alt: 0, name: { en: 'Hover' },
+        calloutMode: 'hover', _clusterId: 'cluster_0', _clusterIndex: 1,
+        _clusterSize: 2, _clusterCenter: { lat: 10.05, lon: 20.05 },
+      },
+    ], 'en');
+    class FakeCSS2D {
+      constructor(el) { this.element = el; this.position = new Vector3(); this.userData = {}; this.visible = true; }
+    }
+    const labels = manager.createCSS2DLabels(FakeCSS2D);
+    assert.equal(labels.length, 2);
+    assert.ok(labels[1].div.style.marginTop);
+    assert.equal(labels[1].div.style.visibility, 'hidden');
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+// Task 5: Group badge rendering for large clusters (4+)
+
+test('CalloutManager renders group badge for 4+ marker cluster', async () => {
+  const { JSDOM } = await import('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+  globalThis.document = dom.window.document;
+  try {
+    const manager = new CalloutManager();
+    const group = new Group();
+    const center = { lat: 10, lon: 20 };
+    const markers = Array.from({ length: 5 }, (_, i) => ({
+      id: `m${i}`, lat: 10 + i * 0.1, lon: 20 + i * 0.1, alt: 0,
+      name: { en: `Marker ${i}` }, calloutMode: 'always',
+      _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 5,
+      _clusterCenter: center,
+    }));
+    manager.update(group, markers, 'en');
+    class FakeCSS2D {
+      constructor(el) { this.element = el; this.position = new Vector3(); this.userData = {}; this.visible = true; }
+    }
+    const labels = manager.createCSS2DLabels(FakeCSS2D);
+    const badge = labels.find(l => l.div.dataset.clusterId === 'cluster_0');
+    assert.ok(badge, 'should create a group badge');
+    assert.ok(badge.div.textContent.includes('5'));
+    const individuals = labels.filter(l => l.div.dataset.markerId && !l.div.dataset.clusterId);
+    for (const ind of individuals) {
+      assert.equal(ind.object.visible, false);
+    }
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+// Task 6: Expand/collapse state management
+
+test('CalloutManager toggles cluster expand/collapse', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const center = { lat: 10, lon: 20 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: 10 + i * 0.1, lon: 20 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  assert.equal(manager.isClusterExpanded('cluster_0'), false);
+  manager.toggleCluster('cluster_0');
+  assert.equal(manager.isClusterExpanded('cluster_0'), true);
+  manager.toggleCluster('cluster_0');
+  assert.equal(manager.isClusterExpanded('cluster_0'), false);
+});
+
+test('CalloutManager collapseAllClusters collapses expanded clusters', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const center = { lat: 10, lon: 20 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: 10 + i * 0.1, lon: 20 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  manager.toggleCluster('cluster_0');
+  assert.equal(manager.isClusterExpanded('cluster_0'), true);
+  manager.collapseAllClusters();
+  assert.equal(manager.isClusterExpanded('cluster_0'), false);
 });
