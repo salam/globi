@@ -50,6 +50,12 @@ isVisible(lat, lon, centerLat, centerLon) → boolean
 
 Each is a plain object (no classes). A registry in `index.js` maps projection name strings to implementations.
 
+### Edge Cases
+
+- **Anti-meridian wrapping (Equirectangular):** Polylines (arcs, paths, borders, region edges) that cross the ±180° boundary must be split. When consecutive projected x-coordinates differ by more than π, insert a break and continue on the opposite edge.
+- **Pole handling:** Regions containing a pole are clipped. Labels at extreme latitudes are culled if they would overlap excessively. For Equirectangular, the poles map to horizontal lines (infinite stretch) — clamp rendering to ±85° latitude.
+- **Orthographic back-hemisphere:** `inverse()` returns `null` outside the disc. All rendering respects `isVisible()` — features behind the hemisphere are simply not drawn.
+
 ## 2. FlatMapRenderer
 
 Location: `src/renderer/flatMapRenderer.js`
@@ -94,7 +100,7 @@ Each rendering concern is a separate module:
 - For each canvas pixel: `inverse(x, y)` to get `(lat, lon)`, then sample the equirectangular source texture at the corresponding `(u, v)`
 - Uses an offscreen canvas for re-projection work, blits to main canvas
 - Cached until center or zoom changes
-- During drag: re-project at reduced resolution for smoothness, full resolution on drag-end
+- During drag: re-project at 1/4 resolution (canvas dimensions / 4), full resolution on drag-end. If full-resolution re-projection exceeds 50ms, tile the work across multiple frames. Consider a pre-computed inverse lookup table (LUT) recomputed only when center changes.
 
 ## 3. Controller & Mode Switching
 
@@ -105,28 +111,53 @@ scene.projection: 'globe' | 'azimuthalEquidistant' | 'orthographic' | 'equirecta
 // Default: 'globe'
 ```
 
-Any non-`'globe'` value activates the flat map renderer with the named projection.
+Any non-`'globe'` value activates the flat map renderer with the named projection. Unknown values normalize to `'globe'`. `validateScene()` emits an error if the raw value is not one of the allowed strings.
 
 ### Controller Behavior
 
-- `GlobeController` holds both `threeGlobeRenderer` and `flatMapRenderer`
+- `GlobeController` holds both `threeGlobeRenderer` and `flatMapRenderer`, plus an `#activeRenderer` reference
 - Both stay instantiated (no teardown/rebuild on switch)
-- Switching: toggle CSS visibility of canvases, trigger render on the newly active one
+- All delegated calls (`panBy`, `zoomBy`, `flyTo`, `hitTest`, `screenToLatLon`, `filterMarkers`, `filterCallouts`, `renderScene`, `resize`) are forwarded to `#activeRenderer` only
+- Switching: set `#activeRenderer`, hide inactive canvas via CSS `display: none`, show active canvas, trigger `renderScene` on active renderer
 - `panBy()`, `zoomBy()`, `flyTo()` work identically for both — they update `centerLat`/`centerLon` and zoom
+- `flyTo()` in flat map mode triggers the same reduced-then-full resolution texture pipeline as drag
 - Switching preserves center and zoom — user sees the same area in both views
+
+### FlatMapRenderer Public API
+
+The `FlatMapRenderer` must implement the same interface as `ThreeGlobeRenderer` for controller delegation:
+
+```javascript
+init(container)              // Create canvas, attach to container
+renderScene(scene)           // Full render pass
+flyTo(target, options)       // Set center + zoom, re-render
+panBy(deltaLon, deltaLat)   // Update center, re-render
+zoomBy(deltaScale)           // Update zoom, re-render
+screenToLatLon(clientX, clientY) → { lat, lon } | null
+hitTest(clientX, clientY)    → { type, id } | null
+projectPointToClient(lat, lon) → { x, y } | null
+filterMarkers(predicate)     // Apply marker visibility filter
+filterCallouts(predicate)    // Apply callout visibility filter
+getCameraState()             → { centerLat, centerLon, zoom }
+resize()                     // Respond to container resize
+destroy()                    // Clean up canvas & listeners
+pauseIdleRotation()          // No-op in flat map mode
+resumeIdleRotation()         // No-op in flat map mode
+```
 
 ## 4. User Interaction
 
 ### Panning
 
 - Mouse drag → screen `(dx, dy)` → `inverse()` to compute geographic delta → `panBy(deltaLon, deltaLat)`
+- When `inverse()` returns `null` (cursor outside projection boundary, e.g. Orthographic), fall back to screen-delta-based panning scaled by zoom, mirroring the existing off-disc behavior in the globe renderer
 - Re-centering invalidates texture cache
 - Smooth drag: re-project at reduced resolution during drag, full resolution on release
 
 ### Zooming
 
 - Mouse wheel / pinch adjusts zoom (`[0.3, 4]` range)
-- Zoom controls degrees of globe visible (~hemisphere at 1.0, city-scale at 4.0, most of globe at 0.3)
+- Zoom semantics: at zoom=1.0, the flat map viewport shows approximately the same geographic extent as the globe (roughly one hemisphere, ~180° of latitude). The mapping is: viewport covers `180 / zoom` degrees of latitude. At zoom=4.0 this is ~45° (city/regional scale), at zoom=0.3 this is ~600° (entire globe with overlap)
 - Zoom into cursor: adjust center toward cursor's lat/lon while zooming in (web-map-style UX)
 
 ### Click / Hover
@@ -204,14 +235,19 @@ viewerUi.showProjectionToggle: true  // default, controls button visibility
 
 - Body selector, marker filter, search, legend, time filter
 - Compass (click recenters on 0, 0)
-- Scale bar (recalculated for projection — distance per pixel at center)
+- Scale bar (recalculated: measure great-circle distance between two points separated by 1 pixel at the projection center, pass to existing scale bar logic)
 - Fullscreen (works on active canvas)
 - Theme (light/dark background, text, grid colors)
+
+### HTML Attribute
+
+`<globe-viewer>` gains a `projection` observed attribute (like `planet`, `theme`, `language`). Setting `<globe-viewer projection="azimuthalEquidistant">` activates the flat map on init.
 
 ### What changes
 
 - Inspect mode uses 2D `inverse()` instead of raycasting
 - No atmosphere or ring rendering (surface features only)
+- Callout clustering continues to use geographic distance (screen-space re-clustering is a non-goal for initial implementation)
 
 ## 7. File Structure
 
