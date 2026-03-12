@@ -10,9 +10,10 @@ import { greatCircleArc, densifyPath } from '../math/geo.js';
 import { FlatMapTextureProjector } from './flatMapTextureProjector.js';
 import { getBodyLabels } from './bodyLabels.js';
 import { getThemePalette } from './themePalette.js';
+import { resolveTexturePaths } from './textureLoader.js';
 
 const ZOOM_MIN = 0.3;
-const ZOOM_MAX = 4;
+const ZOOM_MAX = 12;
 
 function clamp(v, lo, hi) {
   return Math.min(hi, Math.max(lo, v));
@@ -41,9 +42,14 @@ export class FlatMapRenderer {
   #textureProjector = null;
   #markerFilter = null;
   #calloutFilter = null;
+  #arcFilter = null;
+  #pathFilter = null;
   #dirty = false;
   #lowRes = false;
   #borderData = null;
+  #loadedTextureUrl = null;
+  #arcAnimStartTimes = new Map();
+  #arcAnimRafId = 0;
 
   // ---- constructor: no DOM ----
   constructor() {
@@ -86,7 +92,7 @@ export class FlatMapRenderer {
 
     // Lazily fetch country border data for Earth rendering
     if (typeof fetch !== 'undefined') {
-      fetch('assets/ne_110m_countries.geojson')
+      fetch(new URL('../../assets/ne_110m_countries.geojson', import.meta.url).href)
         .then(r => r.json())
         .then(data => { this.#borderData = data; this.#render(); })
         .catch(() => {});
@@ -100,6 +106,10 @@ export class FlatMapRenderer {
     if (scene && scene.projection && scene.projection !== 'globe') {
       this.#projectionName = scene.projection;
     }
+    // Auto-load planet texture from scene config
+    this.#loadTextureFromScene(scene);
+    // Kick off arc reveal animations for arcs that have animationTime
+    this.#initArcAnimations(scene?.arcs || []);
     this.#render();
   }
 
@@ -167,16 +177,40 @@ export class FlatMapRenderer {
     };
   }
 
-  filterMarkers(predicate) {
-    this.#markerFilter = predicate;
+  getCanvasRect() {
+    if (!this.#canvas) return null;
+    return this.#canvas.getBoundingClientRect();
+  }
+
+  filterMarkers(matchingIds) {
+    this.#markerFilter = this.#toFilterPredicate(matchingIds);
     this.#dirty = true;
     this.#render();
   }
 
-  filterCallouts(predicate) {
-    this.#calloutFilter = predicate;
+  filterCallouts(matchingIds) {
+    this.#calloutFilter = this.#toFilterPredicate(matchingIds);
     this.#dirty = true;
     this.#render();
+  }
+
+  filterArcs(matchingIds) {
+    this.#arcFilter = this.#toFilterPredicate(matchingIds);
+    this.#dirty = true;
+    this.#render();
+  }
+
+  filterPaths(matchingIds) {
+    this.#pathFilter = this.#toFilterPredicate(matchingIds);
+    this.#dirty = true;
+    this.#render();
+  }
+
+  #toFilterPredicate(input) {
+    if (input == null) return null;
+    if (typeof input === 'function') return input;
+    const ids = new Set(input);
+    return (item) => ids.has(item.id);
   }
 
   getCameraState() {
@@ -244,13 +278,12 @@ export class FlatMapRenderer {
 
   startDrag() {
     this.#lowRes = true;
-    if (this.#textureProjector) this.#textureProjector.invalidate();
   }
 
   endDrag() {
     this.#lowRes = false;
     if (this.#textureProjector) this.#textureProjector.invalidate();
-    this.#render();
+    requestAnimationFrame(() => this.#render());
   }
 
   setProjection(name) {
@@ -264,6 +297,22 @@ export class FlatMapRenderer {
   }
 
   // ---- Private helpers ----
+
+  #loadTextureFromScene(scene) {
+    if (!scene?.planet || typeof Image === 'undefined') return;
+    const paths = resolveTexturePaths(scene.planet);
+    const url = paths.surface;
+    if (!url || url === this.#loadedTextureUrl) return;
+    this.#loadedTextureUrl = url;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      this.#textureImage = img;
+      if (this.#textureProjector) this.#textureProjector.invalidate();
+      this.#render();
+    };
+    img.src = url;
+  }
 
   #applySize() {
     if (!this.#canvas || !this.#container) return;
@@ -372,6 +421,20 @@ export class FlatMapRenderer {
     this.#renderCallouts(scene);
   }
 
+  #resolveLabel(marker) {
+    const locale = this.#scene?.locale || 'en';
+    const cl = marker.calloutLabel;
+    if (cl) {
+      const text = (typeof cl === 'string') ? cl : (cl[locale] ?? cl.en ?? '');
+      if (text) return text;
+    }
+    const nm = marker.name;
+    if (nm) {
+      return (typeof nm === 'string') ? nm : (nm[locale] ?? nm.en ?? '');
+    }
+    return '';
+  }
+
   #renderCallouts(scene) {
     if (!this.#overlay) return;
     while (this.#overlay.firstChild) this.#overlay.removeChild(this.#overlay.firstChild);
@@ -384,11 +447,11 @@ export class FlatMapRenderer {
       if (this.#markerFilter && !this.#markerFilter(marker)) continue;
       if (this.#calloutFilter && !this.#calloutFilter(marker)) continue;
 
-      const label = marker.callout || marker.label || marker.id;
-      if (!label) continue;
+      const mode = marker.calloutMode ?? 'always';
+      if (mode === 'none') continue;
 
-      // Only show callouts for markers that have callout content
-      if (!marker.callout && !marker.label) continue;
+      const label = this.#resolveLabel(marker);
+      if (!label) continue;
 
       if (proj.isVisible && !proj.isVisible(marker.lat, marker.lon, this.#centerLat, this.#centerLon)) continue;
 
@@ -400,6 +463,7 @@ export class FlatMapRenderer {
       const h = this.#canvas ? this.#canvas.height : 0;
       if (px < -100 || px > w + 100 || py < -100 || py > h + 100) continue;
 
+      const color = marker.color || '#e8f0ff';
       const div = document.createElement('div');
       div.textContent = label;
       div.style.cssText = `
@@ -408,7 +472,7 @@ export class FlatMapRenderer {
         top: ${(py / this.#dpr) - 16}px;
         transform: translateX(-50%);
         font-size: 11px;
-        color: #e8f0ff;
+        color: ${color};
         white-space: nowrap;
         pointer-events: none;
         text-shadow: 0 1px 3px rgba(0,0,0,0.8);
@@ -426,7 +490,7 @@ export class FlatMapRenderer {
     const needsDesaturate = this.#palette && this.#palette.desaturate > 0;
     if (needsDesaturate) {
       ctx.save();
-      ctx.filter = 'grayscale(1)';
+      ctx.filter = 'grayscale(1) brightness(1.4)';
     }
     this.#textureProjector.project(
       ctx,
@@ -440,6 +504,7 @@ export class FlatMapRenderer {
       (x, y) => this.#projectionToPixel(x, y),
       (px, py) => this.#pixelToProjection(px, py),
       this.#lowRes,
+      () => this.#render(),
     );
     if (needsDesaturate) {
       ctx.restore();
@@ -522,14 +587,63 @@ export class FlatMapRenderer {
     }
   }
 
+  #initArcAnimations(arcs) {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const prev = this.#arcAnimStartTimes;
+    this.#arcAnimStartTimes = new Map();
+    for (const arc of arcs) {
+      if (arc.animationTime > 0) {
+        // Keep existing start time if same arc is re-rendered mid-animation
+        this.#arcAnimStartTimes.set(arc.id, prev.get(arc.id) ?? now);
+      }
+    }
+    if (this.#arcAnimStartTimes.size > 0) {
+      this.#startArcAnimLoop();
+    }
+  }
+
+  #startArcAnimLoop() {
+    if (this.#arcAnimRafId) return;
+    const tick = () => {
+      this.#arcAnimRafId = 0;
+      this.#render();
+      // Continue loop if any arc is still animating
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      let anyActive = false;
+      for (const [id, startTime] of this.#arcAnimStartTimes) {
+        const arc = this.#scene?.arcs?.find(a => a.id === id);
+        if (arc && (now - startTime) < arc.animationTime + (arc.animationDelay || 0)) {
+          anyActive = true;
+          break;
+        }
+      }
+      if (anyActive) {
+        this.#arcAnimRafId = requestAnimationFrame(tick);
+      }
+    };
+    this.#arcAnimRafId = requestAnimationFrame(tick);
+  }
+
+  #getArcProgress(arc) {
+    if (!arc.animationTime || arc.animationTime <= 0) return 1;
+    const startTime = this.#arcAnimStartTimes.get(arc.id);
+    if (startTime == null) return 1;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const delay = arc.animationDelay || 0;
+    const elapsed = now - startTime - delay;
+    if (elapsed <= 0) return 0;
+    return Math.min(1, elapsed / arc.animationTime);
+  }
+
   #renderPaths(ctx, paths) {
     for (const path of paths) {
       if (!path.points || path.points.length < 2) continue;
+      if (this.#pathFilter && !this.#pathFilter(path)) continue;
       const dense = densifyPath(path.points);
       ctx.save();
       ctx.strokeStyle = path.color || '#4af';
-      ctx.lineWidth = path.width || 2;
-      ctx.setLineDash(path.dash || []);
+      ctx.lineWidth = path.strokeWidth || 2;
+      ctx.setLineDash(path.dashPattern || []);
       this.#drawPolyline(ctx, dense);
       ctx.restore();
     }
@@ -538,15 +652,22 @@ export class FlatMapRenderer {
   #renderArcs(ctx, arcs) {
     for (const arc of arcs) {
       if (!arc.start || !arc.end) continue;
+      if (this.#arcFilter && !this.#arcFilter(arc)) continue;
       const pts = greatCircleArc(arc.start, arc.end, {
         segments: arc.segments || 64,
         maxAltitude: arc.maxAltitude || 0,
       });
+      // Animated reveal: only draw the first N segments based on progress
+      const progress = this.#getArcProgress(arc);
+      const visibleCount = Math.max(2, Math.ceil(pts.length * progress));
+
+      const lineWidth = arc.strokeWidth || 2;
       ctx.save();
       ctx.strokeStyle = arc.color || '#f80';
-      ctx.lineWidth = arc.width || 2;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = 'round';
 
-      // Draw with altitude-based opacity along segments
+      // Draw with altitude-based opacity and drop shadow along segments
       const proj = getProjection(this.#projectionName);
       if (!proj) { ctx.restore(); continue; }
 
@@ -555,7 +676,7 @@ export class FlatMapRenderer {
       let prevPy = null;
       const maxAlt = pts.reduce((m, p) => Math.max(m, p.alt || 0), 0) || 1;
 
-      for (let i = 0; i < pts.length; i++) {
+      for (let i = 0; i < visibleCount; i++) {
         const pt = pts[i];
         const { x, y } = proj.project(pt.lat, pt.lon, this.#centerLat, this.#centerLon);
         const { px, py } = this.#projectionToPixel(x, y);
@@ -568,7 +689,13 @@ export class FlatMapRenderer {
 
         const antimeridianBreak = Math.abs(px - prevPx) > w / 2;
         if (!antimeridianBreak) {
-          const opacity = 0.4 + 0.6 * ((pt.alt || 0) / maxAlt);
+          const altRatio = (pt.alt || 0) / maxAlt;
+          const opacity = 0.4 + 0.6 * altRatio;
+          // Drop shadow scales with altitude
+          const shadowBlur = altRatio * lineWidth * 2;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+          ctx.shadowBlur = shadowBlur;
+          ctx.shadowOffsetY = shadowBlur * 0.5;
           ctx.globalAlpha = opacity;
           ctx.beginPath();
           ctx.moveTo(prevPx, prevPy);

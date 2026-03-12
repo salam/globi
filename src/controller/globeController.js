@@ -88,6 +88,9 @@ export class GlobeController {
     this.#projection = name;
 
     if (name === 'globe') {
+      if (this.#container && typeof this.#globeRenderer.resize === 'function') {
+        this.#globeRenderer.resize(this.#container.clientWidth, this.#container.clientHeight);
+      }
       if (typeof this.#globeRenderer.show === 'function') this.#globeRenderer.show();
       if (typeof this.#flatMapRenderer.hide === 'function') this.#flatMapRenderer.hide();
       this.#activeRenderer = this.#globeRenderer;
@@ -102,6 +105,10 @@ export class GlobeController {
       if (typeof this.#flatMapRenderer.setProjection === 'function') {
         this.#flatMapRenderer.setProjection(name);
       }
+      // Sync canvas size to current container (may have changed while hidden, e.g. fullscreen)
+      if (this.#container && typeof this.#flatMapRenderer.resize === 'function') {
+        this.#flatMapRenderer.resize(this.#container.clientWidth, this.#container.clientHeight);
+      }
       if (typeof this.#flatMapRenderer.show === 'function') this.#flatMapRenderer.show();
       if (typeof this.#globeRenderer.hide === 'function') this.#globeRenderer.hide();
       this.#activeRenderer = this.#flatMapRenderer;
@@ -110,8 +117,16 @@ export class GlobeController {
     // Sync camera state from previous renderer to new one
     if (prev !== this.#activeRenderer && typeof prev.getCameraState === 'function') {
       const cam = prev.getCameraState();
+      let zoom = cam.zoom;
+      // When switching to flat map, boost zoom so the world fills the viewport width
+      if (name !== 'globe') {
+        const w = this.#container?.clientWidth || 800;
+        const h = this.#container?.clientHeight || 500;
+        const aspect = w / h;
+        zoom = Math.max(zoom, aspect > 1 ? aspect * 1.05 : 1.2);
+      }
       if (typeof this.#activeRenderer.flyTo === 'function') {
-        this.#activeRenderer.flyTo({ lat: cam.centerLat, lon: cam.centerLon, zoom: cam.zoom });
+        this.#activeRenderer.flyTo({ lat: cam.centerLat, lon: cam.centerLon, zoom });
       }
     }
 
@@ -219,6 +234,12 @@ export class GlobeController {
     }
   }
 
+  setLoading(loading) {
+    if (typeof this.#activeRenderer.setLoading === 'function') {
+      this.#activeRenderer.setLoading(loading);
+    }
+  }
+
   zoomBy(deltaScale) {
     if (typeof this.#activeRenderer.zoomBy === 'function') {
       this.#activeRenderer.zoomBy(deltaScale);
@@ -241,6 +262,18 @@ export class GlobeController {
   filterMarkers(matchingIds) {
     if (typeof this.#activeRenderer.filterMarkers === 'function') {
       this.#activeRenderer.filterMarkers(matchingIds);
+    }
+  }
+
+  filterArcs(matchingIds) {
+    if (typeof this.#activeRenderer.filterArcs === 'function') {
+      this.#activeRenderer.filterArcs(matchingIds);
+    }
+  }
+
+  filterPaths(matchingIds) {
+    if (typeof this.#activeRenderer.filterPaths === 'function') {
+      this.#activeRenderer.filterPaths(matchingIds);
     }
   }
 
@@ -267,6 +300,14 @@ export class GlobeController {
       };
     }
     return this.#activeRenderer.getCameraState();
+  }
+
+  getActiveRenderer() {
+    return this.#activeRenderer;
+  }
+
+  toggleLegend() {
+    this.#emitter.emit('toggleLegend');
   }
 
   getScaleAtCenter() {
