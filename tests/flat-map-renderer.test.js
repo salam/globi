@@ -64,3 +64,54 @@ test('FlatMapRenderer – pauseIdleRotation is no-op', async () => {
   assert.doesNotThrow(() => renderer.pauseIdleRotation());
   assert.doesNotThrow(() => renderer.resumeIdleRotation());
 });
+
+test('FlatMapRenderer – flyTo then getCameraState round-trips', async () => {
+  const { FlatMapRenderer } = await import('../src/renderer/flatMapRenderer.js');
+  const renderer = new FlatMapRenderer();
+  renderer.flyTo({ lat: 30, lon: 60, zoom: 2 });
+  const state = renderer.getCameraState();
+  assert.equal(state.centerLat, 30);
+  assert.equal(state.centerLon, 60);
+  assert.equal(state.zoom, 2);
+});
+
+test('FlatMapRenderer – panBy wraps longitude', async () => {
+  const { FlatMapRenderer } = await import('../src/renderer/flatMapRenderer.js');
+  const renderer = new FlatMapRenderer();
+  renderer.flyTo({ lat: 0, lon: 170, zoom: 1 });
+  renderer.panBy(20, 0);
+  const state = renderer.getCameraState();
+  assert.ok(state.centerLon >= -180 && state.centerLon <= 180,
+    `lon should be in [-180,180], got ${state.centerLon}`);
+});
+
+test('FlatMapRenderer – panBy clamps latitude', async () => {
+  const { FlatMapRenderer } = await import('../src/renderer/flatMapRenderer.js');
+  const renderer = new FlatMapRenderer();
+  renderer.panBy(0, 100);
+  assert.ok(renderer.getCameraState().centerLat < 90,
+    'lat should be clamped below 90');
+});
+
+test('FlatMapRenderer – setProjection and getProjectionName', async () => {
+  const { FlatMapRenderer } = await import('../src/renderer/flatMapRenderer.js');
+  const renderer = new FlatMapRenderer();
+  assert.equal(renderer.getProjectionName(), 'azimuthalEquidistant');
+  renderer.setProjection('orthographic');
+  assert.equal(renderer.getProjectionName(), 'orthographic');
+  renderer.setProjection('equirectangular');
+  assert.equal(renderer.getProjectionName(), 'equirectangular');
+});
+
+test('FlatMapRenderer – filterMarkers stores predicate', async () => {
+  const { FlatMapRenderer } = await import('../src/renderer/flatMapRenderer.js');
+  const renderer = new FlatMapRenderer();
+  const pred = (m) => m.id === 'test';
+  assert.doesNotThrow(() => renderer.filterMarkers(pred));
+});
+
+test('FlatMapRenderer – destroy does not throw without init', async () => {
+  const { FlatMapRenderer } = await import('../src/renderer/flatMapRenderer.js');
+  const renderer = new FlatMapRenderer();
+  assert.doesNotThrow(() => renderer.destroy());
+});
