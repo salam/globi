@@ -1,5 +1,6 @@
 import { AnimationEngine } from '../animation/engine.js';
 import { createTranslator } from '../i18n/index.js';
+import { FlatMapRenderer } from '../renderer/flatMapRenderer.js';
 import { ThreeGlobeRenderer } from '../renderer/threeGlobeRenderer.js';
 import { createEmptyScene } from '../scene/schema.js';
 import { SceneStore } from '../scene/store.js';
@@ -34,7 +35,10 @@ const DEFAULT_DICTIONARIES = {
 };
 
 export class GlobeController {
-  #renderer;
+  #globeRenderer;
+  #flatMapRenderer;
+  #activeRenderer;
+  #projection = 'globe';
   #store;
   #animationEngine;
   #emitter;
@@ -45,7 +49,10 @@ export class GlobeController {
   constructor(options = {}) {
     const scene = options.initialScene ?? createEmptyScene(options.locale ?? 'en');
 
-    this.#renderer = options.renderer ?? new ThreeGlobeRenderer();
+    this.#globeRenderer = options.renderer ?? new ThreeGlobeRenderer();
+    this.#flatMapRenderer = new FlatMapRenderer();
+    this.#activeRenderer = this.#globeRenderer;
+
     this.#store = new SceneStore(scene);
     this.#animationEngine = new AnimationEngine();
     this.#emitter = new Emitter();
@@ -56,15 +63,45 @@ export class GlobeController {
 
     this.#unsubStore = this.#store.on('sceneChange', (nextScene) => {
       this.#scene = nextScene;
-      this.#renderer.renderScene(nextScene);
+      // Detect projection changes from scene
+      if (nextScene.projection && nextScene.projection !== this.#projection) {
+        this.setProjection(nextScene.projection);
+      } else {
+        this.#activeRenderer.renderScene(nextScene);
+      }
       this.#emitter.emit('sceneChange', nextScene);
     });
 
-    if (typeof this.#renderer.init === 'function') {
-      this.#renderer.init(options.container ?? { appendChild() {}, clientWidth: 800, clientHeight: 500 }, {
+    if (typeof this.#globeRenderer.init === 'function') {
+      this.#globeRenderer.init(options.container ?? { appendChild() {}, clientWidth: 800, clientHeight: 500 }, {
         initialScene: scene,
       });
     }
+  }
+
+  setProjection(name) {
+    this.#projection = name;
+
+    if (name === 'globe') {
+      if (typeof this.#globeRenderer.show === 'function') this.#globeRenderer.show();
+      if (typeof this.#flatMapRenderer.hide === 'function') this.#flatMapRenderer.hide();
+      this.#activeRenderer = this.#globeRenderer;
+    } else {
+      if (typeof this.#flatMapRenderer.setProjection === 'function') {
+        this.#flatMapRenderer.setProjection(name);
+      }
+      if (typeof this.#flatMapRenderer.show === 'function') this.#flatMapRenderer.show();
+      if (typeof this.#globeRenderer.hide === 'function') this.#globeRenderer.hide();
+      this.#activeRenderer = this.#flatMapRenderer;
+    }
+
+    if (this.#scene) {
+      this.#activeRenderer.renderScene(this.#scene);
+    }
+  }
+
+  getProjection() {
+    return this.#projection;
   }
 
   on(eventName, listener) {
@@ -134,90 +171,105 @@ export class GlobeController {
   }
 
   flyTo(target, options = {}) {
-    this.#renderer.flyTo(target, options);
+    this.#activeRenderer.flyTo(target, options);
   }
 
   panBy(deltaLon, deltaLat) {
-    if (typeof this.#renderer.panBy === 'function') {
-      this.#renderer.panBy(deltaLon, deltaLat);
+    if (typeof this.#activeRenderer.panBy === 'function') {
+      this.#activeRenderer.panBy(deltaLon, deltaLat);
     }
   }
 
   screenToLatLon(clientX, clientY) {
-    if (typeof this.#renderer.screenToLatLon === 'function') {
-      return this.#renderer.screenToLatLon(clientX, clientY);
+    if (typeof this.#activeRenderer.screenToLatLon === 'function') {
+      return this.#activeRenderer.screenToLatLon(clientX, clientY);
     }
     return null;
   }
 
   pauseIdleRotation() {
-    if (typeof this.#renderer.pauseIdleRotation === 'function') {
-      this.#renderer.pauseIdleRotation();
+    if (typeof this.#activeRenderer.pauseIdleRotation === 'function') {
+      this.#activeRenderer.pauseIdleRotation();
     }
   }
 
   resumeIdleRotation() {
-    if (typeof this.#renderer.resumeIdleRotation === 'function') {
-      this.#renderer.resumeIdleRotation();
+    if (typeof this.#activeRenderer.resumeIdleRotation === 'function') {
+      this.#activeRenderer.resumeIdleRotation();
     }
   }
 
   zoomBy(deltaScale) {
-    if (typeof this.#renderer.zoomBy === 'function') {
-      this.#renderer.zoomBy(deltaScale);
+    if (typeof this.#activeRenderer.zoomBy === 'function') {
+      this.#activeRenderer.zoomBy(deltaScale);
     }
   }
 
   hitTest(clientX, clientY, options = {}) {
-    if (typeof this.#renderer.hitTest !== 'function') {
+    if (typeof this.#activeRenderer.hitTest !== 'function') {
       return null;
     }
-    return this.#renderer.hitTest(clientX, clientY, options);
+    return this.#activeRenderer.hitTest(clientX, clientY, options);
   }
 
   filterCallouts(matchingIds) {
-    if (typeof this.#renderer.filterCallouts === 'function') {
-      this.#renderer.filterCallouts(matchingIds);
+    if (typeof this.#activeRenderer.filterCallouts === 'function') {
+      this.#activeRenderer.filterCallouts(matchingIds);
     }
   }
 
   filterMarkers(matchingIds) {
-    if (typeof this.#renderer.filterMarkers === 'function') {
-      this.#renderer.filterMarkers(matchingIds);
+    if (typeof this.#activeRenderer.filterMarkers === 'function') {
+      this.#activeRenderer.filterMarkers(matchingIds);
     }
   }
 
   projectPointToClient(point) {
-    if (typeof this.#renderer.projectPointToClient !== 'function') {
+    if (typeof this.#activeRenderer.projectPointToClient !== 'function') {
       return null;
     }
-    return this.#renderer.projectPointToClient(point);
+    return this.#activeRenderer.projectPointToClient(point);
   }
 
   getCanvasRect() {
-    if (typeof this.#renderer.getCanvasRect === 'function') {
-      return this.#renderer.getCanvasRect();
+    if (typeof this.#activeRenderer.getCanvasRect === 'function') {
+      return this.#activeRenderer.getCanvasRect();
     }
     return null;
   }
 
   getCameraState() {
-    if (typeof this.#renderer.getCameraState !== 'function') {
+    if (typeof this.#activeRenderer.getCameraState !== 'function') {
       return {
         centerLon: 0,
         centerLat: 0,
         zoom: 1,
       };
     }
-    return this.#renderer.getCameraState();
+    return this.#activeRenderer.getCameraState();
   }
 
   resize(width, height) {
-    this.#renderer.resize(width, height);
+    this.#activeRenderer.resize(width, height);
+  }
+
+  startDrag(clientX, clientY) {
+    if (typeof this.#activeRenderer.startDrag === 'function') {
+      this.#activeRenderer.startDrag(clientX, clientY);
+    }
+  }
+
+  endDrag(clientX, clientY) {
+    if (typeof this.#activeRenderer.endDrag === 'function') {
+      this.#activeRenderer.endDrag(clientX, clientY);
+    }
   }
 
   destroy() {
     this.#unsubStore?.();
-    this.#renderer.destroy();
+    this.#globeRenderer.destroy();
+    if (typeof this.#flatMapRenderer.destroy === 'function') {
+      this.#flatMapRenderer.destroy();
+    }
   }
 }

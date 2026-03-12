@@ -93,3 +93,38 @@ test('GlobeController proxies pauseIdleRotation and resumeIdleRotation', () => {
   assert.ok(renderer.calls.some(c => c[0] === 'pauseIdleRotation'));
   assert.ok(renderer.calls.some(c => c[0] === 'resumeIdleRotation'));
 });
+
+test('controller – defaults to globe projection', () => {
+  const controller = new GlobeController({ renderer: new MockRenderer() });
+  assert.equal(controller.getProjection(), 'globe');
+});
+
+test('controller – getProjection reflects setProjection', () => {
+  const controller = new GlobeController({ renderer: new MockRenderer() });
+  controller.setProjection('azimuthalEquidistant');
+  assert.equal(controller.getProjection(), 'azimuthalEquidistant');
+});
+
+test('controller – setProjection back to globe', () => {
+  const controller = new GlobeController({ renderer: new MockRenderer() });
+  controller.setProjection('orthographic');
+  assert.equal(controller.getProjection(), 'orthographic');
+  controller.setProjection('globe');
+  assert.equal(controller.getProjection(), 'globe');
+});
+
+test('controller – scene with projection triggers setProjection', () => {
+  const controller = new GlobeController({ renderer: new MockRenderer() });
+  controller.setScene({ projection: 'equirectangular', markers: [] });
+  assert.equal(controller.getProjection(), 'equirectangular');
+});
+
+test('controller – switching between flat projections', () => {
+  const controller = new GlobeController({ renderer: new MockRenderer() });
+  controller.setProjection('azimuthalEquidistant');
+  assert.equal(controller.getProjection(), 'azimuthalEquidistant');
+  controller.setProjection('orthographic');
+  assert.equal(controller.getProjection(), 'orthographic');
+  controller.setProjection('equirectangular');
+  assert.equal(controller.getProjection(), 'equirectangular');
+});
