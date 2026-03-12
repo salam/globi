@@ -219,6 +219,9 @@ durations.svg
 # Superpowers brainstorm sessions
 .superpowers/
 
+# Claude worktrees
+.claude/worktrees/
+
 # Celestial body textures (downloaded via tools/download-textures.sh)
 assets/textures/mercury/
 assets/textures/venus/
