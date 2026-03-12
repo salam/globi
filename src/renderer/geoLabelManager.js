@@ -8,28 +8,21 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { latLonToCartesian } from '../math/geo.js';
+import { getBodyLabels } from './bodyLabels.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const LABEL_ALTITUDE = 0.003;
 const QUAD_SEGMENTS = 32;
 
-export const GEO_LABELS = [
-  { text: 'AFRICA',        lat: 0,   lon: 22,   heading: 0,   style: 'continent' },
-  { text: 'ASIA',          lat: 45,  lon: 90,   heading: 0,   style: 'continent' },
-  { text: 'EUROPE',        lat: 52,  lon: 15,   heading: 0,   style: 'continent' },
-  { text: 'NORTH AMERICA', lat: 45,  lon: -100, heading: 0,   style: 'continent' },
-  { text: 'SOUTH AMERICA', lat: -15, lon: -58,  heading: -20, style: 'continent' },
-  { text: 'OCEANIA',       lat: -25, lon: 135,  heading: 0,   style: 'continent' },
-  { text: 'ANTARCTICA',    lat: -82, lon: 0,    heading: 0,   style: 'continent' },
-  { text: 'Pacific Ocean',  lat: 0,   lon: -160, heading: -10, style: 'ocean' },
-  { text: 'Atlantic Ocean', lat: 15,  lon: -35,  heading: -60, style: 'ocean' },
-  { text: 'Indian Ocean',   lat: -20, lon: 75,   heading: -30, style: 'ocean' },
-  { text: 'Arctic Ocean',   lat: 80,  lon: 0,    heading: 0,   style: 'ocean' },
-  { text: 'Southern Ocean',  lat: -65, lon: 0,    heading: 0,   style: 'ocean' },
-];
-
 const STYLES = {
   continent: {
+    fontSize: 48,
+    fontStyle: '600 48px "Avenir Next", "Segoe UI", system-ui, sans-serif',
+    fillStyle: 'rgba(255, 255, 255, 0.3)',
+    letterSpacing: 8,
+    arcDeg: 30,
+  },
+  region: {
     fontSize: 48,
     fontStyle: '600 48px "Avenir Next", "Segoe UI", system-ui, sans-serif',
     fillStyle: 'rgba(255, 255, 255, 0.3)',
@@ -43,6 +36,13 @@ const STYLES = {
     letterSpacing: 4,
     arcDeg: 25,
   },
+  feature: {
+    fontSize: 36,
+    fontStyle: '500 36px "Avenir Next", "Segoe UI", system-ui, sans-serif',
+    fillStyle: 'rgba(255, 220, 150, 0.35)',
+    letterSpacing: 3,
+    arcDeg: 22,
+  },
 };
 
 function nextPow2(n) {
@@ -52,7 +52,7 @@ function nextPow2(n) {
 }
 
 function renderTextToCanvas(text, style) {
-  const cfg = STYLES[style];
+  const cfg = STYLES[style] || STYLES.region;
   const measure = typeof OffscreenCanvas !== 'undefined'
     ? new OffscreenCanvas(1, 1)
     : createFallbackCanvas(1, 1);
@@ -133,7 +133,7 @@ function buildCurvedStrip(lat, lon, heading, arcDeg, aspectRatio) {
         LABEL_ALTITUDE,
       );
       positions.push(cart.x, cart.y, cart.z);
-      uvs.push(t, 1 - j);
+      uvs.push(1 - t, 1 - j);
     }
 
     if (i < QUAD_SEGMENTS) {
@@ -154,20 +154,33 @@ function buildCurvedStrip(lat, lon, heading, arcDeg, aspectRatio) {
 export class GeoLabelManager {
   #group = null;
   #built = false;
+  #currentBodyId = null;
 
-  update(group, { showLabels = true } = {}) {
+  /**
+   * Update labels for the given body. Rebuilds when bodyId changes.
+   * @param {import('three').Group} group
+   * @param {object} options
+   * @param {boolean} [options.showLabels=true]
+   * @param {string} [options.bodyId='earth']
+   */
+  update(group, { showLabels = true, bodyId = 'earth' } = {}) {
     this.#group = group;
     group.visible = showLabels;
 
-    if (this.#built) return;
+    if (this.#built && this.#currentBodyId === bodyId) return;
 
-    for (const label of GEO_LABELS) {
-      const cfg = STYLES[label.style];
-      const { canvas, width, height } = renderTextToCanvas(label.text, label.style);
+    // Clear old labels if body changed or first build
+    if (this.#built) {
+      this.#clearLabels();
+    }
+
+    const labels = getBodyLabels(bodyId);
+    for (const label of labels) {
+      const styleName = label.style || 'region';
+      const cfg = STYLES[styleName] || STYLES.region;
+      const { canvas, width, height } = renderTextToCanvas(label.text, styleName);
       const aspectRatio = width / height;
 
-      // CanvasTexture accepts the mock canvas object in Node.js tests —
-      // Three.js just stores the reference; actual GPU upload only happens in browser.
       const texture = new CanvasTexture(canvas);
       texture.colorSpace = SRGBColorSpace;
 
@@ -189,9 +202,10 @@ export class GeoLabelManager {
     }
 
     this.#built = true;
+    this.#currentBodyId = bodyId;
   }
 
-  dispose() {
+  #clearLabels() {
     if (!this.#group) return;
     const toRemove = [...this.#group.children];
     for (const child of toRemove) {
@@ -201,5 +215,10 @@ export class GeoLabelManager {
       child.material?.dispose();
     }
     this.#built = false;
+  }
+
+  dispose() {
+    this.#clearLabels();
+    this.#currentBodyId = null;
   }
 }
