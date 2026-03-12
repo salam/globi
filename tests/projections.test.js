@@ -124,3 +124,29 @@ test('equirectangular – inverse returns null beyond poles', () => {
   const result = equirectangular.inverse(0, 2, 0, 0);
   assert.equal(result, null, 'should return null for lat > 90');
 });
+
+import { getProjection, PROJECTION_NAMES } from '../src/math/projections/index.js';
+
+test('registry – getProjection returns known projections', () => {
+  assert.ok(getProjection('azimuthalEquidistant'));
+  assert.ok(getProjection('orthographic'));
+  assert.ok(getProjection('equirectangular'));
+});
+
+test('registry – getProjection returns null for unknown', () => {
+  assert.equal(getProjection('mercator'), null);
+  assert.equal(getProjection('globe'), null);
+});
+
+test('registry – PROJECTION_NAMES lists all flat projections', () => {
+  assert.deepEqual(PROJECTION_NAMES.sort(), ['azimuthalEquidistant', 'equirectangular', 'orthographic']);
+});
+
+test('registry – every projection has project, inverse, isVisible', () => {
+  for (const name of PROJECTION_NAMES) {
+    const p = getProjection(name);
+    assert.equal(typeof p.project, 'function', `${name}.project`);
+    assert.equal(typeof p.inverse, 'function', `${name}.inverse`);
+    assert.equal(typeof p.isVisible, 'function', `${name}.isVisible`);
+  }
+});
