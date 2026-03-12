@@ -3,6 +3,8 @@ import { getDefaultViewerUiConfig, normalizeViewerUiConfig, validateViewerUiConf
 import { greatCircleDistanceDegrees, latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
 
+export const VALID_PROJECTIONS = ['globe', 'azimuthalEquidistant', 'orthographic', 'equirectangular'];
+
 export const SCENE_SCHEMA_VERSION = 1;
 
 export function createEmptyScene(locale = 'en') {
@@ -20,6 +22,7 @@ export function createEmptyScene(locale = 'en') {
     filters: [],
     timeRange: null,
     dataSources: [],
+    projection: 'globe',
   };
 }
 
@@ -189,7 +192,7 @@ function computeClusterCentroid(members) {
   return cartesianToLatLon(sx / n, sy / n, sz / n);
 }
 
-function clusterMarkers(markers, config) {
+export function clusterMarkers(markers, config) {
   for (const m of markers) {
     m._clusterId = null;
     m._clusterIndex = 0;
@@ -252,6 +255,7 @@ export function normalizeScene(input) {
   const theme = scene.theme === 'light' || scene.theme === 'dark'
     ? scene.theme
     : 'dark';
+  const projection = VALID_PROJECTIONS.includes(scene.projection) ? scene.projection : 'globe';
   const result = {
     version: Number(scene.version ?? SCENE_SCHEMA_VERSION),
     locale: typeof scene.locale === 'string' ? scene.locale : 'en',
@@ -267,6 +271,7 @@ export function normalizeScene(input) {
     timeRange: normalizeTimeRange(scene.timeRange),
     dataSources: Array.isArray(scene.dataSources) ? scene.dataSources.map(normalizeDataSource) : [],
     calloutCluster: normalizeCalloutCluster(scene.calloutCluster),
+    projection,
   };
   clusterMarkers(result.markers, result.calloutCluster);
   return result;
@@ -327,6 +332,10 @@ export function validateScene(sceneInput) {
 
   if (!['light', 'dark'].includes(scene.theme)) {
     errors.push('theme must be one of light|dark');
+  }
+
+  if (rawScene.projection !== undefined && !VALID_PROJECTIONS.includes(rawScene.projection)) {
+    errors.push('scene.projection must be one of: ' + VALID_PROJECTIONS.join(', '));
   }
 
   if (!Number.isFinite(scene.planet.radius) || scene.planet.radius <= 0) {

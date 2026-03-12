@@ -253,3 +253,31 @@ test('validateScene warns on unresolved sourceId', () => {
   const result = validateScene(scene);
   assert.ok(result.errors.some((e) => e.includes('sourceId')));
 });
+
+test('normalizeScene – defaults projection to globe', () => {
+  const scene = normalizeScene({});
+  assert.equal(scene.projection, 'globe');
+});
+
+test('normalizeScene – preserves valid projection', () => {
+  const scene = normalizeScene({ projection: 'azimuthalEquidistant' });
+  assert.equal(scene.projection, 'azimuthalEquidistant');
+});
+
+test('normalizeScene – unknown projection normalizes to globe', () => {
+  const scene = normalizeScene({ projection: 'mercator' });
+  assert.equal(scene.projection, 'globe');
+});
+
+test('validateScene – rejects unknown projection with error', () => {
+  const { valid, errors } = validateScene({ projection: 'mercator' });
+  assert.ok(errors.some(e => e.includes('projection')));
+});
+
+test('validateScene – accepts all valid projections', () => {
+  for (const p of ['globe', 'azimuthalEquidistant', 'orthographic', 'equirectangular']) {
+    const { errors } = validateScene({ projection: p });
+    const projErrors = errors.filter(e => e.includes('projection'));
+    assert.equal(projErrors.length, 0, `projection '${p}' should be valid`);
+  }
+});
