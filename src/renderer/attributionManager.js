@@ -171,7 +171,8 @@ export class AttributionManager {
     const categories = this.categorizeSources(scene, projectFn, canvasRect);
     this.#lastCategories = categories;
 
-    const abbr = this.buildAbbreviatedText(categories.visible);
+    const allSources = scene.dataSources || [];
+    const abbr = this.buildAbbreviatedText(allSources);
     if (this.#textNode) this.#textNode.textContent = abbr;
 
     if (this.#labelEl) {
