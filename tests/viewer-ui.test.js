@@ -56,3 +56,11 @@ test('mergeViewerUiConfig ignores non-object patch values', () => {
   assert.equal(merged.showInspectButton, false);
   assert.equal(merged.controlStyle, VIEWER_CONTROL_STYLE_TEXT);
 });
+
+test('showAttribution defaults to true and can be toggled', () => {
+  const defaults = getDefaultViewerUiConfig();
+  assert.equal(defaults.showAttribution, true);
+
+  const merged = mergeViewerUiConfig(defaults, { showAttribution: false });
+  assert.equal(merged.showAttribution, false);
+});

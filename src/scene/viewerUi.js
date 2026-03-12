@@ -9,6 +9,8 @@ const DEFAULT_VIEWER_UI = Object.freeze({
   showInspectButton: true,
   showCompass: true,
   showScale: true,
+  showMarkerFilter: true,
+  showAttribution: true,
 });
 
 function isObject(value) {
@@ -33,6 +35,8 @@ export function normalizeViewerUiConfig(input = {}) {
     showInspectButton: value.showInspectButton ?? DEFAULT_VIEWER_UI.showInspectButton,
     showCompass: value.showCompass ?? DEFAULT_VIEWER_UI.showCompass,
     showScale: value.showScale ?? DEFAULT_VIEWER_UI.showScale,
+    showMarkerFilter: value.showMarkerFilter ?? DEFAULT_VIEWER_UI.showMarkerFilter,
+    showAttribution: value.showAttribution ?? DEFAULT_VIEWER_UI.showAttribution,
   };
 }
 
@@ -48,6 +52,8 @@ export function resolveViewerUiConfig(input = {}) {
     showInspectButton: pickBooleanOrDefault(normalized.showInspectButton, DEFAULT_VIEWER_UI.showInspectButton),
     showCompass: pickBooleanOrDefault(normalized.showCompass, DEFAULT_VIEWER_UI.showCompass),
     showScale: pickBooleanOrDefault(normalized.showScale, DEFAULT_VIEWER_UI.showScale),
+    showMarkerFilter: pickBooleanOrDefault(normalized.showMarkerFilter, DEFAULT_VIEWER_UI.showMarkerFilter),
+    showAttribution: pickBooleanOrDefault(normalized.showAttribution, DEFAULT_VIEWER_UI.showAttribution),
   };
 }
 
@@ -74,6 +80,8 @@ export function validateViewerUiConfig(viewerUi, pointer, errors) {
     'showInspectButton',
     'showCompass',
     'showScale',
+    'showMarkerFilter',
+    'showAttribution',
   ];
 
   for (const field of booleanFields) {
