@@ -133,7 +133,7 @@ function buildCurvedStrip(lat, lon, heading, arcDeg, aspectRatio) {
         LABEL_ALTITUDE,
       );
       positions.push(cart.x, cart.y, cart.z);
-      uvs.push(1 - t, 1 - j);
+      uvs.push(t, 1 - j);
     }
 
     if (i < QUAD_SEGMENTS) {

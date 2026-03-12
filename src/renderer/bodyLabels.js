@@ -57,7 +57,7 @@ const BODY_LABELS = {
   ],
 
   jupiter: [
-    { text: 'Great Red Spot',   lat: -23, lon: -10,  heading: 0,  style: 'feature' },
+    { text: 'Great Red Spot',   lat: -23, lon: -65,  heading: 0,  style: 'feature' },
     { text: 'North Equatorial Belt', lat: 17,  lon: 0,    heading: 0,  style: 'region' },
     { text: 'South Equatorial Belt', lat: -17, lon: 0,    heading: 0,  style: 'region' },
     { text: 'North Polar Region',    lat: 70,  lon: 0,    heading: 0,  style: 'region' },
