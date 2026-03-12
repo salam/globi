@@ -5,6 +5,7 @@ import { interpolateCameraState } from './cameraTween.js';
 
 import { getLegendSymbol } from './legendSymbol.js';
 import { computeNorthArrowRotation, computeScaleBar } from './navigationHud.js';
+import { AttributionManager } from '../renderer/attributionManager.js';
 import { resolveNavigationHudVisibility } from './viewerUiInteractions.js';
 
 const CONTROL_ICONS = {
@@ -87,6 +88,10 @@ const TEMPLATE = `
       stroke-linecap: round;
       stroke-linejoin: round;
       pointer-events: none;
+    }
+
+    .filter-hidden {
+      display: none !important;
     }
 
     select {
@@ -217,7 +222,7 @@ const TEMPLATE = `
     .nav-hud {
       position: absolute;
       right: 12px;
-      bottom: 12px;
+      bottom: 36px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -301,15 +306,174 @@ const TEMPLATE = `
       color: #cbdcf8;
       letter-spacing: 0.02em;
     }
+
+    .time-filter {
+      position: absolute;
+      right: 12px;
+      top: 50px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      z-index: 10;
+      font-size: 12px;
+      color: #cbdcf8;
+    }
+
+    .time-filter input[type="date"] {
+      border: 1px solid #355183;
+      background: rgba(10, 23, 50, 0.8);
+      color: inherit;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .time-filter input[type="date"]:focus {
+      border-color: #5b8dcf;
+      outline: none;
+    }
+
+    .attribution-label {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 10;
+      font-size: 10px;
+      color: rgba(200, 215, 240, 0.7);
+      background: rgba(6, 16, 38, 0.6);
+      border: 1px solid rgba(75, 107, 163, 0.4);
+      border-radius: 12px;
+      padding: 3px 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+      transition: background 0.15s;
+      max-width: calc(100% - 24px);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .attribution-label:hover {
+      background: rgba(6, 16, 38, 0.85);
+      color: #d9e7ff;
+    }
+
+    .attribution-icon {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    .attribution-panel {
+      position: absolute;
+      top: 0;
+      right: -280px;
+      width: 280px;
+      height: 100%;
+      background: rgba(6, 16, 38, 0.92);
+      border-left: 1px solid #2c4169;
+      z-index: 20;
+      overflow-y: auto;
+      padding: 12px;
+      transition: right 0.25s ease;
+      font-size: 12px;
+      color: #cbdcf8;
+      box-sizing: border-box;
+    }
+
+    .attribution-panel.open {
+      right: 0;
+    }
+
+    .attribution-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #cbdcf8;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+    }
+
+    .attribution-close:hover {
+      color: #ffffff;
+    }
+
+    .attribution-section {
+      margin-bottom: 14px;
+    }
+
+    .attribution-section.muted {
+      opacity: 0.5;
+    }
+
+    .attribution-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(200, 215, 240, 0.6);
+      margin: 0 0 6px;
+    }
+
+    .attribution-entry {
+      margin-bottom: 10px;
+      padding-left: 0;
+    }
+
+    .attribution-name {
+      font-weight: 600;
+      color: #e8effc;
+      margin-bottom: 2px;
+    }
+
+    .attribution-desc {
+      color: rgba(200, 215, 240, 0.7);
+      margin-bottom: 2px;
+    }
+
+    .attribution-license {
+      color: rgba(200, 215, 240, 0.5);
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+
+    .attribution-link {
+      color: #6ba3d9;
+      text-decoration: none;
+      font-size: 10px;
+      word-break: break-all;
+    }
+
+    .attribution-link:hover {
+      text-decoration: underline;
+      color: #8fc5f0;
+    }
   </style>
 
   <div class="stage" part="stage"></div>
   <div class="controls">
     <input class="search-input" type="search" placeholder="Search markers…" aria-label="Search markers" />
+    <select class="marker-filter filter-hidden" aria-label="Filter markers"></select>
     <select class="celestial-select"></select>
     <button class="fullscreen control-button" type="button"></button>
     <button class="legend-toggle control-button" type="button"></button>
     <button class="inspect-toggle control-button" type="button"></button>
+  </div>
+  <div class="time-filter filter-hidden">
+    <span>From</span>
+    <input type="date" class="time-from" aria-label="Filter from date" />
+    <span>To</span>
+    <input type="date" class="time-to" aria-label="Filter to date" />
   </div>
   <div class="legend" aria-live="polite"></div>
   <div class="nav-hud" aria-hidden="true">
@@ -347,6 +511,7 @@ export class GlobeViewerElement extends HTMLElement {
   #scaleBar;
   #scaleLabel;
   #celestialSelect;
+  #markerFilterSelect;
   #fullscreenButton;
   #legendButton;
   #inspectButton;
@@ -367,7 +532,12 @@ export class GlobeViewerElement extends HTMLElement {
   #searchDebounce = 0;
   #legendItems = new Map();
   #activeSearchIds = null;
+  #timeFilterWrap;
+  #timeFromInput;
+  #timeToInput;
   #legendPeekTimeout = 0;
+  #attributionManager = new AttributionManager();
+  #attributionDebounce = 0;
   #focusFrame = 0;
   constructor() {
     super();
@@ -383,10 +553,14 @@ export class GlobeViewerElement extends HTMLElement {
     this.#scaleBar = this.#root.querySelector('.scale-bar');
     this.#scaleLabel = this.#root.querySelector('.scale-label');
     this.#celestialSelect = this.#root.querySelector('.celestial-select');
+    this.#markerFilterSelect = this.#root.querySelector('.marker-filter');
     this.#fullscreenButton = this.#root.querySelector('.fullscreen');
     this.#legendButton = this.#root.querySelector('.legend-toggle');
     this.#inspectButton = this.#root.querySelector('.inspect-toggle');
     this.#searchInput = this.#root.querySelector('.search-input');
+    this.#timeFilterWrap = this.#root.querySelector('.time-filter');
+    this.#timeFromInput = this.#root.querySelector('.time-from');
+    this.#timeToInput = this.#root.querySelector('.time-to');
 
     this.#searchInput.addEventListener('input', () => {
       clearTimeout(this.#searchDebounce);
@@ -410,6 +584,13 @@ export class GlobeViewerElement extends HTMLElement {
     this.#celestialSelect.addEventListener('change', () => {
       this.setPlanetPreset(this.#celestialSelect.value);
     });
+
+    this.#markerFilterSelect.addEventListener('change', () => {
+      this.#applyMarkerFilter(this.#markerFilterSelect.value);
+    });
+
+    this.#timeFromInput.addEventListener('change', () => this.#applyTimeFilter());
+    this.#timeToInput.addEventListener('change', () => this.#applyTimeFilter());
 
     this.#compass.addEventListener('click', () => {
       if (this.#controller) {
@@ -440,8 +621,11 @@ export class GlobeViewerElement extends HTMLElement {
       this.#currentScene = scene;
       this.#applyViewerUi(scene);
       this.#renderLegend(scene);
+      this.#renderMarkerFilter(scene);
+      this.#renderTimeFilter(scene);
       this.#syncCelestialSelection(scene.planet?.id);
       this.#updateNavigationHud();
+      this.#updateAttribution(scene);
       dispatchCustomEvent(this, 'sceneChange', scene);
     });
 
@@ -461,8 +645,12 @@ export class GlobeViewerElement extends HTMLElement {
     this.#currentScene = currentScene;
     this.#applyViewerUi(currentScene);
     this.#renderLegend(currentScene);
+    this.#renderMarkerFilter(currentScene);
+    this.#renderTimeFilter(currentScene);
     this.#syncCelestialSelection(currentScene.planet?.id);
     this.#updateNavigationHud();
+    this.#attributionManager.attach(this.#root);
+    this.#updateAttribution(currentScene);
 
     const theme = this.getAttribute('theme');
     if (theme === 'light' || theme === 'dark') {
@@ -482,6 +670,7 @@ export class GlobeViewerElement extends HTMLElement {
   disconnectedCallback() {
     this._resizeObserver?.disconnect();
     this.#stopFocusAnimation();
+    this.#attributionManager.dispose();
     this.#controller?.destroy();
   }
 
@@ -552,6 +741,8 @@ export class GlobeViewerElement extends HTMLElement {
     this.#viewerUi = resolveViewerUiConfig(scene?.viewerUi);
     const hudVisibility = resolveNavigationHudVisibility(this.#viewerUi);
 
+    this.#markerFilterSelect.classList.add('filter-hidden');
+    this.#timeFilterWrap.classList.add('filter-hidden');
     this.#celestialSelect.hidden = !this.#viewerUi.showBodySelector;
     this.#fullscreenButton.hidden = !this.#viewerUi.showFullscreenButton;
     this.#legendButton.hidden = !this.#viewerUi.showLegendButton;
@@ -565,6 +756,7 @@ export class GlobeViewerElement extends HTMLElement {
     this.#compass.hidden = !hudVisibility.showCompass;
     this.#scale.hidden = !hudVisibility.showScale;
     this.#navHud.hidden = !hudVisibility.showNavHud;
+    this.#attributionManager.setVisible(this.#viewerUi.showAttribution);
 
     this.#syncControlLabels();
   }
@@ -587,6 +779,121 @@ export class GlobeViewerElement extends HTMLElement {
     if (this.#celestialSelect.value !== id) {
       this.#celestialSelect.value = id;
     }
+  }
+
+  #renderMarkerFilter(scene) {
+    const filters = scene?.filters ?? [];
+    while (this.#markerFilterSelect.firstChild) {
+      this.#markerFilterSelect.removeChild(this.#markerFilterSelect.firstChild);
+    }
+
+    if (filters.length === 0) {
+      this.#markerFilterSelect.classList.add('filter-hidden');
+      return;
+    }
+
+    const filter = filters[0];
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = `${filter.label}: All`;
+    this.#markerFilterSelect.appendChild(allOption);
+
+    for (const opt of filter.options) {
+      if (opt.value === 'all') continue;
+      const el = document.createElement('option');
+      el.value = opt.value;
+      el.textContent = opt.label;
+      this.#markerFilterSelect.appendChild(el);
+    }
+
+    this.#markerFilterSelect.value = 'all';
+    if (this.#viewerUi.showMarkerFilter) {
+      this.#markerFilterSelect.classList.remove('filter-hidden');
+    }
+  }
+
+  #applyMarkerFilter(value) {
+    if (!this.#controller) return;
+    const scene = this.#currentScene ?? this.#controller.getScene();
+    const filters = scene?.filters ?? [];
+    const markers = scene?.markers ?? [];
+
+    if (filters.length === 0 || value === 'all') {
+      this.#controller.filterMarkers(null);
+      this.#controller.filterCallouts(null);
+      this.#updateLegendFilter(null);
+      return;
+    }
+
+    const filter = filters[0];
+    const selected = filter.options.find((o) => o.value === value);
+    if (!selected) return;
+
+    const filterCategories = new Set(selected.categories);
+    const allFilteredCategories = new Set();
+    for (const opt of filter.options) {
+      if (opt.value !== 'all') {
+        for (const cat of opt.categories) allFilteredCategories.add(cat);
+      }
+    }
+
+    const matchingIds = markers
+      .filter((m) => {
+        const cat = m.category ?? 'default';
+        if (filterCategories.has(cat)) return true;
+        if (!allFilteredCategories.has(cat)) return true;
+        return false;
+      })
+      .map((m) => m.id);
+
+    this.#controller.filterMarkers(matchingIds);
+    this.#controller.filterCallouts(matchingIds);
+    this.#updateLegendFilter(matchingIds);
+  }
+
+  #renderTimeFilter(scene) {
+    const tr = scene?.timeRange;
+    if (!tr || !tr.min || !tr.max) {
+      this.#timeFilterWrap.classList.add('filter-hidden');
+      return;
+    }
+    this.#timeFromInput.min = tr.min;
+    this.#timeFromInput.max = tr.max;
+    this.#timeFromInput.value = tr.min;
+    this.#timeToInput.min = tr.min;
+    this.#timeToInput.max = tr.max;
+    this.#timeToInput.value = tr.max;
+    this.#timeFilterWrap.classList.remove('filter-hidden');
+  }
+
+  #applyTimeFilter() {
+    if (!this.#controller) return;
+    const scene = this.#currentScene ?? this.#controller.getScene();
+    const markers = scene?.markers ?? [];
+    const fromVal = this.#timeFromInput.value;
+    const toVal = this.#timeToInput.value;
+
+    if (!fromVal && !toVal) {
+      this.#controller.filterMarkers(null);
+      this.#controller.filterCallouts(null);
+      return;
+    }
+
+    const fromMs = fromVal ? new Date(fromVal).getTime() : -Infinity;
+    const toMs = toVal ? new Date(toVal + 'T23:59:59Z').getTime() : Infinity;
+
+    const matchingIds = markers
+      .filter((m) => {
+        if (!m.timestamp) return true;
+        const ms = new Date(m.timestamp).getTime();
+        if (!Number.isFinite(ms)) return true;
+        return ms >= fromMs && ms <= toMs;
+      })
+      .map((m) => m.id);
+
+    this.#controller.filterMarkers(matchingIds);
+    this.#controller.filterCallouts(matchingIds);
+    this.#updateLegendFilter(matchingIds);
   }
 
   #updateNavigationHud() {
@@ -623,6 +930,25 @@ export class GlobeViewerElement extends HTMLElement {
     if (this.#scaleLabel) {
       this.#scaleLabel.textContent = scale.label;
     }
+
+    clearTimeout(this.#attributionDebounce);
+    this.#attributionDebounce = setTimeout(() => {
+      const scene = this.#currentScene ?? this.#controller?.getScene();
+      if (scene) this.#updateAttribution(scene);
+    }, 200);
+  }
+
+  #updateAttribution(scene) {
+    if (!this.#viewerUi.showAttribution) {
+      this.#attributionManager.setVisible(false);
+      return;
+    }
+    this.#attributionManager.setVisible(true);
+
+    const projectFn = (point) => this.#controller?.projectPointToClient(point) ?? null;
+    const canvasRect = this.#controller?.getCanvasRect();
+    if (!canvasRect) return;
+    this.#attributionManager.update(scene, projectFn, canvasRect);
   }
 
   #onSearch(query) {
@@ -805,6 +1131,12 @@ export class GlobeViewerElement extends HTMLElement {
     }
 
     const scene = this.#controller.getScene();
+
+    if (event.key === 'Escape' && this.#attributionManager.isPanelOpen()) {
+      this.#attributionManager.closePanel();
+      return;
+    }
+
     let updated = false;
     let cancelledFocus = false;
 
@@ -946,6 +1278,9 @@ export class GlobeViewerElement extends HTMLElement {
     if (isClick) {
       const hit = this.inspectAt(event.clientX, event.clientY);
       if (hit || this.#inspectMode) return;
+    }
+    if (isClick && this.#attributionManager.isPanelOpen()) {
+      this.#attributionManager.closePanel();
     }
     // No inertia — globe stops immediately
   }
