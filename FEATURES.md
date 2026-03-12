@@ -31,7 +31,19 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Earth borders hidden on non-Earth bodies
 - [x] Ring texture loading for Saturn
 
+## Theme Variants
+- [x] Centralized theme palette module (`themePalette.js`) with 5 themes
+- [x] Photo Realistic theme (default, dark space background)
+- [x] Wireframe Shaded theme (white bg, depth-shaded white sphere)
+- [x] Wireframe Flat theme (white bg, flat white sphere)
+- [x] Grayscale Shaded theme (white bg, desaturated texture with lighting)
+- [x] Grayscale Flat theme (white bg, desaturated texture, even lighting)
+- [x] Theme palette wired into 3D globe renderer and 2D flat map renderer
+- [x] Editor theme selector updated to 5 options
+- [x] Backward-compatible: legacy dark/light themes map to photo
+
 ## Core Globe
+
 - [x] Implement `<globe-viewer>` web component bootstrap (init, destroy, resize).
 - [x] Render textured spherical Earth with configurable planet presets.
 - [x] Offer sun-position-based sphere lighting as an optional mode.

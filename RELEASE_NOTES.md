@@ -1,5 +1,15 @@
 # Release Notes
 
+## Version 1.x.x (Wed, Mar 12 2026, late evening)
+
+* Added 5 theme variants: Photo Realistic (default), Wireframe Shaded, Wireframe Flat, Grayscale Shaded, Grayscale Flat
+* B&W themes use white background with dark line borders and graticule grid
+* Grayscale themes desaturate the satellite earth texture while preserving lighting
+* Wireframe themes render the globe as a clean white sphere with optional depth shading
+* Markers, arcs, and regions keep their original colors across all themes
+* Theme selector in the editor now shows all 5 options
+* Legacy `dark`/`light` theme values automatically map to `photo`
+
 ## Version 1.x.x (Wed, Mar 12 2026, evening)
 
 * New flat map projection mode — switch between 3D globe and 2D map with a single click
