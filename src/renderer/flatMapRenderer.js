@@ -356,7 +356,53 @@ export class FlatMapRenderer {
     // 9. Geo labels
     this.#renderGeoLabels(ctx, scene);
 
-    // 10. Callouts — STUB (Task 13)
+    // 10. Callouts
+    this.#renderCallouts(scene);
+  }
+
+  #renderCallouts(scene) {
+    if (!this.#overlay) return;
+    while (this.#overlay.firstChild) this.#overlay.removeChild(this.#overlay.firstChild);
+
+    const markers = scene?.markers || [];
+    const proj = getProjection(this.#projectionName);
+    if (!proj) return;
+
+    for (const marker of markers) {
+      if (this.#markerFilter && !this.#markerFilter(marker)) continue;
+      if (this.#calloutFilter && !this.#calloutFilter(marker)) continue;
+
+      const label = marker.callout || marker.label || marker.id;
+      if (!label) continue;
+
+      // Only show callouts for markers that have callout content
+      if (!marker.callout && !marker.label) continue;
+
+      if (proj.isVisible && !proj.isVisible(marker.lat, marker.lon, this.#centerLat, this.#centerLon)) continue;
+
+      const { x, y } = proj.project(marker.lat, marker.lon, this.#centerLat, this.#centerLon);
+      const { px, py } = this.#projectionToPixel(x, y);
+
+      // Cull if outside canvas
+      const w = this.#canvas ? this.#canvas.width : 0;
+      const h = this.#canvas ? this.#canvas.height : 0;
+      if (px < -100 || px > w + 100 || py < -100 || py > h + 100) continue;
+
+      const div = document.createElement('div');
+      div.textContent = label;
+      div.style.cssText = `
+        position: absolute;
+        left: ${px / this.#dpr}px;
+        top: ${(py / this.#dpr) - 16}px;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: #e8f0ff;
+        white-space: nowrap;
+        pointer-events: none;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      `;
+      this.#overlay.appendChild(div);
+    }
   }
 
   #renderTexture(ctx, width, height) {
