@@ -34,12 +34,13 @@ getThemePalette(theme) → {
   graticuleOpacity: number,
   graticuleVisible: boolean,  // Show grid (always on for wireframe)
   atmosphereEnabled: boolean, // Blue atmosphere glow
-  atmosphereColor: number[],  // RGB triplet [0,1]
+  atmosphereColor: number[],  // RGB triplet [0,1] — present for all themes, ignored when atmosphereEnabled=false
   rimColor: number[],         // Fresnel rim tint RGB [0,1]
   useTextures: boolean,       // false = skip texture loading for wireframe
   desaturate: number,         // 0.0 = full color, 1.0 = full grayscale
   shaded: boolean,            // Depth gradient on sphere surface
-  labelStyles: {              // Geo-label text colors per type
+  flatLighting: boolean,      // true = ambient-only (no directional), false = normal lighting
+  labelStyles: {              // Geo-label text colors per type (exact CSS fillStyle values)
     continent: string,
     ocean: string,
     region: string,
@@ -58,19 +59,19 @@ getThemePalette(theme) → {
 - graticuleColor: `0xbed8ff`, graticuleOpacity: `0.16`, graticuleVisible: depends on scene config
 - atmosphereEnabled: `true`, atmosphereColor: `[0.3, 0.6, 1.0]`
 - rimColor: `[0.3, 0.5, 1.0]`
-- useTextures: `true`, desaturate: `0.0`, shaded: `true`
-- labelStyles: current colors (white, blue, warm)
-- leaderColor: `#f6b73c`, calloutTextColor: current
+- useTextures: `true`, desaturate: `0.0`, shaded: `true`, flatLighting: `false`
+- labelStyles: `{ continent: 'rgba(255, 255, 255, 0.3)', ocean: 'rgba(150, 190, 255, 0.3)', region: 'rgba(255, 255, 255, 0.3)', feature: 'rgba(255, 220, 150, 0.35)' }`
+- leaderColor: `#f6b73c`, calloutTextColor: `rgba(255, 255, 255, 0.9)`
 
 **wireframe-shaded:**
 - background: `0xffffff`, backgroundFlat: `#ffffff`
 - borderColor: `0x222222`, borderOpacity: `1.0`
 - graticuleColor: `0x999999`, graticuleOpacity: `0.5`, graticuleVisible: `true`
-- atmosphereEnabled: `false`
+- atmosphereEnabled: `false`, atmosphereColor: `[0, 0, 0]` (unused but present)
 - rimColor: `[0, 0, 0]`
-- useTextures: `false`, desaturate: `0.0`, shaded: `true`
-- labelStyles: all dark gray/black text
-- leaderColor: `#333333`, calloutTextColor: `#222222`
+- useTextures: `false`, desaturate: `0.0`, shaded: `true`, flatLighting: `false`
+- labelStyles: `{ continent: 'rgba(34, 34, 34, 0.5)', ocean: 'rgba(68, 68, 68, 0.4)', region: 'rgba(34, 34, 34, 0.5)', feature: 'rgba(51, 51, 51, 0.45)' }`
+- leaderColor: `#333333`, calloutTextColor: `rgba(34, 34, 34, 0.9)`
 
 **wireframe-flat:**
 - Same as wireframe-shaded except: shaded: `false`
@@ -79,83 +80,127 @@ getThemePalette(theme) → {
 - background: `0xffffff`, backgroundFlat: `#ffffff`
 - borderColor: `0x333333`, borderOpacity: `0.8`
 - graticuleColor: `0x999999`, graticuleOpacity: `0.3`, graticuleVisible: depends on scene config
-- atmosphereEnabled: `false`
+- atmosphereEnabled: `false`, atmosphereColor: `[0, 0, 0]` (unused but present)
 - rimColor: `[0.2, 0.2, 0.2]`
-- useTextures: `true`, desaturate: `1.0`, shaded: `true`
-- labelStyles: dark text
-- leaderColor: `#333333`, calloutTextColor: `#222222`
+- useTextures: `true`, desaturate: `1.0`, shaded: `true`, flatLighting: `false`
+- labelStyles: `{ continent: 'rgba(34, 34, 34, 0.5)', ocean: 'rgba(68, 68, 68, 0.4)', region: 'rgba(34, 34, 34, 0.5)', feature: 'rgba(51, 51, 51, 0.45)' }`
+- leaderColor: `#333333`, calloutTextColor: `rgba(34, 34, 34, 0.9)`
 
 **grayscale-flat:**
-- Same as grayscale-shaded except: shaded: `false`
+- Same as grayscale-shaded except: shaded: `false`, flatLighting: `true`
+
+## Runtime Theme Switching
+
+Theme changes trigger a **full scene rebuild** — the same path as changing planets. This is the simplest correct approach given that:
+- `BorderManager` has a `#built` flag that prevents re-rendering
+- `GeoLabelManager` caches rendered label textures
+- Earth mesh shaders are baked at creation time
+
+When `scene.theme` changes:
+1. `threeGlobeRenderer` detects the change (compare previous vs current theme)
+2. Calls `dispose()` on border manager, geo label manager, callout manager
+3. Rebuilds earth mesh with appropriate shader
+4. Rebuilds atmosphere mesh (or skips if `atmosphereEnabled === false`)
+5. Rebuilds graticule with new palette colors
+6. Re-renders borders and labels with new palette
+
+This is the same teardown/rebuild cycle already used when switching planets.
 
 ## File Changes
 
 ### 1. `src/renderer/themePalette.js` (new)
 - Export `getThemePalette(theme)` function
-- Export `VALID_THEMES` array for validation
+- Export `VALID_THEMES` array: `['photo', 'wireframe-shaded', 'wireframe-flat', 'grayscale-shaded', 'grayscale-flat']`
+- Unknown themes fall back to `'photo'`
 
 ### 2. `src/scene/schema.js`
 - Import `VALID_THEMES` from themePalette
-- Update `normalizeScene`: map `'dark'`/`'light'` → `'photo'`, validate against `VALID_THEMES`
-- Update `validateScene`: theme validation uses `VALID_THEMES`
+- Update `createEmptyScene()`: change default theme from `'dark'` to `'photo'`
+- Update `normalizeScene()`: map legacy `'dark'`/`'light'` → `'photo'`, pass through any value in `VALID_THEMES`, default unknown to `'photo'`
+- Update `validateScene()`: validate pre-normalization value — accept `VALID_THEMES` plus legacy `'dark'`/`'light'` (since normalization handles those). Error message lists valid values.
 
 ### 3. `src/renderer/earthBuilder.js`
-- Add new GLSL fragment shaders:
-  - `EARTH_FRAG_WIREFRAME` — outputs white (or shaded white via Fresnel/NdotV gradient)
-  - Modify existing day/night shaders to accept `uniform float desaturate` — mix RGB with luminance
-- `createEarthMesh` and `createBodyMesh` accept `{ theme }` option to select shader
-- `createAtmosphereMesh` is skipped when `palette.atmosphereEnabled === false`
+- Add `EARTH_FRAG_WIREFRAME_SHADED` shader:
+  ```glsl
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  void main() {
+    vec3 normal = normalize(vNormal);
+    vec3 viewDir = normalize(-vPosition);
+    float shade = dot(viewDir, normal);
+    vec3 color = vec3(0.6 + 0.4 * shade);
+    gl_FragColor = vec4(color, 1.0);
+  }
+  ```
+- Add `EARTH_FRAG_WIREFRAME_FLAT` shader: outputs `vec4(1.0)` (pure white)
+- Modify `EARTH_FRAG_DAY_NIGHT` and `EARTH_FRAG_DAY_ONLY`:
+  - Add `uniform float desaturate;` (default 0.0)
+  - Add `uniform float flatLighting;` (default 0.0)
+  - Convert existing hardcoded rim `vec3(0.3, 0.5, 1.0)` to `uniform vec3 rimColor;`
+  - After computing baseColor: `float lum = dot(base.rgb, vec3(0.299, 0.587, 0.114)); base.rgb = mix(base.rgb, vec3(lum), desaturate);`
+  - For flat lighting: `float lightMix = mix(dayNightBlend, 1.0, flatLighting);` — when flatLighting=1.0, treat everything as fully day-lit
+- `createEarthMesh()` accepts new options: `{ desaturate, rimColor, flatLighting, wireframeMode }`
+  - `wireframeMode === 'shaded'` → use `EARTH_FRAG_WIREFRAME_SHADED`
+  - `wireframeMode === 'flat'` → use `EARTH_FRAG_WIREFRAME_FLAT`
+  - Otherwise use existing texture shaders with new uniforms
 
 ### 4. `src/renderer/threeGlobeRenderer.js`
 - Import `getThemePalette`
-- On scene update, resolve palette from `scene.theme`
-- Pass palette to: `setClearColor`, earth mesh creation, graticule, border manager, label manager, callout manager, atmosphere toggle
-- When `palette.useTextures === false`, skip texture loading and use wireframe shader
-- When `palette.desaturate > 0`, pass desaturate uniform to earth shader
+- Store `#currentTheme` to detect changes
+- On scene update: resolve palette, compare with previous theme
+- If theme changed: trigger full rebuild (dispose + recreate earth, atmosphere, borders, labels, graticule)
+- Pass palette values to: `setClearColor(palette.background)`, earth mesh creation, graticule builder, border manager, label manager, callout manager
+- When `palette.atmosphereEnabled === false`: skip atmosphere mesh creation
+- When `palette.useTextures === false`: skip texture loading, use wireframe shader
 
 ### 5. `src/renderer/flatMapRenderer.js`
 - Import `getThemePalette`
 - Use `palette.backgroundFlat` for canvas clear
 - Use `palette.borderColor`/`palette.borderOpacity` for border drawing
-- When `palette.desaturate > 0`, apply CSS grayscale filter to texture or draw desaturated
+- For grayscale desaturation: use `ctx.filter = 'grayscale(1)'` scoped to the texture draw call only (`ctx.save()` → set filter → draw texture → `ctx.restore()`). This preserves colored markers/arcs drawn afterward. The `filter` property is supported in all modern browsers (Chrome 52+, Firefox 49+, Safari 17.5+).
 
 ### 6. `src/renderer/borderManager.js`
-- Accept `{ color, opacity }` options in `update()` instead of using constants
-- Default to current values for backward compat
+- Accept `{ color, opacity }` options in `update()`: `update(group, geojson, { show, color, opacity })`
+- Default `color` to `BORDER_COLOR`, `opacity` to `BORDER_OPACITY` for backward compat
+- No need for in-place material update — theme switches trigger `dispose()` + rebuild (see Runtime Theme Switching)
 
 ### 7. `src/renderer/graticuleBuilder.js`
-- Accept `{ color, opacity }` options in `createGraticule()` (already does via options — just needs to be wired)
+- Already accepts `{ color, opacity }` via options — just needs to be wired from threeGlobeRenderer with palette values
 
 ### 8. `src/renderer/geoLabelManager.js`
-- Accept label style overrides from palette
-- In B&W themes, use dark text instead of the current semi-transparent colored text
+- Accept `{ labelStyles }` option in its update/build method
+- When provided, override the `STYLES` object's `fillStyle` values per label type
+- The mechanism: pass palette's `labelStyles` map into the manager; it merges with defaults before rendering
 
 ### 9. `src/renderer/calloutManager.js`
-- Accept `leaderColor` from palette for the default leader line color
-- Callout label CSS adapts text color from palette
+- Accept `{ leaderColor, textColor }` options
+- Use `leaderColor` as fallback when marker has no explicit color
+- Apply `textColor` to callout label CSS
 
 ### 10. `editor/app.js`
-- Update theme selector UI to show all 5 options
+- Update theme selector UI to show all 5 options with labels:
+  - Photo Realistic, Wireframe (Shaded), Wireframe (Flat), Grayscale (Shaded), Grayscale (Flat)
 
 ## Earth Rendering by Theme
 
 ### Wireframe (shaded)
 - Sphere geometry with no texture
-- Fragment shader: `vec3 color = vec3(1.0); float shade = dot(viewDir, normal); color *= 0.6 + 0.4 * shade;`
-- Subtle darkening at edges gives 3D depth cue
+- Fragment shader uses NdotV (view-space): `float shade = dot(viewDir, normal); color = vec3(0.6 + 0.4 * shade);`
+- Edges appear darker, center appears bright white — 3D depth cue
 
 ### Wireframe (flat)
 - Same geometry, fragment shader: `gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);`
-- Pure white, no depth cue
+- Pure white, zero depth cue
 
-### Grayscale (shaded/flat)
-- Existing texture-based shader with added desaturation:
-  ```glsl
-  float lum = dot(baseColor.rgb, vec3(0.299, 0.587, 0.114));
-  vec3 gray = vec3(lum);
-  vec3 final = mix(baseColor.rgb, gray, desaturate);
-  ```
-- Shaded variant keeps existing lighting. Flat variant sets ambient to 1.0 and disables directional light.
+### Grayscale (shaded)
+- Existing texture-based day/night shader with `desaturate = 1.0`
+- Normal lighting (sun direction, fresnel rim) preserved but rim color changed to dark gray
+- Desaturation applied after lighting: `float lum = dot(base.rgb, vec3(0.299, 0.587, 0.114)); base.rgb = mix(base.rgb, vec3(lum), desaturate);`
+
+### Grayscale (flat)
+- Same as shaded but with `flatLighting = 1.0`
+- Day/night blending forced to full-day: entire globe evenly lit
+- Combined with `desaturate = 1.0`: produces uniform grayscale map with no directional shadows
 
 ## Markers, Arcs, Regions
 
@@ -163,9 +208,13 @@ User-specified content colors are preserved across all themes. These are data, n
 
 ## Testing
 
-- Unit test `themePalette.js`: each theme returns valid palette, unknown themes fall back to photo
-- Unit test schema normalization: `'dark'` → `'photo'`, `'light'` → `'photo'`, all 5 new values pass
-- Unit test schema validation: invalid theme names produce errors
+- Unit test `themePalette.js`: each theme returns valid palette with all expected keys, unknown themes fall back to photo
+- Unit test schema normalization: `'dark'` → `'photo'`, `'light'` → `'photo'`, all 5 new values pass through unchanged
+- Unit test schema validation: invalid theme names produce errors, legacy `'dark'`/`'light'` still accepted
+- Unit test `createEmptyScene()`: default theme is `'photo'`
+- Unit test earthBuilder: wireframe shaders compile and produce expected output
+- Unit test earthBuilder: desaturate/flatLighting uniforms are accepted
 - Integration test: verify wireframe mode skips texture loading
 - Integration test: verify grayscale shader desaturation
+- Integration test: theme switch triggers full rebuild (border/label managers disposed and recreated)
 - Visual test in editor: switch between all 5 themes
