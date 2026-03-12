@@ -9,6 +9,7 @@ import { getProjection } from '../math/projections/index.js';
 import { greatCircleArc, densifyPath } from '../math/geo.js';
 import { FlatMapTextureProjector } from './flatMapTextureProjector.js';
 import { getBodyLabels } from './bodyLabels.js';
+import { getThemePalette } from './themePalette.js';
 
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 4;
@@ -35,6 +36,7 @@ export class FlatMapRenderer {
   #dpr = 1;
 
   #scene = null;
+  #palette = null;
   #textureImage = null;
   #textureProjector = null;
   #markerFilter = null;
@@ -333,12 +335,13 @@ export class FlatMapRenderer {
     const scene = this.#scene;
 
     // 1. Background
-    const dark = scene?.theme === 'dark' || !scene;
-    ctx.fillStyle = dark ? '#0a0e1a' : '#e8f4f8';
+    const palette = getThemePalette(scene?.theme ?? 'photo');
+    this.#palette = palette;
+    ctx.fillStyle = palette.backgroundFlat;
     ctx.fillRect(0, 0, width, height);
 
-    // 2. Texture (browser-only, guarded by textureImage presence)
-    if (this.#textureImage) {
+    // 2. Texture (browser-only, guarded by textureImage presence and palette)
+    if (this.#textureImage && this.#palette.useTextures) {
       this.#renderTexture(ctx, width, height);
     }
 
@@ -420,6 +423,11 @@ export class FlatMapRenderer {
     }
     const proj = getProjection(this.#projectionName);
     if (!proj) return;
+    const needsDesaturate = this.#palette && this.#palette.desaturate > 0;
+    if (needsDesaturate) {
+      ctx.save();
+      ctx.filter = 'grayscale(1)';
+    }
     this.#textureProjector.project(
       ctx,
       this.#textureImage,
@@ -433,13 +441,23 @@ export class FlatMapRenderer {
       (px, py) => this.#pixelToProjection(px, py),
       this.#lowRes,
     );
+    if (needsDesaturate) {
+      ctx.restore();
+    }
   }
 
   #renderGraticule(ctx) {
     const proj = getProjection(this.#projectionName);
     if (!proj) return;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    const p = this.#palette;
+    if (p) {
+      const hex = '#' + p.graticuleColor.toString(16).padStart(6, '0');
+      ctx.strokeStyle = hex;
+      ctx.globalAlpha = p.graticuleOpacity;
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    }
     ctx.lineWidth = 0.5;
 
     // Latitude lines every 30°
@@ -460,6 +478,7 @@ export class FlatMapRenderer {
       this.#drawPolyline(ctx, pts);
     }
 
+    ctx.globalAlpha = 1.0;
     ctx.restore();
   }
 
@@ -601,7 +620,14 @@ export class FlatMapRenderer {
     const w = this.#canvas ? this.#canvas.width : 0;
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    const p = this.#palette;
+    if (p) {
+      const hex = '#' + p.borderColor.toString(16).padStart(6, '0');
+      ctx.strokeStyle = hex;
+      ctx.globalAlpha = p.borderOpacity;
+    } else {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    }
     ctx.lineWidth = 0.5;
 
     for (const feature of this.#borderData.features) {
@@ -630,6 +656,7 @@ export class FlatMapRenderer {
         ctx.stroke();
       }
     }
+    ctx.globalAlpha = 1.0;
     ctx.restore();
   }
 
@@ -657,15 +684,20 @@ export class FlatMapRenderer {
       // Cull outside viewport
       if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
 
+      const p = this.#palette;
+
       if (label.style === 'ocean') {
         ctx.font = `italic ${fontSize}px "Avenir Next", sans-serif`;
-        ctx.fillStyle = 'rgba(100, 160, 220, 0.7)';
+        ctx.fillStyle = p?.labelStyles?.ocean || 'rgba(100, 160, 220, 0.7)';
       } else if (label.style === 'continent') {
         ctx.font = `bold ${fontSize * 1.2}px "Avenir Next", sans-serif`;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fillStyle = p?.labelStyles?.continent || 'rgba(255, 255, 255, 0.6)';
+      } else if (label.style === 'feature') {
+        ctx.font = `${fontSize * 0.9}px "Avenir Next", sans-serif`;
+        ctx.fillStyle = p?.labelStyles?.feature || 'rgba(200, 220, 255, 0.5)';
       } else {
         ctx.font = `${fontSize * 0.9}px "Avenir Next", sans-serif`;
-        ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
+        ctx.fillStyle = p?.labelStyles?.region || 'rgba(200, 220, 255, 0.5)';
       }
 
       ctx.fillText(label.text, px, py);
