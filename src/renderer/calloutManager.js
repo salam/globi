@@ -25,6 +25,7 @@ export class CalloutManager {
   #css2dObjects = [];
   #clusterBadgeIds = new Set();
   #expandedClusters = new Set();
+  #textColor = null;
 
   resolveLabel(marker, locale) {
     const label = marker.calloutLabel?.[locale] ?? marker.calloutLabel?.en ?? '';
@@ -32,8 +33,9 @@ export class CalloutManager {
     return marker.name?.[locale] ?? marker.name?.en ?? '';
   }
 
-  update(group, markers, locale = 'en') {
+  update(group, markers, locale = 'en', { leaderColor = LEADER_COLOR_DEFAULT, textColor = null } = {}) {
     this.#group = group;
+    this.#textColor = textColor;
     this.#clear();
 
     // First pass: collect cluster info for large clusters (4+)
@@ -51,7 +53,7 @@ export class CalloutManager {
           largeClusterCenters.set(clusterId, {
             center: marker._clusterCenter,
             count: clusterSize,
-            color: marker.color || LEADER_COLOR_DEFAULT,
+            color: marker.color || leaderColor,
           });
         }
       }
@@ -115,7 +117,7 @@ export class CalloutManager {
         const surfaceVec = new Vector3(surfacePos.x, surfacePos.y, surfacePos.z);
         const direction = surfaceVec.clone().normalize();
         const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
-        const markerColor = marker.color || LEADER_COLOR_DEFAULT;
+        const markerColor = marker.color || leaderColor;
 
         this.#calloutData.set(marker.id, {
           marker, label, line: null, labelPosition: labelPos,
@@ -149,7 +151,7 @@ export class CalloutManager {
         surfaceVec.clone().normalize().multiplyScalar(LEADER_LENGTH),
       );
 
-      const markerColor = marker.color || LEADER_COLOR_DEFAULT;
+      const markerColor = marker.color || leaderColor;
 
       let line = null;
       // Only create a leader line for the first member of a small cluster (or solo markers)
@@ -213,8 +215,9 @@ export class CalloutManager {
       const c = data.color || LEADER_COLOR_DEFAULT;
       const rgba12 = hexToRgba(c, 0.12);
       const rgba40 = hexToRgba(c, 0.4);
+      const displayColor = this.#textColor || c;
       div.style.cssText = `
-        color: ${c};
+        color: ${displayColor};
         font-size: 12px;
         font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
         font-weight: 600;

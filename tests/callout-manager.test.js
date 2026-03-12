@@ -329,6 +329,36 @@ test('CalloutManager culls cluster badge on backface', () => {
   assert.equal(badgeData.visible, false);
 });
 
+// Task 6 (bw-themes): leaderColor / textColor palette options
+
+test('CalloutManager accepts leaderColor option', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const markers = [{
+    id: 'm1', name: { en: 'Test' }, lat: 0, lon: 0, alt: 0,
+    calloutMode: 'always', calloutLabel: { en: 'Test Label' },
+    color: '', _clusterId: null, _clusterSize: 1, _clusterCenter: null, _clusterIndex: 0,
+  }];
+  manager.update(group, markers, 'en', { leaderColor: '#333333' });
+  const data = manager.getCalloutData();
+  assert.ok(data.has('m1'));
+  const entry = data.get('m1');
+  assert.equal(entry.color, '#333333');
+});
+
+test('CalloutManager preserves marker-specific color over leaderColor', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const markers = [{
+    id: 'm1', name: { en: 'Test' }, lat: 10, lon: 10, alt: 0,
+    calloutMode: 'always', calloutLabel: { en: 'Test' },
+    color: '#ff0000',
+  }];
+  manager.update(group, markers, 'en', { leaderColor: '#333333' });
+  const data = manager.getCalloutData();
+  assert.equal(data.get('m1').color, '#ff0000');
+});
+
 test('CalloutManager filterCallouts dims badge when no members match', () => {
   const manager = new CalloutManager();
   const group = new Group();
