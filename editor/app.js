@@ -1060,7 +1060,7 @@ celestialBodySelect.addEventListener('change', () => {
 themeModeSelect.addEventListener('change', () => {
   scene = {
     ...scene,
-    theme: themeModeSelect.value === 'light' ? 'light' : 'dark',
+    theme: themeModeSelect.value,
   };
   renderToViewer();
 });
