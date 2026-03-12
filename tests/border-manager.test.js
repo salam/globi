@@ -79,3 +79,31 @@ test('BorderManager dispose clears geometry', () => {
   manager.dispose();
   assert.equal(group.children.length, 0);
 });
+
+test('BorderManager accepts custom color and opacity', () => {
+  const manager = new BorderManager();
+  const group = new Group();
+  manager.update(group, SIMPLE_GEOJSON, { show: true, color: 0x222222, opacity: 1.0 });
+  const child = group.children[0];
+  assert.equal(child.material.color.getHex(), 0x222222);
+  assert.equal(child.material.opacity, 1.0);
+});
+
+test('BorderManager defaults to white 0.35 opacity when no color/opacity given', () => {
+  const manager = new BorderManager();
+  const group = new Group();
+  manager.update(group, SIMPLE_GEOJSON, { show: true });
+  const child = group.children[0];
+  assert.equal(child.material.color.getHex(), 0xffffff);
+  assert.equal(child.material.opacity, 0.35);
+});
+
+test('BorderManager updates material when color changes after build', () => {
+  const manager = new BorderManager();
+  const group = new Group();
+  manager.update(group, SIMPLE_GEOJSON, { show: true, color: 0xffffff, opacity: 0.35 });
+  assert.equal(group.children[0].material.color.getHex(), 0xffffff);
+  manager.update(group, SIMPLE_GEOJSON, { show: true, color: 0x222222, opacity: 1.0 });
+  assert.equal(group.children[0].material.color.getHex(), 0x222222);
+  assert.equal(group.children[0].material.opacity, 1.0);
+});

@@ -13,12 +13,28 @@ const BORDER_OPACITY = 0.35;
 export class BorderManager {
   #group = null;
   #built = false;
+  #lastColor = null;
+  #lastOpacity = null;
 
-  update(group, geojson, { show = true } = {}) {
+  update(group, geojson, { show = true, color = BORDER_COLOR, opacity = BORDER_OPACITY } = {}) {
     this.#group = group;
     group.visible = show;
 
-    if (this.#built || !geojson) return;
+    if (this.#built) {
+      if (color !== this.#lastColor || opacity !== this.#lastOpacity) {
+        for (const child of this.#group.children) {
+          if (child.material) {
+            child.material.color.set(color);
+            child.material.opacity = opacity;
+          }
+        }
+        this.#lastColor = color;
+        this.#lastOpacity = opacity;
+      }
+      return;
+    }
+
+    if (!geojson) return;
     if (!geojson.features || geojson.features.length === 0) return;
 
     const vertices = [];
@@ -53,9 +69,9 @@ export class BorderManager {
     geometry.setAttribute('position', new Float32BufferAttribute(new Float32Array(vertices), 3));
 
     const material = new LineBasicMaterial({
-      color: BORDER_COLOR,
+      color,
       transparent: true,
-      opacity: BORDER_OPACITY,
+      opacity,
       depthWrite: false,
     });
 
@@ -63,6 +79,8 @@ export class BorderManager {
     lines.userData = { kind: 'borders' };
     group.add(lines);
     this.#built = true;
+    this.#lastColor = color;
+    this.#lastOpacity = opacity;
   }
 
   dispose() {
