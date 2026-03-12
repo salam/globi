@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {
   getDefaultViewerUiConfig,
   mergeViewerUiConfig,
+  normalizeViewerUiConfig,
+  resolveViewerUiConfig,
   VIEWER_CONTROL_STYLE_ICON,
   VIEWER_CONTROL_STYLE_TEXT,
 } from '../src/scene/viewerUi.js';
@@ -63,4 +65,19 @@ test('showAttribution defaults to true and can be toggled', () => {
 
   const merged = mergeViewerUiConfig(defaults, { showAttribution: false });
   assert.equal(merged.showAttribution, false);
+});
+
+test('getDefaultViewerUiConfig – includes showProjectionToggle true', () => {
+  const config = getDefaultViewerUiConfig();
+  assert.equal(config.showProjectionToggle, true);
+});
+
+test('normalizeViewerUiConfig – defaults showProjectionToggle to true', () => {
+  const config = normalizeViewerUiConfig({});
+  assert.equal(config.showProjectionToggle, true);
+});
+
+test('resolveViewerUiConfig – coerces showProjectionToggle to boolean', () => {
+  const config = resolveViewerUiConfig({ showProjectionToggle: 'false' });
+  assert.equal(config.showProjectionToggle, false);
 });

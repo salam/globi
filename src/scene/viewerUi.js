@@ -11,6 +11,7 @@ const DEFAULT_VIEWER_UI = Object.freeze({
   showScale: true,
   showMarkerFilter: true,
   showAttribution: true,
+  showProjectionToggle: true,
 });
 
 function isObject(value) {
@@ -19,6 +20,13 @@ function isObject(value) {
 
 function pickBooleanOrDefault(value, fallback) {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+function coerceBooleanOrDefault(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  if (value === 'false' || value === '0' || value === 0) return false;
+  if (value === 'true' || value === '1' || value === 1) return true;
+  return fallback;
 }
 
 export function getDefaultViewerUiConfig() {
@@ -37,6 +45,7 @@ export function normalizeViewerUiConfig(input = {}) {
     showScale: value.showScale ?? DEFAULT_VIEWER_UI.showScale,
     showMarkerFilter: value.showMarkerFilter ?? DEFAULT_VIEWER_UI.showMarkerFilter,
     showAttribution: value.showAttribution ?? DEFAULT_VIEWER_UI.showAttribution,
+    showProjectionToggle: value.showProjectionToggle ?? DEFAULT_VIEWER_UI.showProjectionToggle,
   };
 }
 
@@ -54,6 +63,7 @@ export function resolveViewerUiConfig(input = {}) {
     showScale: pickBooleanOrDefault(normalized.showScale, DEFAULT_VIEWER_UI.showScale),
     showMarkerFilter: pickBooleanOrDefault(normalized.showMarkerFilter, DEFAULT_VIEWER_UI.showMarkerFilter),
     showAttribution: pickBooleanOrDefault(normalized.showAttribution, DEFAULT_VIEWER_UI.showAttribution),
+    showProjectionToggle: coerceBooleanOrDefault(normalized.showProjectionToggle, DEFAULT_VIEWER_UI.showProjectionToggle),
   };
 }
 
@@ -82,6 +92,7 @@ export function validateViewerUiConfig(viewerUi, pointer, errors) {
     'showScale',
     'showMarkerFilter',
     'showAttribution',
+    'showProjectionToggle',
   ];
 
   for (const field of booleanFields) {
