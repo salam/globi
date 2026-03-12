@@ -17,6 +17,7 @@ export class FlatMapTextureProjector {
    * @param {CanvasRenderingContext2D} ctx  Target canvas 2D context.
    * @param {HTMLImageElement|ImageBitmap} texture  Equirectangular source texture.
    * @param {object} projection  Projection object with inverse(x,y,clat,clon).
+   * @param {string} projectionName  Name of the projection (for cache key).
    * @param {number} centerLat
    * @param {number} centerLon
    * @param {number} width   Canvas width in physical pixels.
@@ -25,10 +26,10 @@ export class FlatMapTextureProjector {
    * @param {function} pixelToProjection  (px,py) → {x,y}
    * @param {boolean} [lowRes=false]  Use lower resolution for drag performance.
    */
-  project(ctx, texture, projection, centerLat, centerLon, width, height,
+  project(ctx, texture, projection, projectionName, centerLat, centerLon, width, height,
     projectionToPixel, pixelToProjection, lowRes = false) {
     const step = lowRes ? 4 : 1;
-    const cacheKey = `${centerLat},${centerLon},${width},${height},${lowRes}`;
+    const cacheKey = `${projectionName},${centerLat},${centerLon},${width},${height},${lowRes}`;
 
     let offscreen = this.#cache.get(cacheKey);
     if (!offscreen) {
@@ -44,6 +45,7 @@ export class FlatMapTextureProjector {
 
       const texW = this.#textureCanvas.width;
       const texH = this.#textureCanvas.height;
+      const srcData = this.#textureCtx.getImageData(0, 0, texW, texH).data;
       const imgData = offCtx.createImageData(width, height);
       const buf = imgData.data;
 
@@ -59,16 +61,15 @@ export class FlatMapTextureProjector {
 
           const tx = Math.floor(u) % texW;
           const ty = Math.min(Math.floor(v), texH - 1);
-
-          const srcPixels = this.#textureCtx.getImageData(tx, ty, 1, 1).data;
+          const srcIdx = (ty * texW + tx) * 4;
 
           for (let dy = 0; dy < step && py + dy < height; dy++) {
             for (let dx = 0; dx < step && px + dx < width; dx++) {
               const idx = ((py + dy) * width + (px + dx)) * 4;
-              buf[idx]     = srcPixels[0];
-              buf[idx + 1] = srcPixels[1];
-              buf[idx + 2] = srcPixels[2];
-              buf[idx + 3] = srcPixels[3];
+              buf[idx]     = srcData[srcIdx];
+              buf[idx + 1] = srcData[srcIdx + 1];
+              buf[idx + 2] = srcData[srcIdx + 2];
+              buf[idx + 3] = srcData[srcIdx + 3];
             }
           }
         }

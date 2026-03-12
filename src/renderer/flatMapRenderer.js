@@ -7,6 +7,7 @@
 
 import { getProjection } from '../math/projections/index.js';
 import { greatCircleArc, densifyPath } from '../math/geo.js';
+import { FlatMapTextureProjector } from './flatMapTextureProjector.js';
 
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 4;
@@ -347,16 +348,8 @@ export class FlatMapRenderer {
   }
 
   #renderTexture(ctx, width, height) {
-    // Lazy-create the texture projector
     if (!this.#textureProjector) {
-      // Dynamic import so Node.js tests never execute this path
-      // (textureImage is always null in Node tests)
-      const { FlatMapTextureProjector } = globalThis.__FlatMapTextureProjector__ || {};
-      if (FlatMapTextureProjector) {
-        this.#textureProjector = new FlatMapTextureProjector();
-      } else {
-        return;
-      }
+      this.#textureProjector = new FlatMapTextureProjector();
     }
     const proj = getProjection(this.#projectionName);
     if (!proj) return;
@@ -364,6 +357,7 @@ export class FlatMapRenderer {
       ctx,
       this.#textureImage,
       proj,
+      this.#projectionName,
       this.#centerLat,
       this.#centerLon,
       width,
