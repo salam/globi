@@ -76,3 +76,51 @@ test('orthographic – inverse returns null outside disc', () => {
   const result = orthographic.inverse(1.5, 0, 0, 0);
   assert.equal(result, null);
 });
+
+import { equirectangular } from '../src/math/projections/equirectangular.js';
+
+test('equirectangular – project center maps to origin', () => {
+  const { x, y } = equirectangular.project(30, 60, 30, 60);
+  assert.ok(Math.abs(x) < 1e-10);
+  assert.ok(Math.abs(y) < 1e-10);
+});
+
+test('equirectangular – x is longitude delta in radians', () => {
+  const { x, y } = equirectangular.project(0, 45, 0, 0);
+  assert.ok(Math.abs(x - 45 * Math.PI / 180) < 1e-6);
+  assert.ok(Math.abs(y) < 1e-6);
+});
+
+test('equirectangular – y is latitude delta in radians', () => {
+  const { x, y } = equirectangular.project(60, 0, 30, 0);
+  assert.ok(Math.abs(x) < 1e-6);
+  assert.ok(Math.abs(y - 30 * Math.PI / 180) < 1e-6);
+});
+
+test('equirectangular – inverse round-trips', () => {
+  const centerLat = -10, centerLon = 120;
+  const lat = 50, lon = -170;
+  const { x, y } = equirectangular.project(lat, lon, centerLat, centerLon);
+  const inv = equirectangular.inverse(x, y, centerLat, centerLon);
+  assert.ok(inv !== null);
+  assert.ok(Math.abs(inv.lat - lat) < 1e-6);
+  const normExpected = ((lon + 180) % 360 + 360) % 360 - 180;
+  const normActual = ((inv.lon + 180) % 360 + 360) % 360 - 180;
+  assert.ok(Math.abs(normActual - normExpected) < 1e-4);
+});
+
+test('equirectangular – wraps longitude across antimeridian', () => {
+  const { x } = equirectangular.project(0, -170, 0, 170);
+  const expectedX = 20 * Math.PI / 180;
+  assert.ok(Math.abs(x - expectedX) < 1e-6, `x should be ${expectedX}, got ${x}`);
+});
+
+test('equirectangular – isVisible always true', () => {
+  assert.ok(equirectangular.isVisible(90, 0, 0, 0));
+  assert.ok(equirectangular.isVisible(-90, 180, 45, -45));
+});
+
+test('equirectangular – inverse returns null beyond poles', () => {
+  const result = equirectangular.inverse(0, 2, 0, 0);
+  assert.equal(result, null, 'should return null for lat > 90');
+});
