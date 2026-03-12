@@ -4,6 +4,7 @@ import { mergeViewerUiConfig, resolveViewerUiConfig, VIEWER_CONTROL_STYLE_ICON }
 import { interpolateCameraState } from './cameraTween.js';
 
 import { getLegendSymbol } from './legendSymbol.js';
+import { groupMarkersByFilter } from './legendGrouping.js';
 import { computeNorthArrowRotation, computeScaleBar } from './navigationHud.js';
 import { AttributionManager } from '../renderer/attributionManager.js';
 import { resolveNavigationHudVisibility } from './viewerUiInteractions.js';
@@ -26,8 +27,27 @@ const CONTROL_ICONS = {
   `,
   inspect: `
     <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="11" cy="11" r="5.5" />
-      <path d="M15.2 15.2L20 20" />
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 5V2" />
+      <path d="M12 22v-3" />
+      <path d="M5 12H2" />
+      <path d="M22 12h-3" />
+    </svg>
+  `,
+  projection: `
+    <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M3 15h18" />
+      <path d="M9 3v18" />
+      <path d="M15 3v18" />
+    </svg>
+  `,
+  globe: `
+    <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="9" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" />
+      <path d="M3 12h18" />
     </svg>
   `,
 };
@@ -77,6 +97,12 @@ const TEMPLATE = `
       display: inline-flex;
       align-items: center;
       justify-content: center;
+    }
+
+    /* BUG15: hidden attribute must win over icon-only display */
+    .controls button[hidden],
+    .controls select[hidden] {
+      display: none !important;
     }
 
     .control-icon {
@@ -217,6 +243,21 @@ const TEMPLATE = `
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+    }
+
+    .legend-section-header {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #7b9fd4;
+      padding: 8px 6px 4px;
+      border-bottom: 1px solid rgba(124, 160, 214, 0.15);
+      margin-bottom: 2px;
+    }
+
+    .legend-section-header:first-child {
+      padding-top: 2px;
     }
 
     .nav-hud {
@@ -468,6 +509,7 @@ const TEMPLATE = `
     <button class="fullscreen control-button" type="button"></button>
     <button class="legend-toggle control-button" type="button"></button>
     <button class="inspect-toggle control-button" type="button"></button>
+    <button class="projection-toggle control-button icon-only" type="button"></button>
   </div>
   <div class="time-filter filter-hidden">
     <span>From</span>
@@ -497,7 +539,7 @@ function dispatchCustomEvent(target, type, detail) {
 
 export class GlobeViewerElement extends HTMLElement {
   static get observedAttributes() {
-    return ['language', 'planet', 'theme', 'inspect-mode'];
+    return ['language', 'planet', 'theme', 'inspect-mode', 'projection'];
   }
 
   #controller;
@@ -515,6 +557,7 @@ export class GlobeViewerElement extends HTMLElement {
   #fullscreenButton;
   #legendButton;
   #inspectButton;
+  #projectionButton;
   #viewerUi = resolveViewerUiConfig();
   #celestialPresets = listCelestialPresets();
   #currentScene = null;
@@ -557,6 +600,7 @@ export class GlobeViewerElement extends HTMLElement {
     this.#fullscreenButton = this.#root.querySelector('.fullscreen');
     this.#legendButton = this.#root.querySelector('.legend-toggle');
     this.#inspectButton = this.#root.querySelector('.inspect-toggle');
+    this.#projectionButton = this.#root.querySelector('.projection-toggle');
     this.#searchInput = this.#root.querySelector('.search-input');
     this.#timeFilterWrap = this.#root.querySelector('.time-filter');
     this.#timeFromInput = this.#root.querySelector('.time-from');
@@ -579,6 +623,14 @@ export class GlobeViewerElement extends HTMLElement {
     this.#inspectButton.addEventListener('click', () => {
       this.setInspectMode(!this.#inspectMode);
       dispatchCustomEvent(this, 'inspectToggle', { enabled: this.#inspectMode });
+    });
+
+    this.#projectionButton.addEventListener('click', () => {
+      if (!this.#controller) return;
+      const current = this.#controller.getProjection();
+      const next = current === 'globe' ? 'azimuthalEquidistant' : 'globe';
+      this.#controller.setProjection(next);
+      this.#updateProjectionButton();
     });
 
     this.#celestialSelect.addEventListener('change', () => {
@@ -641,6 +693,11 @@ export class GlobeViewerElement extends HTMLElement {
 
     this.#renderCelestialOptions();
     this.setInspectMode(this.hasAttribute('inspect-mode'));
+    const initialProjection = this.getAttribute('projection');
+    if (initialProjection && initialProjection !== 'globe') {
+      this.#controller.setProjection(initialProjection);
+    }
+    this.#updateProjectionButton();
     const currentScene = this.#controller.getScene();
     this.#currentScene = currentScene;
     this.#applyViewerUi(currentScene);
@@ -697,6 +754,14 @@ export class GlobeViewerElement extends HTMLElement {
     if (name === 'inspect-mode') {
       this.setInspectMode(newValue !== null);
     }
+
+    if (name === 'projection') {
+      if (this.#controller) {
+        const proj = newValue || 'globe';
+        this.#controller.setProjection(proj);
+        this.#updateProjectionButton();
+      }
+    }
   }
 
   #syncControlLabels() {
@@ -737,6 +802,21 @@ export class GlobeViewerElement extends HTMLElement {
     button.textContent = label;
   }
 
+  #updateProjectionButton() {
+    if (!this.#projectionButton || !this.#controller) return;
+    const isGlobe = this.#controller.getProjection() === 'globe';
+    // Use the same icon-injection approach as #setControlButtonLabel – content
+    // is our own static SVG markup from CONTROL_ICONS, not user input.
+    const iconSvg = isGlobe ? CONTROL_ICONS.projection : CONTROL_ICONS.globe;
+    const label = isGlobe ? 'Switch to map view' : 'Switch to globe view';
+    const range = document.createRange();
+    range.selectNodeContents(this.#projectionButton);
+    range.deleteContents();
+    this.#projectionButton.appendChild(range.createContextualFragment(iconSvg));
+    this.#projectionButton.title = label;
+    this.#projectionButton.setAttribute('aria-label', label);
+  }
+
   #applyViewerUi(scene) {
     this.#viewerUi = resolveViewerUiConfig(scene?.viewerUi);
     const hudVisibility = resolveNavigationHudVisibility(this.#viewerUi);
@@ -747,6 +827,7 @@ export class GlobeViewerElement extends HTMLElement {
     this.#fullscreenButton.hidden = !this.#viewerUi.showFullscreenButton;
     this.#legendButton.hidden = !this.#viewerUi.showLegendButton;
     this.#inspectButton.hidden = !this.#viewerUi.showInspectButton;
+    this.#projectionButton.hidden = !this.#viewerUi.showProjectionToggle;
 
     if (!this.#viewerUi.showLegendButton) {
       this.#legendVisible = false;
@@ -807,7 +888,8 @@ export class GlobeViewerElement extends HTMLElement {
     }
 
     this.#markerFilterSelect.value = 'all';
-    if (this.#viewerUi.showMarkerFilter) {
+    const showFilter = this.#viewerUi?.showMarkerFilter !== false;
+    if (showFilter) {
       this.#markerFilterSelect.classList.remove('filter-hidden');
     }
   }
@@ -1090,37 +1172,49 @@ export class GlobeViewerElement extends HTMLElement {
   #renderLegend(scene) {
     const locale = scene.locale;
     const markers = scene.markers ?? [];
+    const filters = scene.filters ?? [];
 
-    // Clear legend by removing all children (safe DOM method)
     while (this.#legend.firstChild) {
       this.#legend.removeChild(this.#legend.firstChild);
     }
     this.#legendItems.clear();
-    for (const marker of markers) {
-      const row = document.createElement('button');
-      row.className = 'legend-item';
-      row.type = 'button';
 
-      const symbol = getLegendSymbol(marker);
-      const symbolNode = document.createElement('span');
-      symbolNode.className = `legend-symbol ${symbol.shape}`;
-      symbolNode.style.setProperty('--legend-symbol-color', symbol.color);
-      if (symbol.shape === 'text') {
-        symbolNode.textContent = 'T';
+    const sections = groupMarkersByFilter(markers, filters, locale);
+
+    for (const section of sections) {
+      if (section.label) {
+        const header = document.createElement('div');
+        header.className = 'legend-section-header';
+        header.textContent = section.label;
+        this.#legend.appendChild(header);
       }
 
-      const labelNode = document.createElement('span');
-      labelNode.className = 'legend-label';
-      labelNode.textContent = marker.name?.[locale] ?? marker.name?.en ?? marker.id;
+      for (const marker of section.markers) {
+        const row = document.createElement('button');
+        row.className = 'legend-item';
+        row.type = 'button';
 
-      row.append(symbolNode, labelNode);
-      row.addEventListener('click', () => {
-        this.#animateFocusTo({ lat: marker.lat, lon: marker.lon }, { durationMs: 800 });
-        dispatchCustomEvent(this, 'markerClick', marker);
-        this.#peekLegendItem(marker.id);
-      });
-      this.#legend.appendChild(row);
-      this.#legendItems.set(marker.id, row);
+        const symbol = getLegendSymbol(marker);
+        const symbolNode = document.createElement('span');
+        symbolNode.className = `legend-symbol ${symbol.shape}`;
+        symbolNode.style.setProperty('--legend-symbol-color', symbol.color);
+        if (symbol.shape === 'text') {
+          symbolNode.textContent = 'T';
+        }
+
+        const labelNode = document.createElement('span');
+        labelNode.className = 'legend-label';
+        labelNode.textContent = marker.name?.[locale] ?? marker.name?.en ?? marker.id;
+
+        row.append(symbolNode, labelNode);
+        row.addEventListener('click', () => {
+          this.#animateFocusTo({ lat: marker.lat, lon: marker.lon }, { durationMs: 800 });
+          dispatchCustomEvent(this, 'markerClick', marker);
+          this.#peekLegendItem(marker.id);
+        });
+        this.#legend.appendChild(row);
+        this.#legendItems.set(marker.id, row);
+      }
     }
   }
 
