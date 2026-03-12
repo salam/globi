@@ -29,8 +29,8 @@ export function createRingMesh(planetConfig, ringTexture = null) {
   const uv = geometry.attributes.uv;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
-    const z = pos.getZ(i);
-    const dist = Math.sqrt(x * x + z * z);
+    const y = pos.getY(i);
+    const dist = Math.sqrt(x * x + y * y);
     const t = (dist - rings.innerRadius) / (rings.outerRadius - rings.innerRadius);
     uv.setXY(i, t, 0.5);
   }
