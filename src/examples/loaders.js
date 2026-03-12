@@ -7,15 +7,16 @@ const NATURAL_EARTH_LAND_URL = 'https://raw.githubusercontent.com/nvkelso/natura
 const ISS_CURRENT_URL = 'https://api.wheretheiss.at/v1/satellites/25544';
 const ISS_POSITIONS_URL = 'https://api.wheretheiss.at/v1/satellites/25544/positions';
 const COUNTRIES_GEOJSON_URL = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
-const EARTH_LOW_RES_TEXTURE_URL = 'https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57730/land_ocean_ice_2048.png';
+const EARTH_LOW_RES_TEXTURE_URL = '/assets/textures/earth/land_ocean_ice_2048.png';
 
-const DS_REST_COUNTRIES = Object.freeze({ id: 'rest-countries', name: 'REST Countries API', shortName: 'RC', url: 'https://restcountries.com/', description: 'Open API for country data including capitals and memberships' });
-const DS_NATURAL_EARTH = Object.freeze({ id: 'natural-earth', name: 'Natural Earth', shortName: 'NE', url: 'https://www.naturalearthdata.com/', license: 'Public Domain', description: 'Public domain map dataset for cartography' });
-const DS_WHERETHEISS = Object.freeze({ id: 'wheretheiss', name: 'Where the ISS at?', shortName: 'ISS', url: 'https://wheretheiss.at/', description: 'Real-time ISS position and orbital data' });
-const DS_GEO_COUNTRIES = Object.freeze({ id: 'geo-countries', name: 'Geo Countries', shortName: 'GC', url: 'https://github.com/datasets/geo-countries', license: 'ODC PDDL', description: 'Country boundary polygons' });
-const DS_OSINT_VESSELS = Object.freeze({ id: 'osint-vessels', name: 'Curated OSINT Reports', shortName: 'OSINT', url: '#', description: 'Curated open-source intelligence reports' });
-const DS_AIS_FEEDS = Object.freeze({ id: 'ais-feeds', name: 'AIS Feeds', shortName: 'AIS', url: '#', description: 'Automatic Identification System vessel feeds' });
-const DS_AIS_SAMPLE = Object.freeze({ id: 'ais-sample', name: 'AIS Sample Data', shortName: 'AIS', url: '#', description: 'Sample AIS vessel data' });
+const DS_REST_COUNTRIES = Object.freeze({ id: 'rest-countries', name: 'REST Countries API', shortName: 'RC', url: 'https://restcountries.com/', license: 'Open Source', description: 'Open REST API providing data on 250+ countries — capitals, coordinates, UN/NATO membership, and more' });
+const DS_NATURAL_EARTH = Object.freeze({ id: 'natural-earth', name: 'Natural Earth', shortName: 'NE', url: 'https://www.naturalearthdata.com/', license: 'Public Domain', description: 'Free vector and raster map data at 1:10m, 1:50m, and 1:110m scales, built by volunteers and supported by NACIS' });
+const DS_WHERETHEISS = Object.freeze({ id: 'wheretheiss', name: 'Where the ISS at?', shortName: 'ISS', url: 'https://wheretheiss.at/', description: 'Real-time ISS position, altitude, and velocity via REST API — operated by Linzig, LLC' });
+const DS_GEO_COUNTRIES = Object.freeze({ id: 'geo-countries', name: 'Geo Countries', shortName: 'GC', url: 'https://github.com/datasets/geo-countries', license: 'ODC PDDL', description: 'GeoJSON country boundary polygons derived from Natural Earth via the Datasets project (Open Knowledge Foundation)' });
+const DS_OSINT_VESSELS = Object.freeze({ id: 'osint-vessels', name: 'Naval OSINT Reports', shortName: 'OSINT', url: 'https://nosi.org/', description: 'Curated naval positions from open-source intelligence — NOSI, defense press, and public ship-tracking services' });
+const DS_AIS_FEEDS = Object.freeze({ id: 'ais-feeds', name: 'AISHub', shortName: 'AIS', url: 'https://www.aishub.net/', license: 'Reciprocal sharing', description: 'Community AIS data exchange — free real-time vessel positions via shared receiver network (69k+ vessels, 1.4k+ stations)' });
+const DS_AIS_SAMPLE = Object.freeze({ id: 'ais-sample', name: 'AIS Sample Data', shortName: 'AIS', url: 'https://www.aishub.net/', description: 'Sample vessel positions based on AIS broadcasts — Automatic Identification System data from AISHub community network' });
+const DS_DEEPSTATEMAP = Object.freeze({ id: 'deepstatemap', name: 'DeepStateMap', shortName: 'DS', url: 'https://deepstatemap.live/en', description: 'Independent OSINT project visualising the course of hostilities in Ukraine from open sources' });
 
 const NATION_COLORS = Object.freeze({
   US: '#1f3d73',
@@ -258,9 +259,28 @@ function normalizeLandmassRegions(rawLandGeojson, sourceId = '') {
     .filter(Boolean);
 }
 
+// BUG14: cache the raw GeoJSON so repeated example loads don't re-download
+let _landmassCache = null;
+let _landmassCachePromise = null;
+
 async function loadLandmassRegions(fetchImpl, sourceId = '') {
-  const landRaw = await safeFetchJson(fetchImpl, NATURAL_EARTH_LAND_URL);
-  return normalizeLandmassRegions(landRaw, sourceId);
+  if (!_landmassCache) {
+    if (!_landmassCachePromise) {
+      _landmassCachePromise = safeFetchJson(fetchImpl, NATURAL_EARTH_LAND_URL).then((raw) => {
+        _landmassCache = raw;
+        _landmassCachePromise = null;
+        return raw;
+      });
+    }
+    await _landmassCachePromise;
+  }
+  return normalizeLandmassRegions(_landmassCache, sourceId);
+}
+
+/** @internal — exposed for tests only */
+export function _resetLandmassCache() {
+  _landmassCache = null;
+  _landmassCachePromise = null;
 }
 
 function normalizeIssMarker(current) {
@@ -773,7 +793,7 @@ export async function loadUkraineConflictOpenSourceExample(options = {}) {
     arcs: [],
     animations: [],
     camera: { lat: 50.4501, lon: 30.5234 },
-    dataSources: [DS_GEO_COUNTRIES, DS_NATURAL_EARTH],
+    dataSources: [DS_GEO_COUNTRIES, DS_NATURAL_EARTH, DS_DEEPSTATEMAP],
   };
 }
 
