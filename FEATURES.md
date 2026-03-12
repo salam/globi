@@ -50,7 +50,20 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Add curved ocean and continent labels rendered on the globe surface.
 - [x] Add `showBorders` and `showLabels` planet config flags with editor toggles.
 
+## Data Source Attribution
+- [x] Scene-level `dataSources[]` array with id, name, shortName, url, description, license
+- [x] Per-entity `sourceId` field on markers, paths, arcs, and regions
+- [x] Abbreviated attribution label at bottom-right with middle-dot-separated shortNames
+- [x] Attribution icon (person-in-circle) before label text
+- [x] Slide-in panel with full source details, clickable links, and selectable text
+- [x] Three-section panel: visible sources, outside current view, without data for this visualization
+- [x] Viewport-aware dynamic updates: only sources with visible entities shown in abbreviated label
+- [x] Panel dismissal via label click, click-outside, × button, Escape key
+- [x] `showAttribution` viewerUi toggle (defaults to true)
+- [x] All 7 example loaders updated with dataSources and sourceId
+
 ## Scene Data Model
+
 - [x] Define versioned schema for `Marker`, `Path`, `Arc`, `Region`, `Animation`.
 - [x] Add runtime validation and migration for scene JSON.
 - [x] Support multilingual marker content (`name`/`description` per locale).

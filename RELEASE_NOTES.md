@@ -2,6 +2,15 @@
 
 ## Version 1.x.x (Thu, Mar 12 2026)
 
+* Data source attribution label at bottom-right of the globe viewer — shows abbreviated source names (e.g. NE · RC · ISS) with an attribution icon
+* Click the attribution label to open a slide-in panel with full source details, clickable URLs, and license info
+* Attribution dynamically updates on pan/zoom: only sources with entities visible in the viewport appear in the abbreviated label
+* Panel shows three sections: active data sources, sources outside current view, and sources without data for this visualization
+* All 7 example scenes now carry `dataSources` metadata and per-entity `sourceId` references
+* New `showAttribution` viewer UI toggle (on by default)
+
+## Version 1.x.x (Thu, Mar 12 2026, morning)
+
 * New example: "Vessel Tracking (Multi-Source)" — shows 21 naval vessels from 5 nations on the globe with nation-colored markers and dashed trail paths
 * Curated OSINT dataset covers US, French, British, Russian, and Chinese carriers and amphibious ships (March 2026 deployment snapshot)
 * Vessel aggregator CLI tool (`tools/vessel-aggregator.js`) merges OSINT data with live AIS feeds from AISHub and VesselFinder
@@ -25,6 +34,10 @@
 * Fixed download script compatibility with macOS default bash
 * Smart callout clustering: nearby markers automatically stack as cascading cards (2-3 markers) or collapse into expandable group badges (4+ markers)
 * Configurable clustering threshold via `calloutCluster.thresholdDeg` scene property (default: 2 degrees)
+* Zoom-aware clustering: clusters resolve dynamically as you zoom in — markers that overlap at world view separate into individual callouts at close range
+* Zoom-aware callout altitude: leader lines shorten when zoomed in, keeping labels closer to the surface
+* Fixed cluster badge rendering: group badges now display with a styled pill shape instead of unstyled text
+* Fixed clustered callout visibility: collapsed cluster members no longer leak through as label-less ghosts
 
 ## Version 1.x.x (Tue, Mar 11 2026)
 
