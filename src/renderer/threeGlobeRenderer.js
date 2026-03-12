@@ -62,6 +62,7 @@ export class ThreeGlobeRenderer {
   #atmosphereMesh = null;
   #ringMesh = null;
   #obliquityGroup = null;
+  #obliquityDeg = 0;
   #currentBodyId = null;
   #graticule = null;
   #markerGroup = null;
@@ -337,7 +338,8 @@ export class ThreeGlobeRenderer {
     }
 
     // --- Apply obliquity tilt ---
-    obliquityGroup.rotation.x = (resolvedPlanet.obliquity ?? 0) * DEG_TO_RAD;
+    this.#obliquityDeg = resolvedPlanet.obliquity ?? 0;
+    obliquityGroup.rotation.x = this.#obliquityDeg * DEG_TO_RAD;
 
     // --- Apply initial globe rotation ---
     this.#applyGlobeRotation();
@@ -416,19 +418,22 @@ export class ThreeGlobeRenderer {
       }
     }
 
-    if (this.#borderGroup && this.#borderGeoJson) {
-      const showBorders = (scene.planet ?? {}).showBorders !== false;
-      this.#borderManager.update(this.#borderGroup, this.#borderGeoJson, { show: showBorders });
-    }
-
-    if (this.#geoLabelGroup) {
-      const showLabels = (scene.planet ?? {}).showLabels !== false;
-      this.#geoLabelManager.update(this.#geoLabelGroup, { showLabels });
-    }
-
     // Update textures from planet config
     const planet = scene.planet ?? {};
     const resolvedPlanet = resolvePlanetConfig(planet);
+
+    // Borders are Earth-specific — hide on other bodies
+    if (this.#borderGroup && this.#borderGeoJson) {
+      const isEarth = resolvedPlanet.id === 'earth';
+      const showBorders = isEarth && (scene.planet ?? {}).showBorders !== false;
+      this.#borderManager.update(this.#borderGroup, this.#borderGeoJson, { show: showBorders });
+    }
+
+    // Body-specific labels — rebuild when body changes
+    if (this.#geoLabelGroup) {
+      const showLabels = (scene.planet ?? {}).showLabels !== false;
+      this.#geoLabelManager.update(this.#geoLabelGroup, { showLabels, bodyId: resolvedPlanet.id });
+    }
 
     // Detect body change — teardown old meshes and rebuild
     if (resolvedPlanet.id !== this.#currentBodyId && this.#globeGroup) {
@@ -488,15 +493,20 @@ export class ThreeGlobeRenderer {
     const raycaster = new Raycaster();
     raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.#camera);
 
-    // Test markers first
+    // Test markers first (recursive to hit children of 3D model groups)
     const markerObjects = this.#markerGroup ? [...this.#markerGroup.children] : [];
-    const markerHits = raycaster.intersectObjects(markerObjects, false);
+    const markerHits = raycaster.intersectObjects(markerObjects, true);
     if (markerHits.length > 0) {
       const hit = markerHits[0];
-      const markerId = hit.object.userData?.markerId;
+      // Walk up from the hit mesh to find the object carrying markerId
+      let target = hit.object;
+      while (target && !target.userData?.markerId) {
+        target = target.parent;
+      }
+      const markerId = target?.userData?.markerId;
       const markerData = this.#markerManager.getMarkerMap()?.get(markerId);
       if (markerData) {
-        const anchorPos = this.#worldToClient(hit.object.position);
+        const anchorPos = this.#worldToClient((target ?? hit.object).position);
         return {
           kind: 'marker',
           id: markerId,
@@ -537,6 +547,22 @@ export class ThreeGlobeRenderer {
     }
 
     return null;
+  }
+
+  /**
+   * Check if client coordinates land on a callout label (CSS2D overlay).
+   * Returns the same hit shape as hitTest, or null.
+   */
+  calloutHitTest(clientX, clientY) {
+    const el = document.elementFromPoint(clientX, clientY);
+    const calloutEl = el?.closest?.('.globe-callout-label');
+    if (!calloutEl) return null;
+    const id = calloutEl.dataset?.markerId;
+    if (!id) return null;
+    const markerData = this.#markerManager.getMarkerMap()?.get(id);
+    if (!markerData) return null;
+    const anchorPos = this.#worldToClient(markerData.object.position);
+    return { kind: 'marker', id, entity: markerData.marker, anchor: anchorPos };
   }
 
   /**
@@ -677,11 +703,11 @@ export class ThreeGlobeRenderer {
   /** Apply the current centerLon/centerLat as globe group Euler angles. */
   #applyGlobeRotation() {
     if (!this.#globeGroup) return;
-    // latLonToCartesian puts (0,0) on +X with z negated for Three.js UV alignment.
-    // Camera at +Z. XYZ order: Y rotation (longitude) applied to point first,
-    // then X rotation (latitude tilt). This decouples lat/lon centering exactly.
+    // XYZ order: Y rotation (longitude) applied to point first,
+    // then X rotation (latitude tilt). Subtract obliquity so the combined
+    // parent obliquity + child latitude = centerLat exactly.
     this.#globeGroup.rotation.set(
-      this.#centerLat * DEG_TO_RAD,
+      (this.#centerLat - this.#obliquityDeg) * DEG_TO_RAD,
       -(this.#centerLon + 90) * DEG_TO_RAD,
       0,
       'XYZ'
@@ -758,8 +784,9 @@ export class ThreeGlobeRenderer {
     }
 
     // Update obliquity on the outer group
+    this.#obliquityDeg = planet.obliquity ?? 0;
     if (this.#obliquityGroup) {
-      this.#obliquityGroup.rotation.x = (planet.obliquity ?? 0) * DEG_TO_RAD;
+      this.#obliquityGroup.rotation.x = this.#obliquityDeg * DEG_TO_RAD;
     }
 
     // Track current body
@@ -783,6 +810,46 @@ export class ThreeGlobeRenderer {
     if (paths.atmosphereOverlay) {
       this.#loadTexture(paths.atmosphereOverlay, 'atmosphereTexture');
     }
+
+    // Load ring texture if present
+    if (paths.ring && this.#ringMesh) {
+      this.#loadRingTexture(paths.ring);
+    }
+  }
+
+  #loadRingTexture(uri) {
+    if (this.#loadedTextures.has(uri)) {
+      const cached = this.#loadedTextures.get(uri);
+      if (this.#ringMesh?.material) {
+        this.#ringMesh.material.map = cached;
+        this.#ringMesh.material.alphaMap = cached;
+        this.#ringMesh.material.opacity = 1.0;
+        this.#ringMesh.material.needsUpdate = true;
+      }
+      return;
+    }
+
+    this.#textureLoader.load(
+      uri,
+      (loadedTex) => {
+        loadedTex.colorSpace = SRGBColorSpace;
+        this.#loadedTextures.set(uri, loadedTex);
+        if (this.#ringMesh?.material) {
+          this.#ringMesh.material.map = loadedTex;
+          this.#ringMesh.material.alphaMap = loadedTex;
+          this.#ringMesh.material.opacity = 1.0;
+          this.#ringMesh.material.needsUpdate = true;
+        }
+        this.#dirty = true;
+      },
+      undefined,
+      (err) => {
+        const event = new CustomEvent('textureError', { detail: { uri, uniformName: 'ringTexture', error: err } });
+        if (this.#container) {
+          this.#container.dispatchEvent(event);
+        }
+      }
+    );
   }
 
   /**
