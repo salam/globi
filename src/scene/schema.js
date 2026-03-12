@@ -1,5 +1,6 @@
 import { resolvePlanetConfig } from './celestial.js';
 import { getDefaultViewerUiConfig, normalizeViewerUiConfig, validateViewerUiConfig } from './viewerUi.js';
+import { greatCircleDistanceDegrees, latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
 
 export const SCENE_SCHEMA_VERSION = 1;
@@ -16,6 +17,8 @@ export function createEmptyScene(locale = 'en') {
     arcs: [],
     regions: [],
     animations: [],
+    filters: [],
+    timeRange: null,
   };
 }
 
@@ -62,6 +65,7 @@ function normalizeMarker(marker = {}) {
       ? marker.calloutMode
       : 'always',
     calloutLabel: normalizeLocalizedText(marker.calloutLabel),
+    timestamp: typeof marker.timestamp === 'string' ? marker.timestamp : (marker.timestamp ?? null),
   };
 }
 
@@ -120,9 +124,111 @@ function normalizeAnimation(animation = {}) {
   };
 }
 
+function normalizeFilterOption(option = {}) {
+  return {
+    value: String(option.value ?? ''),
+    label: String(option.label ?? ''),
+    categories: Array.isArray(option.categories) ? option.categories.map(String) : [],
+  };
+}
+
+function normalizeFilter(filter = {}) {
+  return {
+    id: String(filter.id ?? ''),
+    label: String(filter.label ?? ''),
+    options: Array.isArray(filter.options) ? filter.options.map(normalizeFilterOption) : [],
+  };
+}
+
+function normalizeTimeRange(tr) {
+  if (!tr || typeof tr !== 'object') return null;
+  const min = typeof tr.min === 'string' ? tr.min : '';
+  const max = typeof tr.max === 'string' ? tr.max : '';
+  if (!min || !max) return null;
+  return { min, max };
+}
+
 function cryptoRandomId(prefix) {
   const suffix = Math.random().toString(36).slice(2, 10);
   return `${prefix}-${suffix}`;
+}
+
+function normalizeCalloutCluster(config) {
+  const c = ensureObject(config, {});
+  return {
+    enabled: typeof c.enabled === 'boolean' ? c.enabled : true,
+    thresholdDeg: Number.isFinite(c.thresholdDeg) && c.thresholdDeg > 0
+      ? c.thresholdDeg
+      : 2,
+  };
+}
+
+function computeClusterCentroid(members) {
+  let sx = 0, sy = 0, sz = 0;
+  for (const m of members) {
+    const p = latLonToCartesian(m.lat, m.lon, 1, 0);
+    sx += p.x; sy += p.y; sz += p.z;
+  }
+  const n = members.length;
+  return cartesianToLatLon(sx / n, sy / n, sz / n);
+}
+
+function clusterMarkers(markers, config) {
+  for (const m of markers) {
+    m._clusterId = null;
+    m._clusterIndex = 0;
+    m._clusterSize = 1;
+    m._clusterCenter = null;
+  }
+
+  if (!config.enabled) return;
+
+  const threshold = config.thresholdDeg;
+  const eligible = markers.filter(m => m.calloutMode !== 'none');
+  const assigned = new Set();
+  let clusterId = 0;
+
+  const sorted = [...eligible].sort((a, b) => a.lat - b.lat);
+
+  for (const seed of sorted) {
+    if (assigned.has(seed.id)) continue;
+
+    const candidates = [seed];
+    for (const other of sorted) {
+      if (other.id === seed.id || assigned.has(other.id)) continue;
+      const dist = greatCircleDistanceDegrees(seed, other);
+      if (dist <= threshold) candidates.push(other);
+    }
+
+    let members = candidates;
+    let stable = false;
+    while (!stable) {
+      const centroid = computeClusterCentroid(members);
+      const kept = [];
+      for (const m of members) {
+        const dist = greatCircleDistanceDegrees(m, centroid);
+        if (dist <= threshold) kept.push(m);
+      }
+      stable = kept.length === members.length;
+      members = kept;
+      if (members.length <= 1) break;
+    }
+
+    if (members.length < 2) {
+      assigned.add(seed.id);
+      continue;
+    }
+
+    const cid = `cluster_${clusterId++}`;
+    const centroid = computeClusterCentroid(members);
+    for (let i = 0; i < members.length; i++) {
+      members[i]._clusterId = cid;
+      members[i]._clusterIndex = i;
+      members[i]._clusterSize = members.length;
+      members[i]._clusterCenter = { lat: centroid.lat, lon: centroid.lon };
+      assigned.add(members[i].id);
+    }
+  }
 }
 
 export function normalizeScene(input) {
@@ -130,7 +236,7 @@ export function normalizeScene(input) {
   const theme = scene.theme === 'light' || scene.theme === 'dark'
     ? scene.theme
     : 'dark';
-  return {
+  const result = {
     version: Number(scene.version ?? SCENE_SCHEMA_VERSION),
     locale: typeof scene.locale === 'string' ? scene.locale : 'en',
     theme,
@@ -141,7 +247,12 @@ export function normalizeScene(input) {
     arcs: Array.isArray(scene.arcs) ? scene.arcs.map(normalizeArc) : [],
     regions: Array.isArray(scene.regions) ? scene.regions.map(normalizeRegion) : [],
     animations: Array.isArray(scene.animations) ? scene.animations.map(normalizeAnimation) : [],
+    filters: Array.isArray(scene.filters) ? scene.filters.map(normalizeFilter) : [],
+    timeRange: normalizeTimeRange(scene.timeRange),
+    calloutCluster: normalizeCalloutCluster(scene.calloutCluster),
   };
+  clusterMarkers(result.markers, result.calloutCluster);
+  return result;
 }
 
 function validatePoint(point, pointer, errors) {
