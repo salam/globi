@@ -2,11 +2,29 @@
 
 ## Version 1.x.x (Thu, Mar 12 2026)
 
+* New example: "Vessel Tracking (Multi-Source)" — shows 21 naval vessels from 5 nations on the globe with nation-colored markers and dashed trail paths
+* Curated OSINT dataset covers US, French, British, Russian, and Chinese carriers and amphibious ships (March 2026 deployment snapshot)
+* Vessel aggregator CLI tool (`tools/vessel-aggregator.js`) merges OSINT data with live AIS feeds from AISHub and VesselFinder
+* Trail paths show historical vessel movement where multiple positions are known (e.g. Ford's Norfolk → Caribbean → Mediterranean → Red Sea transit)
+* Config-based API keys: works in OSINT-only mode by default, add API keys to enhance with live AIS positions
+* Renamed example from "Aircraft Carriers (Open Sources)" to "Naval Vessels (OSINT)" — now loads curated vessel data with per-vessel timestamps shown in brackets
+* New example: "Civil Shipping (Straits)" — 18 sample vessels across 9 major global shipping straits (Malacca, Hormuz, Suez, Panama, Gibraltar, English Channel, Bab el-Mandeb, Bosphorus, Lombok)
+* Configurable marker filter dropdown in the viewer toolbar — scenes can define filter groups that show/hide subsets of markers by category
+* Capitals example now includes a "UN Members" filter to show all capitals or only UN-member capitals
+* Naval vessels example includes a nation filter to show all navies or select by US, French, British, Russian, or Chinese navy
+* Capitals example now includes a "NATO Members" filter alongside "UN Members" — uses compound categories so overlapping membership works correctly
+* Vessel Tracking (Multi-Source) example now includes a nation filter (same as Naval Vessels OSINT)
+* Civil Shipping example now includes a strait filter to view vessels in a specific shipping chokepoint
+* Time range filter (from/to date picker) on military vessel examples — narrow the displayed vessels by observation date
 * Body-specific landmark labels: each planet/moon shows its own geographic features (Olympus Mons on Mars, Great Red Spot on Jupiter, Sea of Tranquility on the Moon, etc.)
 * Earth borders automatically hidden when viewing non-Earth bodies
+* "Unload All" option in the example dropdown clears all markers, paths, arcs, and regions
+* Switching to a different planetary body automatically unloads any loaded example (examples are Earth-specific)
 * Ring textures now load and display correctly for Saturn
 * Fixed texture path resolution for all bodies (absolute URL paths)
 * Fixed download script compatibility with macOS default bash
+* Smart callout clustering: nearby markers automatically stack as cascading cards (2-3 markers) or collapse into expandable group badges (4+ markers)
+* Configurable clustering threshold via `calloutCluster.thresholdDeg` scene property (default: 2 degrees)
 
 ## Version 1.x.x (Tue, Mar 11 2026)
 

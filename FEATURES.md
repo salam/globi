@@ -81,6 +81,7 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Create WYSIWYG editor shell with globe preview integration.
 - [x] Add forms for markers, arcs, paths, and regions.
 - [x] Add loadable example scenes (capitals, continents+seas, ISS live, and open-source conflict/carrier context presets).
+- [x] Add "Unload All" option to example dropdown and auto-unload examples on body switch.
 - [ ] Add timeline editor for keyframe authoring.
 - [x] Add multilingual content editing UI.
 - [x] Add inline inspect panel for immediate click-and-edit updates.
@@ -96,6 +97,7 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [ ] Reach target performance envelope (~1000 markers, 100 paths).
 - [ ] Test compatibility on Chrome, Firefox, Safari, Edge, iOS, Android.
 - [x] Sanitize callout HTML/Markdown to prevent XSS.
+- [x] Smart callout clustering — nearby markers auto-stack (2-3) or collapse into group badges (4+).
 - [x] Add i18n dictionaries for `en`, `de`, `fr`, `it`.
 - [ ] Add screen-reader and keyboard accessibility checks.
 
@@ -104,6 +106,26 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Phase 2 (Weeks 5-8): advanced layers + animations.
 - [x] Phase 3 (Weeks 9-12): editor + import/export + i18n.
 - [ ] Phase 4 (Weeks 13-14): performance, accessibility, hardening.
+
+## Vessel Data Pipeline
+- [x] Vessel aggregator CLI tool (`tools/vessel-aggregator.js`) for merging OSINT + AIS sources
+- [x] AISHub and VesselFinder adapter support with API key config
+- [x] MMSI-based and name-fallback deduplication across sources
+- [x] Trail deduplication (0.1 deg / 1 hour threshold)
+- [x] Unified vessel schema output to `data/vessels.json`
+- [x] OSINT-only mode when no config file or API keys present
+- [x] Curated OSINT dataset with 21 vessels from 5 nations (US/FR/GB/RU/CN)
+- [x] Globi example loader "Vessel Tracking (Multi-Source)" with nation-colored markers and dashed trail paths
+- [x] Naval Vessels (OSINT) example with timestamps in names and trail paths
+- [x] Civil Shipping (Global Straits) example with 18 vessels across 9 major shipping chokepoints
+- [x] Configurable marker filter system (scene `filters` array, viewer dropdown)
+- [x] UN membership filter for capitals example
+- [x] NATO membership filter for capitals example (compound categories)
+- [x] Nation filter for naval vessels example (US/FR/GB/RU/CN)
+- [x] Nation filter for vessel tracking (multi-source) example
+- [x] Strait filter for civil shipping example (9 shipping straits)
+- [x] Time range filter (from/to date inputs) for military vessel examples
+- [x] Marker `timestamp` field for time-based filtering
 
 ## Remaining Gaps
 - [ ] Replace placeholder USDZ export with production-grade USD/USDZ packaging.
