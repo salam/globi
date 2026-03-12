@@ -32,6 +32,7 @@ import { getSunLightVector } from '../math/solar.js';
 import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
 import { latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
 import { clusterMarkers } from '../scene/schema.js';
+import { getThemePalette } from './themePalette.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -65,6 +66,7 @@ export class ThreeGlobeRenderer {
   #obliquityGroup = null;
   #obliquityDeg = 0;
   #currentBodyId = null;
+  #currentTheme = null;
   #graticule = null;
   #markerGroup = null;
   #arcGroup = null;
@@ -221,7 +223,9 @@ export class ThreeGlobeRenderer {
     }
     webglRenderer.setSize(width, height);
     webglRenderer.setPixelRatio(globalThis.devicePixelRatio ?? 1);
-    webglRenderer.setClearColor(0x020b18, 1);
+    webglRenderer.setClearColor(
+      getThemePalette(options.initialScene?.theme ?? 'photo').background, 1,
+    );
     webglRenderer.outputColorSpace = SRGBColorSpace;
     const canvas = webglRenderer.domElement;
     canvas.style.display = 'block';
@@ -273,6 +277,10 @@ export class ThreeGlobeRenderer {
     const resolvedPlanet = resolvePlanetConfig(planet);
     this.#currentBodyId = resolvedPlanet.id;
 
+    const initialTheme = options.initialScene?.theme ?? 'photo';
+    const palette = getThemePalette(initialTheme);
+    this.#currentTheme = initialTheme;
+
     const shaderMode = resolvedPlanet.id === 'earth' ? 'dayNight'
       : resolvedPlanet.id === 'venus' ? 'venusAtmosphere'
       : 'single';
@@ -280,19 +288,27 @@ export class ThreeGlobeRenderer {
     const isSunMode = resolvedPlanet.lightingMode === 'sun';
     this.#lightingMode = isSunMode ? 'sun' : 'fixed';
 
+    let wireframeMode = null;
+    if (!palette.useTextures) {
+      wireframeMode = palette.shaded ? 'shaded' : 'flat';
+    }
+
     const bodyMesh = createBodyMesh({
       shaderMode,
       sunDirection: this.#sunDirection,
       sunLocked: isSunMode,
       rimColor: resolvedPlanet.atmosphere
         ? hexToColor(resolvedPlanet.atmosphere.scatterColor)
-        : new Color(0.3, 0.5, 1.0),
+        : new Color(...palette.rimColor),
+      wireframeMode,
+      desaturate: palette.desaturate,
+      flatLighting: palette.flatLighting ? 1.0 : 0.0,
     });
     this.#bodyMesh = bodyMesh;
     globeGroup.add(bodyMesh);
 
     // --- Graticule ---
-    const graticule = createGraticule();
+    const graticule = createGraticule({ color: palette.graticuleColor, opacity: palette.graticuleOpacity });
     this.#graticule = graticule;
     globeGroup.add(graticule);
 
@@ -323,7 +339,12 @@ export class ThreeGlobeRenderer {
           this.#borderGeoJson = data;
           if (this.#lastScene) {
             const show = this.#lastScene.planet?.showBorders !== false;
-            this.#borderManager.update(this.#borderGroup, data, { show });
+            const pal = getThemePalette(this.#currentTheme || 'photo');
+            this.#borderManager.update(this.#borderGroup, data, {
+              show,
+              color: pal.borderColor,
+              opacity: pal.borderOpacity,
+            });
             this.#dirty = true;
           }
         }
@@ -331,7 +352,7 @@ export class ThreeGlobeRenderer {
       .catch(() => {});
 
     // --- Atmosphere mesh (inside globeGroup so it tilts with obliquity) ---
-    if (resolvedPlanet.atmosphere?.enabled) {
+    if (resolvedPlanet.atmosphere?.enabled && palette.atmosphereEnabled) {
       const atmosphereMesh = createAtmosphereMesh({
         sunDirection: this.#sunDirection,
         sunLocked: isSunMode,
@@ -378,6 +399,21 @@ export class ThreeGlobeRenderer {
     this.#lastScene = scene;
     this.#dirty = true;
 
+    const theme = scene.theme ?? 'photo';
+    const palette = getThemePalette(theme);
+
+    // Update clear color on every render (cheap)
+    if (this.#webglRenderer) {
+      this.#webglRenderer.setClearColor(palette.background, 1);
+    }
+
+    // Detect theme change — trigger full body + graticule rebuild
+    if (theme !== this.#currentTheme) {
+      this.#currentTheme = theme;
+      const resolvedPl = resolvePlanetConfig(scene.planet ?? {});
+      this.#rebuildForTheme(resolvedPl, palette);
+    }
+
     // Update sub-managers with new scene data
     const locale = scene.locale ?? 'en';
 
@@ -396,7 +432,10 @@ export class ThreeGlobeRenderer {
     // Callout manager + CSS2D labels
     if (this.#calloutGroup) {
       this.#lastClusterZoom = this.#zoom;
-      this.#calloutManager.update(this.#calloutGroup, scene.markers ?? [], locale, this.#zoom);
+      this.#calloutManager.update(this.#calloutGroup, scene.markers ?? [], locale, {
+        leaderColor: palette.leaderColor,
+        textColor: palette.calloutTextColor,
+      });
 
       if (typeof CSS2DObject !== 'undefined' && this.#globeGroup) {
         // Remove old CSS2D label objects from globe group
@@ -475,18 +514,30 @@ export class ThreeGlobeRenderer {
     if (this.#borderGroup && this.#borderGeoJson) {
       const isEarth = resolvedPlanet.id === 'earth';
       const showBorders = isEarth && (scene.planet ?? {}).showBorders !== false;
-      this.#borderManager.update(this.#borderGroup, this.#borderGeoJson, { show: showBorders });
+      this.#borderManager.update(this.#borderGroup, this.#borderGeoJson, {
+        show: showBorders,
+        color: palette.borderColor,
+        opacity: palette.borderOpacity,
+      });
     }
 
     // Body-specific labels — rebuild when body changes
     if (this.#geoLabelGroup) {
       const showLabels = (scene.planet ?? {}).showLabels !== false;
-      this.#geoLabelManager.update(this.#geoLabelGroup, { showLabels, bodyId: resolvedPlanet.id });
+      this.#geoLabelManager.update(this.#geoLabelGroup, {
+        showLabels, bodyId: resolvedPlanet.id, labelStyles: palette.labelStyles,
+      });
     }
 
     // Detect body change — teardown old meshes and rebuild
     if (resolvedPlanet.id !== this.#currentBodyId && this.#globeGroup) {
       this.#rebuildBody(resolvedPlanet);
+    }
+
+    // Graticule visibility from palette or scene-level override
+    if (this.#graticule) {
+      this.#graticule.visible = palette.graticuleVisible ||
+        (scene.planet?.showGraticule === true);
     }
 
     this.#updateTextures(resolvedPlanet);
@@ -789,7 +840,28 @@ export class ThreeGlobeRenderer {
     this.#camera.position.set(0, 0, CAMERA_BASE_DISTANCE / this.#zoom);
   }
 
-  #rebuildBody(planet) {
+  #rebuildForTheme(planet, palette) {
+    // Rebuild body mesh with palette-aware settings
+    this.#rebuildBody(planet, palette);
+
+    // Rebuild graticule with new colors
+    if (this.#graticule && this.#globeGroup) {
+      this.#globeGroup.remove(this.#graticule);
+      this.#graticule.geometry?.dispose();
+      this.#graticule.material?.dispose();
+    }
+    const graticule = createGraticule({ color: palette.graticuleColor, opacity: palette.graticuleOpacity });
+    this.#graticule = graticule;
+    if (this.#globeGroup) this.#globeGroup.add(graticule);
+
+    // Reset border manager so it rebuilds with new colors
+    this.#borderManager.dispose();
+    this.#borderManager = new BorderManager();
+  }
+
+  #rebuildBody(planet, palette = null) {
+    const p = palette || getThemePalette(this.#currentTheme || 'photo');
+
     // Teardown old body mesh
     if (this.#bodyMesh) {
       this.#globeGroup.remove(this.#bodyMesh);
@@ -821,19 +893,27 @@ export class ThreeGlobeRenderer {
 
     // Rebuild body mesh
     const isSunMode = this.#lightingMode === 'sun';
+    let wireframeMode = null;
+    if (!p.useTextures) {
+      wireframeMode = p.shaded ? 'shaded' : 'flat';
+    }
+
     const bodyMesh = createBodyMesh({
       shaderMode,
       sunDirection: this.#sunDirection,
       sunLocked: isSunMode,
       rimColor: planet.atmosphere
         ? hexToColor(planet.atmosphere.scatterColor)
-        : new Color(0.3, 0.5, 1.0),
+        : new Color(...p.rimColor),
+      wireframeMode,
+      desaturate: p.desaturate,
+      flatLighting: p.flatLighting ? 1.0 : 0.0,
     });
     this.#bodyMesh = bodyMesh;
     this.#globeGroup.add(bodyMesh);
 
     // Rebuild atmosphere (if applicable)
-    if (planet.atmosphere?.enabled) {
+    if (planet.atmosphere?.enabled && p.atmosphereEnabled) {
       const atmosphereMesh = createAtmosphereMesh({
         sunDirection: this.#sunDirection,
         sunLocked: isSunMode,
@@ -1046,7 +1126,11 @@ export class ThreeGlobeRenderer {
     clusterMarkers(markers, zoomAdjusted);
 
     const locale = scene.locale ?? 'en';
-    this.#calloutManager.update(this.#calloutGroup, markers, locale, this.#zoom);
+    const reclusterPalette = getThemePalette(this.#currentTheme || 'photo');
+    this.#calloutManager.update(this.#calloutGroup, markers, locale, {
+      leaderColor: reclusterPalette.leaderColor,
+      textColor: reclusterPalette.calloutTextColor,
+    });
     this.#lastClusterZoom = this.#zoom;
 
     if (typeof CSS2DObject !== 'undefined') {
