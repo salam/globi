@@ -378,7 +378,7 @@ const TEMPLATE = `
 
     .attribution-label {
       position: absolute;
-      left: 12px;
+      right: 12px;
       bottom: 6px;
       z-index: 10;
       font-size: 10px;
