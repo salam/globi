@@ -656,6 +656,11 @@ export class ThreeGlobeRenderer {
     return this.#worldToClient(worldPos);
   }
 
+  getCanvasRect() {
+    if (!this.#webglRenderer) return null;
+    return this.#webglRenderer.domElement.getBoundingClientRect();
+  }
+
   /**
    * Tear down all GPU resources and DOM elements.
    */

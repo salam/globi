@@ -181,11 +181,24 @@ export class GlobeController {
     }
   }
 
+  filterMarkers(matchingIds) {
+    if (typeof this.#renderer.filterMarkers === 'function') {
+      this.#renderer.filterMarkers(matchingIds);
+    }
+  }
+
   projectPointToClient(point) {
     if (typeof this.#renderer.projectPointToClient !== 'function') {
       return null;
     }
     return this.#renderer.projectPointToClient(point);
+  }
+
+  getCanvasRect() {
+    if (typeof this.#renderer.getCanvasRect === 'function') {
+      return this.#renderer.getCanvasRect();
+    }
+    return null;
   }
 
   getCameraState() {
