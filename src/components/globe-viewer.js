@@ -1286,6 +1286,9 @@ export class GlobeViewerElement extends HTMLElement {
   #onPointerDown(event) {
     event.preventDefault();
     this.#stopFocusAnimation();
+    if (typeof this.#controller.startDrag === 'function') {
+      this.#controller.startDrag();
+    }
     this.#controller.pauseIdleRotation();
 
     this.#drag.active = true;
@@ -1366,6 +1369,9 @@ export class GlobeViewerElement extends HTMLElement {
     this.#drag.grabLatLon = null;
     this.#drag.wasOffDisk = false;
     this.#stage.releasePointerCapture?.(event.pointerId);
+    if (typeof this.#controller.endDrag === 'function') {
+      this.#controller.endDrag();
+    }
     this.#controller.resumeIdleRotation();
 
     const isClick = this.#drag.travel < 6;
@@ -1380,13 +1386,25 @@ export class GlobeViewerElement extends HTMLElement {
   }
 
   #onWheel(event) {
-    if (!this.#controller) {
-      return;
-    }
+    if (!this.#controller) return;
     event.preventDefault();
     this.#stopFocusAnimation();
+
+    const cursorLatLon = this.#controller.screenToLatLon(event.clientX, event.clientY);
+    const oldZoom = this.#controller.getCameraState().zoom;
     const delta = -event.deltaY * 0.0015;
     this.#controller.zoomBy(delta);
+    const newZoom = this.#controller.getCameraState().zoom;
+
+    if (cursorLatLon && oldZoom !== newZoom) {
+      const factor = 1 - oldZoom / newZoom;
+      const state = this.#controller.getCameraState();
+      this.#controller.panBy(
+        (cursorLatLon.lon - state.centerLon) * factor,
+        (cursorLatLon.lat - state.centerLat) * factor
+      );
+    }
+
     this.#updateNavigationHud();
   }
 
