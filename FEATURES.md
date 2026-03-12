@@ -27,6 +27,9 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Ring systems for Saturn, Jupiter, Uranus, Neptune
 - [x] Progressive texture loading (2K → 8K on zoom)
 - [x] Body-switching with automatic teardown/rebuild
+- [x] Body-specific landmark labels (Olympus Mons, Great Red Spot, Sea of Tranquility, etc.)
+- [x] Earth borders hidden on non-Earth bodies
+- [x] Ring texture loading for Saturn
 
 ## Core Globe
 - [x] Implement `<globe-viewer>` web component bootstrap (init, destroy, resize).

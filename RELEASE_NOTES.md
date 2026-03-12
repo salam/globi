@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 1.x.x (Thu, Mar 12 2026)
+
+* Body-specific landmark labels: each planet/moon shows its own geographic features (Olympus Mons on Mars, Great Red Spot on Jupiter, Sea of Tranquility on the Moon, etc.)
+* Earth borders automatically hidden when viewing non-Earth bodies
+* Ring textures now load and display correctly for Saturn
+* Fixed texture path resolution for all bodies (absolute URL paths)
+* Fixed download script compatibility with macOS default bash
+
 ## Version 1.x.x (Tue, Mar 11 2026)
 
 * Realistic surfaces for all 13 celestial bodies sourced from NASA/JPL and Solar System Scope
