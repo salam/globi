@@ -101,6 +101,9 @@ export class ThreeGlobeRenderer {
   // --- Container reference for resize/destroy ---
   #container = null;
 
+  // --- Cluster interaction state ---
+  #clusterCollapseListenerAdded = false;
+
   // ---------------------------------------------------------------------------
   // Public API — camera state
   // ---------------------------------------------------------------------------
@@ -386,6 +389,26 @@ export class ThreeGlobeRenderer {
         const labels = this.#calloutManager.createCSS2DLabels(CSS2DObject);
         for (const { id, object, div } of labels) {
           this.#globeGroup.add(object);
+
+          // Wire cluster badge click -> toggle expand
+          if (div.dataset.clusterId) {
+            div.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const cid = div.dataset.clusterId;
+              this.#calloutManager.toggleCluster(cid);
+              // Fire cluster click event
+              const clusterMembers = [...(this.#calloutManager.getCalloutData().entries())]
+                .filter(([mid, d]) => d.marker?._clusterId === cid && mid !== cid)
+                .map(([mid]) => mid);
+              const event = new CustomEvent('calloutClick', {
+                bubbles: true,
+                detail: { kind: 'cluster', id: cid, markerIds: clusterMembers },
+              });
+              this.#container.dispatchEvent(event);
+            });
+            continue;
+          }
+
           // Wire hover/click event listeners (E7)
           const mode = object.userData?.calloutMode;
           if (mode === 'hover') {
@@ -414,6 +437,16 @@ export class ThreeGlobeRenderer {
               this.#container.dispatchEvent(event);
             }
           });
+        }
+
+        // Collapse all clusters when clicking elsewhere on the globe
+        if (!this.#clusterCollapseListenerAdded) {
+          this.#container.addEventListener('pointerdown', (e) => {
+            if (!e.target.closest('.globe-callout-badge') && !e.target.closest('.globe-callout-label')) {
+              this.#calloutManager.collapseAllClusters();
+            }
+          });
+          this.#clusterCollapseListenerAdded = true;
         }
       }
     }
@@ -599,6 +632,11 @@ export class ThreeGlobeRenderer {
    */
   filterCallouts(matchingIds) {
     this.#calloutManager.filterCallouts(matchingIds);
+    this.#dirty = true;
+  }
+
+  filterMarkers(matchingIds) {
+    this.#markerManager.filterMarkers(matchingIds);
     this.#dirty = true;
   }
 

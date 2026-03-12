@@ -288,3 +288,59 @@ test('CalloutManager collapseAllClusters collapses expanded clusters', () => {
   manager.collapseAllClusters();
   assert.equal(manager.isClusterExpanded('cluster_0'), false);
 });
+
+// Task 7: click-elsewhere collapse integration
+
+test('CalloutManager collapseAllClusters is callable for click-elsewhere integration', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const center = { lat: 10, lon: 20 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: 10 + i * 0.1, lon: 20 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  manager.toggleCluster('cluster_0');
+  assert.equal(manager.isClusterExpanded('cluster_0'), true);
+  manager.collapseAllClusters();
+  assert.equal(manager.isClusterExpanded('cluster_0'), false);
+});
+
+// Task 8: Badge visibility culling and filterCallouts integration
+
+test('CalloutManager culls cluster badge on backface', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const center = { lat: 0, lon: 180 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: i * 0.1, lon: 180 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  const camPos = new Vector3(0, 0, 3);
+  const globeQuat = new Quaternion();
+  manager.updateVisibility(camPos, globeQuat);
+  const badgeData = manager.getCalloutData().get('cluster_0');
+  assert.ok(badgeData, 'badge entry should exist');
+  assert.equal(badgeData.visible, false);
+});
+
+test('CalloutManager filterCallouts dims badge when no members match', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const center = { lat: 10, lon: 20 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: 10 + i * 0.1, lon: 20 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  manager.filterCallouts(['nonexistent']);
+  const badgeData = manager.getCalloutData().get('cluster_0');
+  assert.ok(badgeData.line.material.opacity < 0.2, 'badge line should be dimmed');
+});
