@@ -56,9 +56,13 @@ Answers: "What is the user looking at right now?"
 
 ### Visibility determination
 
-Uses the renderer's `projectPointToClient()` to project each entity's coordinates to screen space, then checks against viewport bounds. For regions, checks if any vertex of the polygon is within bounds.
+Uses the renderer's `projectPointToClient()` to project each entity's coordinates to screen space, then checks against viewport bounds.
 
-Works with both ThreeGlobeRenderer (3D) and FlatMapRenderer (2D) — the query layer abstracts over both via the renderer's projection API.
+**Renderer abstraction:** The two renderers have incompatible signatures — `ThreeGlobeRenderer.projectPointToClient(point)` takes an object `{lat, lon, alt}`, while `FlatMapRenderer.projectPointToClient(lat, lon)` takes separate numbers. `ViewStateQuery` normalizes this with an internal `project(lat, lon, alt, renderer)` helper that branches on the renderer type.
+
+**Region visibility:** A region is visible if any polygon vertex projects into the viewport bounds OR the viewport center point falls inside the polygon's bounding box. This handles large regions (e.g. Russia) that fully contain the viewport with no vertices inside it.
+
+Works with both ThreeGlobeRenderer (3D) and FlatMapRenderer (2D).
 
 ## Module 2: Context Menu
 
@@ -68,6 +72,7 @@ Works with both ThreeGlobeRenderer (3D) and FlatMapRenderer (2D) — the query l
 
 - `contextmenu` event on `.stage` container (suppresses browser default)
 - Keyboard: Shift+F10 or Menu key (accessibility)
+- **Touch devices:** Long-press (500ms `touchstart` timeout, cancelled on `touchmove`/`touchend`) with subtle haptic-style visual feedback (brief scale pulse on the touch point)
 
 ### Menu items — contextual based on hit-test
 
@@ -75,8 +80,8 @@ Works with both ThreeGlobeRenderer (3D) and FlatMapRenderer (2D) — the query l
 
 | Item | Submenu | Action |
 |------|---------|--------|
-| Export visible → | GeoJSON, JSON, OBJ, USDZ | Export filtered scene via `viewStateQuery.getVisibleEntities()` then existing `src/io/` exporters |
-| Export full scene → | GeoJSON, JSON, OBJ, USDZ | Export full scene via existing exporters |
+| Export visible → | GeoJSON, JSON, OBJ, USDZ (greyed, "Coming soon") | Export filtered scene via `viewStateQuery.getVisibleEntities()` then existing `src/io/` exporters |
+| Export full scene → | GeoJSON, JSON, OBJ, USDZ (greyed, "Coming soon") | Export full scene via existing exporters |
 | Copy description → | Brief, Detailed | Copy screen reader text to clipboard via `viewDescriber` |
 | Copy LLMs.txt | — | Copy LLMs.txt to clipboard via `llmsTxt` formatter |
 | Copy coordinates | — | Copy lat/lon at click point |
@@ -149,7 +154,7 @@ Works with both ThreeGlobeRenderer (3D) and FlatMapRenderer (2D) — the query l
 ### Integration
 
 - Context menu "Copy description" items call `describeView()`
-- An `aria-live="polite"` region in the shadow DOM updates with brief description on significant view changes (debounced 500ms after interaction stops)
+- An `aria-live="polite"` region in the shadow DOM updates with brief description on significant view changes (debounced 500ms after interaction stops). This region uses `aria-atomic="true"` and `aria-label="View description"` to distinguish it from existing live regions (legend, loading indicator)
 - Agent interface exposes via `window.globi.describe(level)`
 
 ## Module 4: LLMs.txt Formatter
@@ -246,6 +251,8 @@ Set when `<globi-viewer>` connects; removed on disconnect.
 | `globi.addRegion(opts)` / `removeRegion(id)` | — | Region CRUD |
 | `globi.loadScene(sceneObj)` | object | Load entire scene |
 
+**Implementation note:** CRUD methods (add/remove/update) are thin wrappers that clone the current scene, mutate the clone's entity array, then call `viewer.setScene(clone)`. No new controller-level API is needed — the agent interface composes existing primitives. This is a public API addition on `window.globi` only, not on the web component itself.
+
 #### UI control
 
 | Method | Description |
@@ -281,29 +288,45 @@ Returns:
 - `window.globi` targets the first `<globi-viewer>` on the page
 - `window.globiAll` returns an array of all instances
 - Each `<globi-viewer>` element exposes `.globi` as an instance property: `document.querySelector('#my-globe').globi.flyTo(...)`
+- **Ownership policy:** When the current `window.globi` owner disconnects, ownership transfers to the next connected `<globi-viewer>` (if any). If none remain, `window.globi` is deleted.
 
 ### Layer B: DOM `data-*` Attributes
 
-Semantic attributes on elements within the shadow DOM, updated reactively:
+Two tiers — host-level attributes visible to any DOM query, and shadow-internal attributes for agents that pierce the shadow root.
+
+**Host element (visible to all agents):**
+
+| Attribute | Example |
+|-----------|---------|
+| `data-globi-role` | `"viewer"` |
+| `data-globi-body` | `"Earth"` |
+| `data-globi-projection` | `"globe"` |
+| `data-globi-zoom` | `"1.5"` |
+| `data-globi-actions` | `"toggleLegend,toggleFullscreen,toggleInspect,setProjection,flyTo,export"` |
+| `data-globi-marker-count` | `"12"` |
+
+**Shadow-internal elements (requires `.shadowRoot.querySelector()` or Playwright's nested `locator()`):**
 
 | Element | Attributes |
 |---------|------------|
-| `<globi-viewer>` | `data-globi-role="viewer"` `data-globi-body="Earth"` `data-globi-projection="globe"` `data-globi-zoom="1.5"` |
-| Control buttons | `data-globi-action="toggleLegend"` `data-globi-action="toggleFullscreen"` etc. |
+| Control buttons | `data-globi-action="toggleLegend"` etc. |
 | Legend items | `data-globi-action="filterCategory"` `data-globi-param="capitals"` |
 | Stage container | `data-globi-role="viewport"` |
 
-These allow generic browser agents (Playwright accessibility tree crawlers, Computer Use) to discover and reason about available actions without needing `window.globi`.
+**Note:** Shadow DOM internal attributes are not visible to `document.querySelector()`. Agents using Playwright must use `locator('globi-viewer').locator('[data-globi-action]')`. The host-level `data-globi-actions` attribute provides a flat manifest for agents that cannot pierce the shadow boundary.
 
 ## Integration & Wiring
 
 ### Initialization (`globi-viewer.js` `connectedCallback`)
 
-1. Create `ViewStateQuery` instance, passing the active renderer
+1. Create `ViewStateQuery` instance (renderer reference is null initially)
 2. Create `ContextMenu`, `ViewDescriber`, `AgentInterface` — each receives `ViewStateQuery` + the viewer element
 3. `AgentInterface` sets `window.globi` and applies `data-*` attributes
 4. `ContextMenu` attaches `contextmenu` listener to `.stage`
 5. `ViewDescriber` inserts `aria-live="polite"` region and starts debounced updates
+6. After the renderer initializes and fires the first `sceneChange` event, `ViewStateQuery` receives the renderer reference and becomes fully operational
+
+**Readiness:** Before the renderer is initialized, read commands (`globi.visible()`, `globi.entityAt()`, `globi.describe()`) return empty/null results gracefully. Agents should listen for `globi.on('sceneChange', ...)` as a readiness signal before querying view state. `globi.help()` works immediately (static manifest).
 
 ### Cleanup (`disconnectedCallback`)
 
