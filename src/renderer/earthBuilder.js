@@ -19,10 +19,32 @@ const EARTH_VERT = /* glsl */`
   }
 `;
 
+const EARTH_FRAG_WIREFRAME_SHADED = /* glsl */`
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+
+  void main() {
+    vec3 normal = normalize(vNormal);
+    vec3 viewDir = normalize(-vPosition);
+    float shade = dot(viewDir, normal);
+    vec3 color = vec3(0.6 + 0.4 * shade);
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
+
+const EARTH_FRAG_WIREFRAME_FLAT = /* glsl */`
+  void main() {
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  }
+`;
+
 const EARTH_FRAG_DAY_NIGHT = /* glsl */`
   uniform sampler2D dayTexture;
   uniform sampler2D nightTexture;
   uniform vec3 sunDirection;
+  uniform vec3 uRimColor;
+  uniform float desaturate;
+  uniform float flatLighting;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -41,16 +63,16 @@ const EARTH_FRAG_DAY_NIGHT = /* glsl */`
     // Night lights boosted slightly
     vec4 nightLit = nightColor * 1.4;
 
-    vec4 baseColor = mix(nightLit, dayColor, dayNightBlend);
-
-    // Fresnel rim tinted blue
+    // Fresnel rim tinted
     float fresnel = pow(1.0 - dot(viewDir, normal), 3.0);
-    vec3 rimColor = vec3(0.3, 0.5, 1.0) * fresnel * 0.6;
+    vec3 rimTint = uRimColor * fresnel * 0.6;
 
-    // Ambient fill on dark side
-    float ambient = 0.03 * (1.0 - dayNightBlend);
-
-    gl_FragColor = vec4(baseColor.rgb + rimColor + ambient, 1.0);
+    float lightMix = mix(dayNightBlend, 1.0, flatLighting);
+    vec4 litColor = mix(nightLit, dayColor, lightMix);
+    float ambient = 0.03 * (1.0 - lightMix);
+    float lum = dot(litColor.rgb, vec3(0.299, 0.587, 0.114));
+    vec3 desatColor = mix(litColor.rgb, vec3(lum), desaturate);
+    gl_FragColor = vec4(desatColor + rimTint + ambient, 1.0);
   }
 `;
 
@@ -58,6 +80,9 @@ const EARTH_FRAG_DAY_ONLY = /* glsl */`
   uniform sampler2D dayTexture;
   uniform sampler2D nightTexture;
   uniform vec3 sunDirection;
+  uniform vec3 uRimColor;
+  uniform float desaturate;
+  uniform float flatLighting;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -70,9 +95,11 @@ const EARTH_FRAG_DAY_ONLY = /* glsl */`
     vec4 dayColor = texture2D(dayTexture, vUv);
 
     float fresnel = pow(1.0 - dot(viewDir, normal), 3.0);
-    vec3 rimColor = vec3(0.3, 0.5, 1.0) * fresnel * 0.4;
+    vec3 rimTint = uRimColor * fresnel * 0.4;
 
-    gl_FragColor = vec4(dayColor.rgb + rimColor, 1.0);
+    float lum = dot(dayColor.rgb, vec3(0.299, 0.587, 0.114));
+    vec3 desatColor = mix(dayColor.rgb, vec3(lum), desaturate);
+    gl_FragColor = vec4(desatColor + rimTint, 1.0);
   }
 `;
 
@@ -80,6 +107,8 @@ const BODY_FRAG_SINGLE = /* glsl */`
   uniform sampler2D dayTexture;
   uniform vec3 sunDirection;
   uniform vec3 rimColor;
+  uniform float desaturate;
+  uniform float flatLighting;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -92,14 +121,16 @@ const BODY_FRAG_SINGLE = /* glsl */`
 
     float NdotL = max(0.0, dot(normal, lightDir));
     float ambient = 0.05;
-    float diffuse = NdotL;
+    float diffuse = mix(NdotL, 1.0, flatLighting);
 
     vec4 texColor = texture2D(dayTexture, vUv);
 
     float fresnel = pow(1.0 - dot(viewDir, normal), 3.0);
     vec3 rim = rimColor * fresnel * 0.4;
 
-    gl_FragColor = vec4(texColor.rgb * (ambient + diffuse) + rim, 1.0);
+    float lum = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+    vec3 desatColor = mix(texColor.rgb * (ambient + diffuse), vec3(lum * (ambient + diffuse)), desaturate);
+    gl_FragColor = vec4(desatColor + rim, 1.0);
   }
 `;
 
@@ -109,6 +140,8 @@ const BODY_FRAG_VENUS = /* glsl */`
   uniform float atmosphereTextureBlend;
   uniform vec3 sunDirection;
   uniform vec3 rimColor;
+  uniform float desaturate;
+  uniform float flatLighting;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -121,7 +154,7 @@ const BODY_FRAG_VENUS = /* glsl */`
 
     float NdotL = max(0.0, dot(normal, lightDir));
     float ambient = 0.05;
-    float diffuse = NdotL;
+    float diffuse = mix(NdotL, 1.0, flatLighting);
 
     vec4 surfaceColor = texture2D(dayTexture, vUv) * 0.3;
     vec4 atmoColor = texture2D(atmosphereTexture, vUv);
@@ -130,7 +163,9 @@ const BODY_FRAG_VENUS = /* glsl */`
     float fresnel = pow(1.0 - dot(viewDir, normal), 3.0);
     vec3 rim = rimColor * fresnel * 0.6;
 
-    gl_FragColor = vec4(texColor.rgb * (ambient + diffuse) + rim, 1.0);
+    float lum = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+    vec3 desatColor = mix(texColor.rgb * (ambient + diffuse), vec3(lum * (ambient + diffuse)), desaturate);
+    gl_FragColor = vec4(desatColor + rim, 1.0);
   }
 `;
 
@@ -216,16 +251,40 @@ export function createEarthMesh(options = {}) {
     dayTexture = null,
     nightTexture = null,
     sunDirection = DEFAULT_SUN_DIRECTION,
+    sunLocked = false,
     nightLayer = true,
+    wireframeMode = null,
+    desaturate = 0.0,
+    rimColor = [0.3, 0.5, 1.0],
+    flatLighting = 0.0,
   } = options;
 
   const geometry = new SphereGeometry(1, 64, 64);
+
+  if (wireframeMode === 'shaded') {
+    const material = new ShaderMaterial({
+      vertexShader: EARTH_VERT,
+      fragmentShader: EARTH_FRAG_WIREFRAME_SHADED,
+    });
+    return new Mesh(geometry, material);
+  }
+  if (wireframeMode === 'flat') {
+    const material = new ShaderMaterial({
+      vertexShader: EARTH_VERT,
+      fragmentShader: EARTH_FRAG_WIREFRAME_FLAT,
+    });
+    return new Mesh(geometry, material);
+  }
 
   const material = new ShaderMaterial({
     uniforms: {
       dayTexture: { value: dayTexture },
       nightTexture: { value: nightTexture },
       sunDirection: { value: sunDirection },
+      sunLocked: { value: sunLocked },
+      uRimColor: { value: rimColor },
+      desaturate: { value: desaturate },
+      flatLighting: { value: flatLighting },
     },
     vertexShader: EARTH_VERT,
     fragmentShader: nightLayer ? EARTH_FRAG_DAY_NIGHT : EARTH_FRAG_DAY_ONLY,
@@ -255,25 +314,47 @@ export function createBodyMesh(options = {}) {
     atmosphereTextureBlend = 0.85,
     sunDirection = DEFAULT_SUN_DIRECTION,
     rimColor = DEFAULT_ATMOSPHERE_COLOR,
+    wireframeMode = null,
+    desaturate = 0.0,
+    flatLighting = 0.0,
   } = options;
 
   const geometry = new SphereGeometry(1, 64, 64);
 
+  if (wireframeMode === 'shaded') {
+    const material = new ShaderMaterial({
+      vertexShader: EARTH_VERT,
+      fragmentShader: EARTH_FRAG_WIREFRAME_SHADED,
+    });
+    return new Mesh(geometry, material);
+  }
+  if (wireframeMode === 'flat') {
+    const material = new ShaderMaterial({
+      vertexShader: EARTH_VERT,
+      fragmentShader: EARTH_FRAG_WIREFRAME_FLAT,
+    });
+    return new Mesh(geometry, material);
+  }
+
   const uniforms = {
     dayTexture: { value: dayTexture },
     sunDirection: { value: sunDirection },
-    rimColor: { value: rimColor },
+    desaturate: { value: desaturate },
+    flatLighting: { value: flatLighting },
   };
 
   let fragmentShader;
   if (shaderMode === 'venusAtmosphere') {
+    uniforms.rimColor = { value: rimColor };
     uniforms.atmosphereTexture = { value: atmosphereTexture };
     uniforms.atmosphereTextureBlend = { value: atmosphereTextureBlend };
     fragmentShader = BODY_FRAG_VENUS;
   } else if (shaderMode === 'single') {
+    uniforms.rimColor = { value: rimColor };
     fragmentShader = BODY_FRAG_SINGLE;
   } else {
     // dayNight (Earth)
+    uniforms.uRimColor = { value: rimColor };
     uniforms.nightTexture = { value: nightTexture };
     fragmentShader = nightTexture ? EARTH_FRAG_DAY_NIGHT : EARTH_FRAG_DAY_ONLY;
   }

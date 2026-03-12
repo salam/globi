@@ -73,3 +73,39 @@ test('createBodyMesh shaderMode "dayNight" is backward compatible with createEar
   assert.ok('dayTexture' in body.material.uniforms);
   assert.ok('nightTexture' in body.material.uniforms);
 });
+
+test('createEarthMesh with wireframeMode "shaded" returns mesh without texture uniforms', () => {
+  const mesh = createEarthMesh({ wireframeMode: 'shaded' });
+  assert.ok(mesh instanceof Mesh);
+  assert.ok(mesh.material instanceof ShaderMaterial);
+  assert.ok(!('dayTexture' in mesh.material.uniforms));
+});
+
+test('createEarthMesh with wireframeMode "flat" returns mesh', () => {
+  const mesh = createEarthMesh({ wireframeMode: 'flat' });
+  assert.ok(mesh instanceof Mesh);
+  assert.ok(!('dayTexture' in mesh.material.uniforms));
+});
+
+test('createEarthMesh with desaturate uniform', () => {
+  const mesh = createEarthMesh({ desaturate: 1.0 });
+  assert.ok(mesh instanceof Mesh);
+  assert.equal(mesh.material.uniforms.desaturate.value, 1.0);
+});
+
+test('createEarthMesh with rimColor uniform', () => {
+  const mesh = createEarthMesh({ rimColor: [0.2, 0.2, 0.2] });
+  assert.ok(mesh instanceof Mesh);
+  assert.deepEqual(mesh.material.uniforms.uRimColor.value, [0.2, 0.2, 0.2]);
+});
+
+test('createEarthMesh with flatLighting uniform', () => {
+  const mesh = createEarthMesh({ flatLighting: 1.0 });
+  assert.ok(mesh instanceof Mesh);
+  assert.equal(mesh.material.uniforms.flatLighting.value, 1.0);
+});
+
+test('createBodyMesh with wireframeMode "shaded" works', () => {
+  const mesh = createBodyMesh({ wireframeMode: 'shaded' });
+  assert.ok(mesh instanceof Mesh);
+});
