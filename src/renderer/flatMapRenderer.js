@@ -8,6 +8,7 @@
 import { getProjection } from '../math/projections/index.js';
 import { greatCircleArc, densifyPath } from '../math/geo.js';
 import { FlatMapTextureProjector } from './flatMapTextureProjector.js';
+import { getBodyLabels } from './bodyLabels.js';
 
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 4;
@@ -40,6 +41,7 @@ export class FlatMapRenderer {
   #calloutFilter = null;
   #dirty = false;
   #lowRes = false;
+  #borderData = null;
 
   // ---- constructor: no DOM ----
   constructor() {
@@ -78,6 +80,14 @@ export class FlatMapRenderer {
 
     if (options.projection) {
       this.#projectionName = options.projection;
+    }
+
+    // Lazily fetch country border data for Earth rendering
+    if (typeof fetch !== 'undefined') {
+      fetch('assets/ne_110m_countries.geojson')
+        .then(r => r.json())
+        .then(data => { this.#borderData = data; this.#render(); })
+        .catch(() => {});
     }
 
     this.#render();
@@ -331,7 +341,8 @@ export class FlatMapRenderer {
     // 4. Regions
     this.#renderRegions(ctx, scene.regions || []);
 
-    // 5. Borders — STUB (Task 10)
+    // 5. Borders
+    this.#renderBorders(ctx, scene);
 
     // 6. Paths
     this.#renderPaths(ctx, scene.paths || []);
@@ -342,7 +353,8 @@ export class FlatMapRenderer {
     // 8. Markers
     this.#renderMarkers(ctx, scene.markers || []);
 
-    // 9. Geo labels — STUB (Task 12)
+    // 9. Geo labels
+    this.#renderGeoLabels(ctx, scene);
 
     // 10. Callouts — STUB (Task 13)
   }
@@ -522,5 +534,87 @@ export class FlatMapRenderer {
       }
       ctx.restore();
     }
+  }
+
+  #renderBorders(ctx, scene) {
+    if (!this.#borderData) return;
+    const bodyId = scene?.planet?.id || 'earth';
+    if (bodyId !== 'earth') return;
+
+    const proj = getProjection(this.#projectionName);
+    if (!proj) return;
+    const w = this.#canvas ? this.#canvas.width : 0;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 0.5;
+
+    for (const feature of this.#borderData.features) {
+      const geom = feature.geometry;
+      const rings = geom.type === 'MultiPolygon'
+        ? geom.coordinates.flat()
+        : geom.coordinates;
+
+      for (const ring of rings) {
+        ctx.beginPath();
+        let prevPx = null;
+        for (const coord of ring) {
+          const lon = coord[0];
+          const lat = coord[1];
+          const { x, y } = proj.project(lat, lon, this.#centerLat, this.#centerLon);
+          const { px, py } = this.#projectionToPixel(x, y);
+          if (prevPx === null) {
+            ctx.moveTo(px, py);
+          } else if (Math.abs(px - prevPx) > w / 2) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+          prevPx = px;
+        }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  #renderGeoLabels(ctx, scene) {
+    const bodyId = scene?.planet?.id || 'earth';
+    const labels = getBodyLabels(bodyId);
+    if (!labels || !labels.length) return;
+
+    const proj = getProjection(this.#projectionName);
+    if (!proj) return;
+    const w = this.#canvas ? this.#canvas.width : 0;
+    const h = this.#canvas ? this.#canvas.height : 0;
+    const fontSize = Math.round(10 * Math.sqrt(this.#zoom));
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const label of labels) {
+      if (proj.isVisible && !proj.isVisible(label.lat, label.lon, this.#centerLat, this.#centerLon)) continue;
+
+      const { x, y } = proj.project(label.lat, label.lon, this.#centerLat, this.#centerLon);
+      const { px, py } = this.#projectionToPixel(x, y);
+
+      // Cull outside viewport
+      if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
+
+      if (label.style === 'ocean') {
+        ctx.font = `italic ${fontSize}px "Avenir Next", sans-serif`;
+        ctx.fillStyle = 'rgba(100, 160, 220, 0.7)';
+      } else if (label.style === 'continent') {
+        ctx.font = `bold ${fontSize * 1.2}px "Avenir Next", sans-serif`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      } else {
+        ctx.font = `${fontSize * 0.9}px "Avenir Next", sans-serif`;
+        ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
+      }
+
+      ctx.fillText(label.text, px, py);
+    }
+    ctx.restore();
   }
 }
