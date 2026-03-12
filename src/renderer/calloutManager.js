@@ -267,6 +267,15 @@ export class CalloutManager {
       const facing = rotatedNormal.dot(camDir);
       const frontFacing = facing > 0;
 
+      // Handle cluster badge entries
+      if (this.#clusterBadgeIds.has(id)) {
+        data.visible = frontFacing;
+        if (data.line) data.line.visible = frontFacing && !this.#expandedClusters.has(id);
+        const css2d = this.#css2dObjects.find(o => o.userData?.clusterId === id);
+        if (css2d) css2d.visible = frontFacing && !this.#expandedClusters.has(id);
+        continue;
+      }
+
       if (data.mode === 'always') {
         if (data.line) data.line.visible = frontFacing;
         data.visible = frontFacing;
@@ -301,6 +310,22 @@ export class CalloutManager {
     if (!matchingIds) {
       // null/undefined = reset, restore all 'always' callouts to full opacity
       for (const [id, data] of this.#calloutData) {
+        // Badge reset: respect expand state
+        if (this.#clusterBadgeIds.has(id)) {
+          const show = !this.#expandedClusters.has(id);
+          if (data.line) {
+            data.line.visible = show;
+            data.line.material.opacity = LEADER_OPACITY;
+          }
+          data.visible = true;
+          const css2d = this.#css2dObjects.find(o => o.userData?.clusterId === id);
+          if (css2d) {
+            css2d.visible = show;
+            if (css2d.element) css2d.element.style.opacity = '1';
+          }
+          continue;
+        }
+
         const show = data.mode === 'always';
         if (data.line) {
           data.line.visible = show;
@@ -317,6 +342,19 @@ export class CalloutManager {
     }
     const ids = new Set(matchingIds);
     for (const [id, data] of this.#calloutData) {
+      // Badge: check if any member matches
+      if (this.#clusterBadgeIds.has(id)) {
+        const memberIds = [...this.#calloutData.entries()]
+          .filter(([, d]) => d.marker?._clusterId === id)
+          .map(([mid]) => mid);
+        const anyMatch = memberIds.some(mid => ids.has(mid));
+        if (data.line) data.line.material.opacity = anyMatch ? LEADER_OPACITY : LEADER_OPACITY * 0.2;
+        data.visible = true;
+        const css2d = this.#css2dObjects.find(o => o.userData?.clusterId === id);
+        if (css2d?.element) css2d.element.style.opacity = anyMatch ? '1' : '0.2';
+        continue;
+      }
+
       const match = ids.has(id);
       // Keep all visible, but dim non-matches to 20%
       if (data.line) {
