@@ -19,6 +19,7 @@ export function createEmptyScene(locale = 'en') {
     animations: [],
     filters: [],
     timeRange: null,
+    dataSources: [],
   };
 }
 
@@ -66,6 +67,7 @@ function normalizeMarker(marker = {}) {
       : 'always',
     calloutLabel: normalizeLocalizedText(marker.calloutLabel),
     timestamp: typeof marker.timestamp === 'string' ? marker.timestamp : (marker.timestamp ?? null),
+    sourceId: typeof marker.sourceId === 'string' ? marker.sourceId : '',
   };
 }
 
@@ -85,6 +87,7 @@ function normalizePath(path = {}) {
     strokeWidth: Number(path.strokeWidth ?? 1),
     dashPattern: Array.isArray(path.dashPattern) ? path.dashPattern.map(Number) : [],
     animationDuration: Number(path.animationDuration ?? 0),
+    sourceId: typeof path.sourceId === 'string' ? path.sourceId : '',
   };
 }
 
@@ -99,6 +102,7 @@ function normalizeArc(arc = {}) {
     strokeWidth: Number(arc.strokeWidth ?? 1),
     dashPattern: Array.isArray(arc.dashPattern) ? arc.dashPattern.map(Number) : [],
     animationTime: Number(arc.animationTime ?? 0),
+    sourceId: typeof arc.sourceId === 'string' ? arc.sourceId : '',
   };
 }
 
@@ -110,6 +114,18 @@ function normalizeRegion(region = {}) {
     capColor: region.capColor ?? '#4caf50',
     sideColor: region.sideColor ?? '#2e7d32',
     altitude: Number(region.altitude ?? 0),
+    sourceId: typeof region.sourceId === 'string' ? region.sourceId : '',
+  };
+}
+
+function normalizeDataSource(ds = {}) {
+  return {
+    id: String(ds.id ?? ''),
+    name: String(ds.name ?? ''),
+    shortName: String(ds.shortName ?? ''),
+    url: String(ds.url ?? ''),
+    description: String(ds.description ?? ''),
+    license: String(ds.license ?? ''),
   };
 }
 
@@ -249,6 +265,7 @@ export function normalizeScene(input) {
     animations: Array.isArray(scene.animations) ? scene.animations.map(normalizeAnimation) : [],
     filters: Array.isArray(scene.filters) ? scene.filters.map(normalizeFilter) : [],
     timeRange: normalizeTimeRange(scene.timeRange),
+    dataSources: Array.isArray(scene.dataSources) ? scene.dataSources.map(normalizeDataSource) : [],
     calloutCluster: normalizeCalloutCluster(scene.calloutCluster),
   };
   clusterMarkers(result.markers, result.calloutCluster);
@@ -382,6 +399,27 @@ export function validateScene(sceneInput) {
     }
   }
 
+  const dataSourceIds = new Set();
+  scene.dataSources.forEach((ds, index) => {
+    const pointer = `dataSources[${index}]`;
+    if (typeof ds.id !== 'string' || !ID_PATTERN.test(ds.id)) {
+      errors.push(`${pointer}.id must match ${ID_PATTERN}`);
+    } else if (dataSourceIds.has(ds.id)) {
+      errors.push(`${pointer}.id duplicate id: ${ds.id}`);
+    } else {
+      dataSourceIds.add(ds.id);
+    }
+    if (typeof ds.name !== 'string' || ds.name.length === 0) {
+      errors.push(`${pointer}.name must be a non-empty string`);
+    }
+    if (typeof ds.shortName !== 'string' || ds.shortName.length === 0) {
+      errors.push(`${pointer}.shortName must be a non-empty string`);
+    }
+    if (typeof ds.url !== 'string' || ds.url.length === 0) {
+      errors.push(`${pointer}.url must be a non-empty string`);
+    }
+  });
+
   const rawMarkers = Array.isArray(rawScene.markers) ? rawScene.markers : [];
   scene.markers.forEach((marker, index) => {
     const pointer = `markers[${index}]`;
@@ -396,6 +434,9 @@ export function validateScene(sceneInput) {
     if (rawCalloutMode !== undefined && !['always', 'hover', 'click', 'none'].includes(rawCalloutMode)) {
       errors.push(`${pointer}.calloutMode must be one of always|hover|click|none`);
     }
+    if (marker.sourceId && !dataSourceIds.has(marker.sourceId)) {
+      errors.push(`${pointer}.sourceId references unknown dataSources id: ${marker.sourceId}`);
+    }
   });
 
   scene.paths.forEach((path, index) => {
@@ -408,6 +449,9 @@ export function validateScene(sceneInput) {
     path.points.forEach((point, pointIndex) => {
       validatePoint(point, `${pointer}.points[${pointIndex}]`, errors);
     });
+    if (path.sourceId && !dataSourceIds.has(path.sourceId)) {
+      errors.push(`${pointer}.sourceId references unknown dataSources id: ${path.sourceId}`);
+    }
   });
 
   scene.arcs.forEach((arc, index) => {
@@ -419,6 +463,9 @@ export function validateScene(sceneInput) {
     if (!Number.isFinite(arc.maxAltitude) || arc.maxAltitude < 0) {
       errors.push(`${pointer}.maxAltitude must be >= 0`);
     }
+    if (arc.sourceId && !dataSourceIds.has(arc.sourceId)) {
+      errors.push(`${pointer}.sourceId references unknown dataSources id: ${arc.sourceId}`);
+    }
   });
 
   scene.regions.forEach((region, index) => {
@@ -427,6 +474,9 @@ export function validateScene(sceneInput) {
     validateLocalizedText(region.name, `${pointer}.name`, errors);
     if (!region.geojson || typeof region.geojson !== 'object') {
       errors.push(`${pointer}.geojson must be an object`);
+    }
+    if (region.sourceId && !dataSourceIds.has(region.sourceId)) {
+      errors.push(`${pointer}.sourceId references unknown dataSources id: ${region.sourceId}`);
     }
   });
 

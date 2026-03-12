@@ -176,3 +176,80 @@ test('validateScene accepts valid planet with atmosphere and rings', () => {
   const result = validateScene(scene);
   assert.equal(result.valid, true);
 });
+
+test('createEmptyScene includes empty dataSources array', () => {
+  const scene = createEmptyScene();
+  assert.deepEqual(scene.dataSources, []);
+});
+
+test('normalizeScene defaults dataSources to empty array', () => {
+  const scene = normalizeScene({});
+  assert.deepEqual(scene.dataSources, []);
+});
+
+test('normalizeScene normalizes dataSources entries', () => {
+  const scene = normalizeScene({
+    dataSources: [
+      { id: 'src-1', name: 'Source One', shortName: 'S1', url: 'https://example.com' },
+      { id: 'src-2', name: 'Source Two', shortName: 'S2', url: 'https://example.org', description: 'Desc', license: 'MIT' },
+    ],
+  });
+  assert.equal(scene.dataSources.length, 2);
+  assert.equal(scene.dataSources[0].id, 'src-1');
+  assert.equal(scene.dataSources[0].description, '');
+  assert.equal(scene.dataSources[0].license, '');
+  assert.equal(scene.dataSources[1].description, 'Desc');
+  assert.equal(scene.dataSources[1].license, 'MIT');
+});
+
+test('normalizeScene adds sourceId to markers, paths, arcs, regions', () => {
+  const scene = normalizeScene({
+    markers: [{ id: 'm1', name: 'M', lat: 0, lon: 0, sourceId: 'src-1' }],
+    paths: [{ id: 'p1', name: 'P', points: [{ lat: 0, lon: 0 }, { lat: 1, lon: 1 }] }],
+    arcs: [{ id: 'a1', name: 'A', start: { lat: 0, lon: 0 }, end: { lat: 1, lon: 1 }, sourceId: 'src-2' }],
+    regions: [{ id: 'r1', name: 'R', geojson: { type: 'Polygon', coordinates: [] } }],
+  });
+  assert.equal(scene.markers[0].sourceId, 'src-1');
+  assert.equal(scene.paths[0].sourceId, '');
+  assert.equal(scene.arcs[0].sourceId, 'src-2');
+  assert.equal(scene.regions[0].sourceId, '');
+});
+
+test('validateScene accepts valid dataSources', () => {
+  const scene = createEmptyScene();
+  scene.dataSources = [
+    { id: 'src-1', name: 'Source', shortName: 'S', url: 'https://x.com' },
+  ];
+  scene.markers = [{ id: 'm1', name: { en: 'M' }, description: { en: '' }, lat: 0, lon: 0, sourceId: 'src-1' }];
+  const result = validateScene(scene);
+  assert.equal(result.valid, true);
+});
+
+test('validateScene reports duplicate dataSources ids', () => {
+  const scene = createEmptyScene();
+  scene.dataSources = [
+    { id: 'dup', name: 'A', shortName: 'A', url: 'https://a.com' },
+    { id: 'dup', name: 'B', shortName: 'B', url: 'https://b.com' },
+  ];
+  const result = validateScene(scene);
+  assert.ok(result.errors.some((e) => e.includes('duplicate')));
+});
+
+test('validateScene reports missing dataSources name', () => {
+  const scene = createEmptyScene();
+  scene.dataSources = [
+    { id: 'src-1', name: '', shortName: 'S', url: 'https://x.com' },
+  ];
+  const result = validateScene(scene);
+  assert.ok(result.errors.some((e) => e.includes('name')));
+});
+
+test('validateScene warns on unresolved sourceId', () => {
+  const scene = createEmptyScene();
+  scene.dataSources = [
+    { id: 'src-1', name: 'Source', shortName: 'S', url: 'https://x.com' },
+  ];
+  scene.markers = [{ id: 'm1', name: { en: 'M' }, description: { en: '' }, lat: 0, lon: 0, sourceId: 'unknown' }];
+  const result = validateScene(scene);
+  assert.ok(result.errors.some((e) => e.includes('sourceId')));
+});
