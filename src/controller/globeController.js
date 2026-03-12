@@ -37,8 +37,10 @@ const DEFAULT_DICTIONARIES = {
 export class GlobeController {
   #globeRenderer;
   #flatMapRenderer;
+  #flatMapInited = false;
   #activeRenderer;
   #projection = 'globe';
+  #container;
   #store;
   #animationEngine;
   #emitter;
@@ -72,14 +74,17 @@ export class GlobeController {
       this.#emitter.emit('sceneChange', nextScene);
     });
 
+    this.#container = options.container ?? { appendChild() {}, clientWidth: 800, clientHeight: 500 };
+
     if (typeof this.#globeRenderer.init === 'function') {
-      this.#globeRenderer.init(options.container ?? { appendChild() {}, clientWidth: 800, clientHeight: 500 }, {
+      this.#globeRenderer.init(this.#container, {
         initialScene: scene,
       });
     }
   }
 
   setProjection(name) {
+    const prev = this.#activeRenderer;
     this.#projection = name;
 
     if (name === 'globe') {
@@ -87,12 +92,27 @@ export class GlobeController {
       if (typeof this.#flatMapRenderer.hide === 'function') this.#flatMapRenderer.hide();
       this.#activeRenderer = this.#globeRenderer;
     } else {
+      // Lazily init the flat map renderer on first use (browser only)
+      if (!this.#flatMapInited && this.#container && typeof this.#flatMapRenderer.init === 'function'
+          && typeof document !== 'undefined') {
+        this.#flatMapRenderer.init(this.#container);
+        this.#flatMapRenderer.hide();
+        this.#flatMapInited = true;
+      }
       if (typeof this.#flatMapRenderer.setProjection === 'function') {
         this.#flatMapRenderer.setProjection(name);
       }
       if (typeof this.#flatMapRenderer.show === 'function') this.#flatMapRenderer.show();
       if (typeof this.#globeRenderer.hide === 'function') this.#globeRenderer.hide();
       this.#activeRenderer = this.#flatMapRenderer;
+    }
+
+    // Sync camera state from previous renderer to new one
+    if (prev !== this.#activeRenderer && typeof prev.getCameraState === 'function') {
+      const cam = prev.getCameraState();
+      if (typeof this.#activeRenderer.flyTo === 'function') {
+        this.#activeRenderer.flyTo({ lat: cam.centerLat, lon: cam.centerLon, zoom: cam.zoom });
+      }
     }
 
     if (this.#scene) {

@@ -31,6 +31,7 @@ import { GeoLabelManager } from './geoLabelManager.js';
 import { getSunLightVector } from '../math/solar.js';
 import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
 import { latLonToCartesian, cartesianToLatLon } from '../math/geo.js';
+import { clusterMarkers } from '../scene/schema.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -94,15 +95,21 @@ export class ThreeGlobeRenderer {
   // --- Texture loader ---
   #textureLoader = new TextureLoader();
   #loadedTextures = new Map(); // uri → texture
+  #lastTexturePaths = null;    // BUG16: cached paths for zoom-based upgrade
+  #hiResLoaded = false;        // BUG16: whether hi-res textures have been applied
 
   // --- Sun direction (for shader uniforms) ---
   #sunDirection = new Vector3(-5, 3, 8).normalize();
+  #lightingMode = 'fixed';
+  #dirLight = null;
 
   // --- Container reference for resize/destroy ---
   #container = null;
 
   // --- Cluster interaction state ---
   #clusterCollapseListenerAdded = false;
+  #lastClusterZoom = 1;
+  #lastMarkerZoom = 1;
 
   // ---------------------------------------------------------------------------
   // Public API — camera state
@@ -249,6 +256,7 @@ export class ThreeGlobeRenderer {
     const dirLight = new DirectionalLight(0xffffff, 1.6);
     dirLight.position.set(-5, 3, 8);
     scene.add(dirLight);
+    this.#dirLight = dirLight;
 
     // --- Obliquity wrapper group (physical tilt, doesn't change with user panning) ---
     const obliquityGroup = new Group();
@@ -269,9 +277,13 @@ export class ThreeGlobeRenderer {
       : resolvedPlanet.id === 'venus' ? 'venusAtmosphere'
       : 'single';
 
+    const isSunMode = resolvedPlanet.lightingMode === 'sun';
+    this.#lightingMode = isSunMode ? 'sun' : 'fixed';
+
     const bodyMesh = createBodyMesh({
       shaderMode,
       sunDirection: this.#sunDirection,
+      sunLocked: isSunMode,
       rimColor: resolvedPlanet.atmosphere
         ? hexToColor(resolvedPlanet.atmosphere.scatterColor)
         : new Color(0.3, 0.5, 1.0),
@@ -304,7 +316,7 @@ export class ThreeGlobeRenderer {
     globeGroup.add(this.#geoLabelGroup);
 
     // Async GeoJSON fetch for country borders
-    fetch('assets/ne_110m_countries.geojson')
+    fetch(new URL('../../assets/ne_110m_countries.geojson', import.meta.url).href)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
@@ -322,6 +334,7 @@ export class ThreeGlobeRenderer {
     if (resolvedPlanet.atmosphere?.enabled) {
       const atmosphereMesh = createAtmosphereMesh({
         sunDirection: this.#sunDirection,
+        sunLocked: isSunMode,
         atmosphereColor: hexToColor(resolvedPlanet.atmosphere.scatterColor),
         thickness: resolvedPlanet.atmosphere.thickness,
         density: resolvedPlanet.atmosphere.density,
@@ -370,6 +383,8 @@ export class ThreeGlobeRenderer {
 
     if (this.#markerGroup) {
       this.#markerManager.update(this.#markerGroup, scene.markers ?? [], locale);
+      this.#markerManager.applyZoom(this.#zoom);
+      this.#lastMarkerZoom = this.#zoom;
     }
     if (this.#arcGroup) {
       this.#arcPathManager.update(this.#arcGroup, scene.arcs ?? [], scene.paths ?? []);
@@ -380,7 +395,8 @@ export class ThreeGlobeRenderer {
 
     // Callout manager + CSS2D labels
     if (this.#calloutGroup) {
-      this.#calloutManager.update(this.#calloutGroup, scene.markers ?? [], locale);
+      this.#lastClusterZoom = this.#zoom;
+      this.#calloutManager.update(this.#calloutGroup, scene.markers ?? [], locale, this.#zoom);
 
       if (typeof CSS2DObject !== 'undefined' && this.#globeGroup) {
         // Remove old CSS2D label objects from globe group
@@ -661,6 +677,16 @@ export class ThreeGlobeRenderer {
     return this.#webglRenderer.domElement.getBoundingClientRect();
   }
 
+  show() {
+    if (this.#webglRenderer) this.#webglRenderer.domElement.style.display = 'block';
+    if (this.#css2dRenderer) this.#css2dRenderer.domElement.style.display = '';
+  }
+
+  hide() {
+    if (this.#webglRenderer) this.#webglRenderer.domElement.style.display = 'none';
+    if (this.#css2dRenderer) this.#css2dRenderer.domElement.style.display = 'none';
+  }
+
   /**
    * Tear down all GPU resources and DOM elements.
    */
@@ -794,9 +820,11 @@ export class ThreeGlobeRenderer {
       : 'single';
 
     // Rebuild body mesh
+    const isSunMode = this.#lightingMode === 'sun';
     const bodyMesh = createBodyMesh({
       shaderMode,
       sunDirection: this.#sunDirection,
+      sunLocked: isSunMode,
       rimColor: planet.atmosphere
         ? hexToColor(planet.atmosphere.scatterColor)
         : new Color(0.3, 0.5, 1.0),
@@ -808,6 +836,7 @@ export class ThreeGlobeRenderer {
     if (planet.atmosphere?.enabled) {
       const atmosphereMesh = createAtmosphereMesh({
         sunDirection: this.#sunDirection,
+        sunLocked: isSunMode,
         atmosphereColor: hexToColor(planet.atmosphere.scatterColor),
         thickness: planet.atmosphere.thickness,
         density: planet.atmosphere.density,
@@ -843,6 +872,7 @@ export class ThreeGlobeRenderer {
     if (!mat?.uniforms) return;
 
     const paths = resolveTexturePaths(planet);
+    this.#lastTexturePaths = paths;
 
     if (paths.surface) {
       this.#loadTexture(paths.surface, 'dayTexture');
@@ -857,6 +887,25 @@ export class ThreeGlobeRenderer {
     // Load ring texture if present
     if (paths.ring && this.#ringMesh) {
       this.#loadRingTexture(paths.ring);
+    }
+
+    // BUG16: check if zoom warrants hi-res textures right now
+    this.#hiResLoaded = false;
+    this.#maybeUpgradeTextures();
+  }
+
+  /** BUG16: Load hi-res textures when zoom exceeds threshold. */
+  #maybeUpgradeTextures() {
+    const paths = this.#lastTexturePaths;
+    if (!paths || this.#hiResLoaded) return;
+    if (!shouldUpgradeTexture(this.#zoom)) return;
+
+    this.#hiResLoaded = true;
+    if (paths.surfaceHi) {
+      this.#loadTexture(paths.surfaceHi, 'dayTexture');
+    }
+    if (paths.nightHi) {
+      this.#loadTexture(paths.nightHi, 'nightTexture');
     }
   }
 
@@ -901,7 +950,15 @@ export class ThreeGlobeRenderer {
    */
   #loadTexture(uri, uniformName) {
     if (this.#loadedTextures.has(uri)) {
-      return this.#loadedTextures.get(uri);
+      const cached = this.#loadedTextures.get(uri);
+      // BUG17: always assign to current body mesh — after #rebuildBody the
+      // material is new even though the texture URI is the same.
+      if (this.#bodyMesh?.material?.uniforms?.[uniformName]) {
+        this.#bodyMesh.material.uniforms[uniformName].value = cached;
+        this.#bodyMesh.material.needsUpdate = true;
+        this.#dirty = true;
+      }
+      return cached;
     }
 
     const tex = this.#textureLoader.load(
@@ -930,21 +987,37 @@ export class ThreeGlobeRenderer {
 
   /** Update sun direction uniform on body and atmosphere meshes. */
   #updateSunDirection(planet) {
-    if (planet.lightingMode !== 'sun') {
-      // Fixed lighting — use default direction
-      const v = new Vector3(-5, 3, 8).normalize();
-      this.#sunDirection.copy(v);
+    const isSunMode = planet.lightingMode === 'sun';
+    this.#lightingMode = isSunMode ? 'sun' : 'fixed';
+
+    if (!isSunMode) {
+      // Fixed lighting — use default direction (roughly view-space)
+      this.#sunDirection.set(-5, 3, 8).normalize();
     } else {
+      // Sun mode — body-fixed direction from orbital mechanics
       const dir = getSunDirectionForBody(planet, planet.lightingTimestamp);
-      const v = new Vector3(dir.x, dir.y, dir.z);
-      this.#sunDirection.copy(v);
+      this.#sunDirection.set(dir.x, dir.y, dir.z);
     }
 
+    // Set sunLocked uniform (true = object-space NdotL, false = view-space)
+    if (this.#bodyMesh?.material?.uniforms?.sunLocked) {
+      this.#bodyMesh.material.uniforms.sunLocked.value = isSunMode;
+    }
+    if (this.#atmosphereMesh?.material?.uniforms?.sunLocked) {
+      this.#atmosphereMesh.material.uniforms.sunLocked.value = isSunMode;
+    }
+
+    // Set sunDirection uniform
     if (this.#bodyMesh?.material?.uniforms?.sunDirection) {
       this.#bodyMesh.material.uniforms.sunDirection.value.copy(this.#sunDirection);
     }
     if (this.#atmosphereMesh?.material?.uniforms?.sunDirection) {
       this.#atmosphereMesh.material.uniforms.sunDirection.value.copy(this.#sunDirection);
+    }
+
+    // Move the scene DirectionalLight to match sun direction
+    if (this.#dirLight) {
+      this.#dirLight.position.copy(this.#sunDirection).multiplyScalar(10);
     }
   }
 
@@ -957,6 +1030,75 @@ export class ThreeGlobeRenderer {
     for (const obj of toRemove) {
       this.#globeGroup.remove(obj);
     }
+  }
+
+  /** Re-cluster markers with zoom-adjusted threshold and rebuild callout labels. */
+  #reclusterCallouts() {
+    const scene = this.#lastScene;
+    if (!scene || !this.#calloutGroup || !this.#globeGroup) return;
+
+    const config = scene.calloutCluster ?? { enabled: true, thresholdDeg: 2 };
+    const zoomAdjusted = {
+      enabled: config.enabled,
+      thresholdDeg: config.thresholdDeg / Math.max(this.#zoom, 0.3),
+    };
+    const markers = scene.markers ?? [];
+    clusterMarkers(markers, zoomAdjusted);
+
+    const locale = scene.locale ?? 'en';
+    this.#calloutManager.update(this.#calloutGroup, markers, locale, this.#zoom);
+    this.#lastClusterZoom = this.#zoom;
+
+    if (typeof CSS2DObject !== 'undefined') {
+      this.#css2dCleanup();
+      const labels = this.#calloutManager.createCSS2DLabels(CSS2DObject);
+      for (const { id, object, div } of labels) {
+        this.#globeGroup.add(object);
+        if (div.dataset.clusterId) {
+          div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cid = div.dataset.clusterId;
+            this.#calloutManager.toggleCluster(cid);
+            const clusterMembers = [...(this.#calloutManager.getCalloutData().entries())]
+              .filter(([mid, d]) => d.marker?._clusterId === cid && mid !== cid)
+              .map(([mid]) => mid);
+            const event = new CustomEvent('calloutClick', {
+              bubbles: true,
+              detail: { kind: 'cluster', id: cid, markerIds: clusterMembers },
+            });
+            this.#container.dispatchEvent(event);
+          });
+          continue;
+        }
+        const mode = object.userData?.calloutMode;
+        if (mode === 'hover') {
+          div.addEventListener('mouseenter', () => this.#calloutManager.showCallout(id));
+          div.addEventListener('mouseleave', () => this.#calloutManager.hideCallout(id));
+        } else if (mode === 'click') {
+          div.addEventListener('click', () => {
+            const data = this.#calloutManager.getCalloutData()?.get(id);
+            if (data?.visible) {
+              this.#calloutManager.hideCallout(id);
+            } else {
+              this.#calloutManager.showCallout(id);
+            }
+          });
+        }
+        div.addEventListener('click', () => {
+          const markerData = this.#markerManager.getMarkerMap()?.get(id);
+          if (markerData && this.#container) {
+            const marker = markerData.marker;
+            const anchorPos = this.#worldToClient(markerData.object.position);
+            const event = new CustomEvent('calloutClick', {
+              bubbles: true,
+              detail: { kind: 'marker', id, entity: marker, anchor: anchorPos },
+            });
+            this.#container.dispatchEvent(event);
+          }
+        });
+      }
+    }
+    this.#dirty = true;
   }
 
   /** Convert a Three.js world position to client {clientX, clientY, visible}. */
@@ -994,6 +1136,9 @@ export class ThreeGlobeRenderer {
   /** Elapsed time accumulator for animations (seconds). */
   #elapsedTime = 0;
   #lastFrameTime = 0;
+  #reusableQuat = new Quaternion();
+  #reusableVec3 = new Vector3();
+  #lastCameraJson = '';
 
   /** Per-frame logic: idle rotation, callout visibility, conditional render. */
   #frame() {
@@ -1017,11 +1162,39 @@ export class ThreeGlobeRenderer {
       this.#dirty = true;
     }
 
-    // Update callout visibility (E10)
+    // Scale markers and re-cluster callouts when zoom changes
+    if (Math.abs(this.#zoom - this.#lastMarkerZoom) > 0.02) {
+      this.#markerManager.applyZoom(this.#zoom);
+      this.#lastMarkerZoom = this.#zoom;
+      this.#dirty = true;
+
+      // BUG16: trigger hi-res texture load when zoom crosses threshold
+      this.#maybeUpgradeTextures();
+    }
+    if (this.#lastScene && Math.abs(this.#zoom - this.#lastClusterZoom) > 0.05) {
+      this.#reclusterCallouts();
+    }
+
+    // Update callout visibility (E10) — only when camera or globe orientation changed
     if (this.#camera && this.#globeGroup) {
-      const cameraPos = this.#camera.position.clone();
-      const globeQuat = this.#globeGroup.quaternion;
-      this.#calloutManager.updateVisibility(cameraPos, globeQuat);
+      const cp = this.#camera.position;
+      const gq = this.#globeGroup.quaternion;
+      const key = `${cp.x.toFixed(4)},${cp.y.toFixed(4)},${cp.z.toFixed(4)},${gq.x.toFixed(4)},${gq.y.toFixed(4)},${gq.z.toFixed(4)},${gq.w.toFixed(4)}`;
+      if (key !== this.#lastCameraJson) {
+        this.#lastCameraJson = key;
+        this.#calloutManager.updateVisibility(cp.clone(), gq);
+      }
+    }
+
+    // BUG18: In sun mode, sync DirectionalLight to world-space sun direction
+    // (ShaderMaterial uses sunLocked object-space normals, but the scene light
+    //  affects non-shader meshes like markers.)
+    if (this.#lightingMode === 'sun' && this.#dirLight && this.#bodyMesh) {
+      this.#bodyMesh.updateMatrixWorld();
+      this.#bodyMesh.getWorldQuaternion(this.#reusableQuat);
+      this.#reusableVec3.copy(this.#sunDirection).applyQuaternion(this.#reusableQuat).multiplyScalar(10);
+      this.#dirLight.position.copy(this.#reusableVec3);
+      this.#dirty = true;
     }
 
     // Only render when dirty
