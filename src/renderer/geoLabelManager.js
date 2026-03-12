@@ -51,7 +51,7 @@ function nextPow2(n) {
   return v;
 }
 
-function renderTextToCanvas(text, style) {
+function renderTextToCanvas(text, style, fillStyleOverride = null) {
   const cfg = STYLES[style] || STYLES.region;
   const measure = typeof OffscreenCanvas !== 'undefined'
     ? new OffscreenCanvas(1, 1)
@@ -69,7 +69,7 @@ function renderTextToCanvas(text, style) {
   const ctx = canvas.getContext('2d');
 
   ctx.font = cfg.fontStyle;
-  ctx.fillStyle = cfg.fillStyle;
+  ctx.fillStyle = fillStyleOverride || cfg.fillStyle;
   ctx.textBaseline = 'middle';
 
   let x = 8;
@@ -155,30 +155,38 @@ export class GeoLabelManager {
   #group = null;
   #built = false;
   #currentBodyId = null;
+  #labelStyles = null;
+  #currentLabelStylesKey = null;
 
   /**
-   * Update labels for the given body. Rebuilds when bodyId changes.
+   * Update labels for the given body. Rebuilds when bodyId or labelStyles change.
    * @param {import('three').Group} group
    * @param {object} options
    * @param {boolean} [options.showLabels=true]
    * @param {string} [options.bodyId='earth']
+   * @param {object|null} [options.labelStyles=null]
    */
-  update(group, { showLabels = true, bodyId = 'earth' } = {}) {
+  update(group, { showLabels = true, bodyId = 'earth', labelStyles = null } = {}) {
     this.#group = group;
     group.visible = showLabels;
 
-    if (this.#built && this.#currentBodyId === bodyId) return;
+    const labelStylesKey = labelStyles ? JSON.stringify(labelStyles) : null;
+    if (this.#built && this.#currentBodyId === bodyId && this.#currentLabelStylesKey === labelStylesKey) return;
 
-    // Clear old labels if body changed or first build
+    // Clear old labels if body or styles changed, or first build
     if (this.#built) {
       this.#clearLabels();
     }
+
+    this.#labelStyles = labelStyles;
+    this.#currentLabelStylesKey = labelStylesKey;
 
     const labels = getBodyLabels(bodyId);
     for (const label of labels) {
       const styleName = label.style || 'region';
       const cfg = STYLES[styleName] || STYLES.region;
-      const { canvas, width, height } = renderTextToCanvas(label.text, styleName);
+      const fillStyleOverride = this.#labelStyles?.[styleName] || null;
+      const { canvas, width, height } = renderTextToCanvas(label.text, styleName, fillStyleOverride);
       const aspectRatio = width / height;
 
       const texture = new CanvasTexture(canvas);

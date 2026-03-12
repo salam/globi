@@ -142,3 +142,32 @@ test('feature-style labels use warm color fill', () => {
   });
   assert.ok(features.length > 0, 'Mars should have feature-style labels');
 });
+
+test('GeoLabelManager accepts labelStyles override', () => {
+  const manager = new GeoLabelManager();
+  const group = new Group();
+  const overrides = {
+    continent: 'rgba(34, 34, 34, 0.5)',
+    ocean: 'rgba(68, 68, 68, 0.4)',
+    region: 'rgba(34, 34, 34, 0.5)',
+    feature: 'rgba(51, 51, 51, 0.45)',
+  };
+  manager.update(group, { showLabels: true, bodyId: 'earth', labelStyles: overrides });
+  assert.equal(group.children.length, 12);
+});
+
+test('GeoLabelManager rebuilds when labelStyles change', () => {
+  const manager = new GeoLabelManager();
+  const group = new Group();
+  manager.update(group, { showLabels: true, bodyId: 'earth' });
+  assert.equal(group.children.length, 12);
+
+  const overrides = {
+    continent: 'rgba(34, 34, 34, 0.5)',
+    ocean: 'rgba(68, 68, 68, 0.4)',
+    region: 'rgba(34, 34, 34, 0.5)',
+    feature: 'rgba(51, 51, 51, 0.45)',
+  };
+  manager.update(group, { showLabels: true, bodyId: 'earth', labelStyles: overrides });
+  assert.equal(group.children.length, 12);
+});
