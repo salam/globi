@@ -1613,13 +1613,13 @@ export class GlobiViewerElement extends HTMLElement {
     const scene = this.#controller.getScene();
     switch (action) {
       case 'copyCoordinates':
-        if (data) navigator.clipboard?.writeText(`${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}`);
+        if (data) this.#copyToClipboard(`${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}`);
         break;
       case 'copyLlmsTxt':
-        navigator.clipboard?.writeText(formatLlmsTxt(scene, this.#viewStateQuery));
+        this.#copyToClipboard(formatLlmsTxt(scene, this.#viewStateQuery));
         break;
       case 'copyDescription':
-        navigator.clipboard?.writeText(describeView(scene, this.#viewStateQuery, data?.level ?? 'brief'));
+        this.#copyToClipboard(describeView(scene, this.#viewStateQuery, data?.level ?? 'brief'));
         break;
       case 'dropMarker':
         if (data) {
@@ -1642,12 +1642,12 @@ export class GlobiViewerElement extends HTMLElement {
         break;
       case 'copyMarkerInfo': {
         const name = typeof data.name === 'string' ? data.name : (data.name?.en ?? '');
-        navigator.clipboard?.writeText(`${name} (${data.lat}, ${data.lon})`);
+        this.#copyToClipboard(`${name} (${data.lat}, ${data.lon})`);
         break;
       }
       case 'copyRegionInfo': {
         const name = typeof data.name === 'string' ? data.name : (data.name?.en ?? '');
-        navigator.clipboard?.writeText(name);
+        this.#copyToClipboard(name);
         break;
       }
       case 'export': {
@@ -1662,6 +1662,24 @@ export class GlobiViewerElement extends HTMLElement {
         break;
       }
     }
+  }
+
+  #copyToClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => this.#copyFallback(text));
+    } else {
+      this.#copyFallback(text);
+    }
+  }
+
+  #copyFallback(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
   }
 
   #buildVisibleScene(scene) {
