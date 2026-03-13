@@ -14,7 +14,7 @@ test('getThemePalette returns a palette with all expected keys for each theme', 
     'graticuleColor', 'graticuleOpacity', 'graticuleVisible',
     'atmosphereEnabled', 'atmosphereColor', 'rimColor',
     'useTextures', 'desaturate', 'shaded', 'flatLighting',
-    'labelStyles', 'leaderColor', 'calloutTextColor',
+    'labelStyles', 'leaderColor', 'calloutTextColor', 'landmassColor',
   ];
   for (const theme of VALID_THEMES) {
     const palette = getThemePalette(theme);
@@ -64,6 +64,20 @@ test('grayscale-flat has flatLighting true', () => {
   const p = getThemePalette('grayscale-flat');
   assert.equal(p.flatLighting, true);
   assert.equal(p.shaded, false);
+});
+
+test('wireframe themes have landmassColor, others have null', () => {
+  const ws = getThemePalette('wireframe-shaded');
+  assert.ok(typeof ws.landmassColor === 'string', 'wireframe-shaded should have a landmassColor string');
+  assert.ok(ws.landmassColor.startsWith('rgba('));
+
+  const wf = getThemePalette('wireframe-flat');
+  assert.ok(typeof wf.landmassColor === 'string', 'wireframe-flat should have a landmassColor string');
+  assert.ok(wf.landmassColor.startsWith('rgba('));
+
+  assert.equal(getThemePalette('photo').landmassColor, null);
+  assert.equal(getThemePalette('grayscale-shaded').landmassColor, null);
+  assert.equal(getThemePalette('grayscale-flat').landmassColor, null);
 });
 
 test('labelStyles has all 4 label types for each theme', () => {

@@ -27,6 +27,7 @@ import { ArcPathManager } from './arcPathManager.js';
 import { RegionManager } from './regionManager.js';
 import { CalloutManager } from './calloutManager.js';
 import { BorderManager } from './borderManager.js';
+import { LandmassManager } from './landmassManager.js';
 import { GeoLabelManager } from './geoLabelManager.js';
 import { getSunLightVector } from '../math/solar.js';
 import { clampLatitude, normalizeLongitude } from '../math/sphereProjection.js';
@@ -40,7 +41,7 @@ function hexToColor(hex) {
   return new Color(hex || '#ffffff');
 }
 const ZOOM_MIN = 0.3;
-const ZOOM_MAX = 4;
+const ZOOM_MAX = 2.7;
 const CAMERA_BASE_DISTANCE = 3;
 const IDLE_ROTATION_SPEED_DEFAULT = 0;
 
@@ -67,6 +68,10 @@ export class ThreeGlobeRenderer {
   #obliquityDeg = 0;
   #currentBodyId = null;
   #currentTheme = null;
+  #currentSurfaceTint = null;
+  #currentOverlayTint = null;
+  #prevSurfaceTint = null;
+  #prevOverlayTint = null;
   #graticule = null;
   #markerGroup = null;
   #arcGroup = null;
@@ -81,6 +86,8 @@ export class ThreeGlobeRenderer {
   #borderManager = new BorderManager();
   #borderGroup = null;
   #borderGeoJson = null;
+  #landmassManager = new LandmassManager();
+  #landmassGroup = null;
   #geoLabelManager = new GeoLabelManager();
   #geoLabelGroup = null;
 
@@ -148,6 +155,25 @@ export class ThreeGlobeRenderer {
     if (this.#savedRotationSpeed !== null) {
       this.#rotationSpeed = this.#savedRotationSpeed;
       this.#savedRotationSpeed = null;
+    }
+  }
+
+  /**
+   * Enter or exit loading state. While loading, the globe spins fast to
+   * indicate data is being fetched. The previous rotation speed is restored
+   * when loading ends.
+   */
+  setLoading(loading) {
+    if (loading) {
+      if (this.#loadingSavedSpeed === null) {
+        this.#loadingSavedSpeed = this.#rotationSpeed;
+      }
+      this.#rotationSpeed = 0.5;
+      this.#dirty = true;
+    } else if (this.#loadingSavedSpeed !== null) {
+      this.#rotationSpeed = this.#loadingSavedSpeed;
+      this.#loadingSavedSpeed = null;
+      this.#dirty = true;
     }
   }
 
@@ -314,6 +340,7 @@ export class ThreeGlobeRenderer {
 
     // --- Sub-manager groups ---
     this.#markerGroup = new Group();
+    this.#markerGroup.renderOrder = 1;
     globeGroup.add(this.#markerGroup);
 
     this.#arcGroup = new Group();
@@ -323,7 +350,11 @@ export class ThreeGlobeRenderer {
     globeGroup.add(this.#regionGroup);
 
     this.#calloutGroup = new Group();
+    this.#calloutGroup.renderOrder = 2;
     globeGroup.add(this.#calloutGroup);
+
+    this.#landmassGroup = new Group();
+    globeGroup.add(this.#landmassGroup);
 
     this.#borderGroup = new Group();
     globeGroup.add(this.#borderGroup);
@@ -331,25 +362,31 @@ export class ThreeGlobeRenderer {
     this.#geoLabelGroup = new Group();
     globeGroup.add(this.#geoLabelGroup);
 
-    // Async GeoJSON fetch for country borders
-    fetch(new URL('../../assets/ne_110m_countries.geojson', import.meta.url).href)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) {
-          this.#borderGeoJson = data;
-          if (this.#lastScene) {
-            const show = this.#lastScene.planet?.showBorders !== false;
-            const pal = getThemePalette(this.#currentTheme || 'photo');
-            this.#borderManager.update(this.#borderGroup, data, {
-              show,
-              color: pal.borderColor,
-              opacity: pal.borderOpacity,
-            });
-            this.#dirty = true;
+    // BUG28: Only fetch country borders for Earth — other planets have no countries
+    if (resolvedPlanet.id === 'earth') {
+      fetch(new URL('../../assets/ne_110m_countries.geojson', import.meta.url).href)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            this.#borderGeoJson = data;
+            if (this.#lastScene) {
+              const isEarth = resolvePlanetConfig(this.#lastScene.planet ?? {}).id === 'earth';
+              const show = isEarth && this.#lastScene.planet?.showBorders !== false;
+              const pal = this.#getPalette();
+              this.#borderManager.update(this.#borderGroup, data, {
+                show,
+                color: pal.borderColor,
+                opacity: pal.borderOpacity,
+              });
+              this.#landmassManager.update(this.#landmassGroup, data, {
+                color: pal.landmassColor,
+              });
+              this.#dirty = true;
+            }
           }
-        }
-      })
-      .catch(() => {});
+        })
+        .catch(() => {});
+    }
 
     // --- Atmosphere mesh (inside globeGroup so it tilts with obliquity) ---
     if (resolvedPlanet.atmosphere?.enabled && palette.atmosphereEnabled) {
@@ -400,16 +437,23 @@ export class ThreeGlobeRenderer {
     this.#dirty = true;
 
     const theme = scene.theme ?? 'photo';
-    const palette = getThemePalette(theme);
+    const themeChanged = theme !== this.#currentTheme;
+    this.#currentTheme = theme;
+    this.#currentSurfaceTint = scene.surfaceTint ?? null;
+    this.#currentOverlayTint = scene.overlayTint ?? null;
+    const palette = this.#getPalette();
 
     // Update clear color on every render (cheap)
     if (this.#webglRenderer) {
       this.#webglRenderer.setClearColor(palette.background, 1);
     }
 
-    // Detect theme change — trigger full body + graticule rebuild
-    if (theme !== this.#currentTheme) {
-      this.#currentTheme = theme;
+    // Detect theme or tint change — trigger full body + graticule rebuild
+    const tintsChanged = (scene.surfaceTint ?? null) !== this.#prevSurfaceTint
+      || (scene.overlayTint ?? null) !== this.#prevOverlayTint;
+    this.#prevSurfaceTint = scene.surfaceTint ?? null;
+    this.#prevOverlayTint = scene.overlayTint ?? null;
+    if (themeChanged || tintsChanged) {
       const resolvedPl = resolvePlanetConfig(scene.planet ?? {});
       this.#rebuildForTheme(resolvedPl, palette);
     }
@@ -435,6 +479,7 @@ export class ThreeGlobeRenderer {
       this.#calloutManager.update(this.#calloutGroup, scene.markers ?? [], locale, {
         leaderColor: palette.leaderColor,
         textColor: palette.calloutTextColor,
+        zoom: this.#zoom,
       });
 
       if (typeof CSS2DObject !== 'undefined' && this.#globeGroup) {
@@ -510,7 +555,7 @@ export class ThreeGlobeRenderer {
     const planet = scene.planet ?? {};
     const resolvedPlanet = resolvePlanetConfig(planet);
 
-    // Borders are Earth-specific — hide on other bodies
+    // Borders and landmass fill are Earth-specific — hide on other bodies
     if (this.#borderGroup && this.#borderGeoJson) {
       const isEarth = resolvedPlanet.id === 'earth';
       const showBorders = isEarth && (scene.planet ?? {}).showBorders !== false;
@@ -518,6 +563,9 @@ export class ThreeGlobeRenderer {
         show: showBorders,
         color: palette.borderColor,
         opacity: palette.borderOpacity,
+      });
+      this.#landmassManager.update(this.#landmassGroup, this.#borderGeoJson, {
+        color: isEarth ? palette.landmassColor : null,
       });
     }
 
@@ -545,11 +593,17 @@ export class ThreeGlobeRenderer {
     // Update sun direction uniform
     this.#updateSunDirection(resolvedPlanet);
 
-    // Update idle rotation speed
-    if (typeof planet.rotationSpeed === 'number') {
-      this.#rotationSpeed = planet.rotationSpeed;
+    // Update idle rotation speed (skip while loading — fast spin takes priority)
+    if (this.#loadingSavedSpeed === null) {
+      if (typeof planet.rotationSpeed === 'number') {
+        this.#rotationSpeed = planet.rotationSpeed;
+      } else {
+        this.#rotationSpeed = IDLE_ROTATION_SPEED_DEFAULT;
+      }
     } else {
-      this.#rotationSpeed = IDLE_ROTATION_SPEED_DEFAULT;
+      // Store the scene's intended speed so it's restored when loading ends
+      this.#loadingSavedSpeed = typeof planet.rotationSpeed === 'number'
+        ? planet.rotationSpeed : IDLE_ROTATION_SPEED_DEFAULT;
     }
 
     // If no Three.js renderer available (Node.js tests), skip WebGL-specific steps
@@ -707,6 +761,16 @@ export class ThreeGlobeRenderer {
     this.#dirty = true;
   }
 
+  filterArcs(matchingIds) {
+    this.#arcPathManager.filterArcs(matchingIds);
+    this.#dirty = true;
+  }
+
+  filterPaths(matchingIds) {
+    this.#arcPathManager.filterPaths(matchingIds);
+    this.#dirty = true;
+  }
+
   projectPointToClient(point) {
     if (!this.#camera || !this.#webglRenderer) {
       return null;
@@ -750,6 +814,7 @@ export class ThreeGlobeRenderer {
     this.#regionManager?.dispose();
     this.#calloutManager?.dispose();
     this.#borderManager?.dispose();
+    this.#landmassManager?.dispose();
     this.#geoLabelManager?.dispose();
 
     // Dispose Three.js objects
@@ -820,6 +885,9 @@ export class ThreeGlobeRenderer {
   /** Saved rotation speed while idle rotation is paused (null = not paused). */
   #savedRotationSpeed = null;
 
+  /** Saved rotation speed while in loading state (null = not loading). */
+  #loadingSavedSpeed = null;
+
   /** Apply the current centerLon/centerLat as globe group Euler angles. */
   #applyGlobeRotation() {
     if (!this.#globeGroup) return;
@@ -854,13 +922,19 @@ export class ThreeGlobeRenderer {
     this.#graticule = graticule;
     if (this.#globeGroup) this.#globeGroup.add(graticule);
 
-    // Reset border manager so it rebuilds with new colors
+    // Reset border and landmass managers so they rebuild with new colors
     this.#borderManager.dispose();
     this.#borderManager = new BorderManager();
+    this.#landmassManager.dispose();
+    this.#landmassManager = new LandmassManager();
+  }
+
+  #getPalette() {
+    return getThemePalette(this.#currentTheme || 'photo', this.#currentSurfaceTint, this.#currentOverlayTint);
   }
 
   #rebuildBody(planet, palette = null) {
-    const p = palette || getThemePalette(this.#currentTheme || 'photo');
+    const p = palette || this.#getPalette();
 
     // Teardown old body mesh
     if (this.#bodyMesh) {
@@ -1126,10 +1200,11 @@ export class ThreeGlobeRenderer {
     clusterMarkers(markers, zoomAdjusted);
 
     const locale = scene.locale ?? 'en';
-    const reclusterPalette = getThemePalette(this.#currentTheme || 'photo');
+    const reclusterPalette = this.#getPalette();
     this.#calloutManager.update(this.#calloutGroup, markers, locale, {
       leaderColor: reclusterPalette.leaderColor,
       textColor: reclusterPalette.calloutTextColor,
+      zoom: this.#zoom,
     });
     this.#lastClusterZoom = this.#zoom;
 
@@ -1243,6 +1318,11 @@ export class ThreeGlobeRenderer {
     // Animate marker pulse rings
     if (this.#markerManager.hasPulseAnimations()) {
       this.#markerManager.animate(this.#elapsedTime);
+      this.#dirty = true;
+    }
+
+    // Animate arc/path progressive reveal
+    if (this.#arcPathManager.animate()) {
       this.#dirty = true;
     }
 

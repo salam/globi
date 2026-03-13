@@ -11,6 +11,7 @@
 
 ## Version 1.2.1 (Thu, Mar 13 2026)
 
+* Wireframe landmass fill: wireframe themes now show landmasses as a subtle gray fill, making it easy to distinguish land from ocean at a glance. The fill color responds to overlay tint.
 * Theme cycle toggle: click the thumbnail button in the controls bar to switch between all 5 visual themes (photo, wireframe-shaded, wireframe-flat, grayscale-shaded, grayscale-flat). Thumbnail adapts to the current planet's color. Button hidden by default, enabled in all examples.
 * npm publishing — tagged releases now automatically publish to the npm registry, making Globi available via `npm install globi` and the unpkg CDN (`https://unpkg.com/globi/dist/globi.min.js`)
 * Release workflow now includes all 6 dist files (globi, globi-io, globi-examples — both minified and unminified) as GitHub Release assets
