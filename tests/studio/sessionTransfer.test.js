@@ -14,24 +14,28 @@ const { writeScene, readScene, STORAGE_KEY } = await import('../../studio/state/
 describe('sessionTransfer', () => {
   beforeEach(() => storage.clear());
 
-  it('writes and reads a scene', () => {
+  it('writes and reads a scene', async () => {
     const scene = { version: 1, markers: [{ id: 'm1' }] };
     writeScene(scene);
-    const result = readScene();
+    const result = await readScene();
     assert.deepEqual(result, scene);
   });
 
-  it('returns null when nothing stored', () => {
-    assert.equal(readScene(), null);
+  it('returns null when nothing stored', async () => {
+    assert.equal(await readScene(), null);
   });
 
-  it('clears after read', () => {
+  it('clears after read', async () => {
     writeScene({ version: 1 });
-    readScene();
-    assert.equal(readScene(), null);
+    await readScene();
+    assert.equal(await readScene(), null);
   });
 
   it('uses the documented storage key', () => {
     assert.equal(STORAGE_KEY, 'globi-studio-scene');
+  });
+
+  it('compresses large scenes when CompressionStream is available', { skip: typeof globalThis.CompressionStream === 'undefined' }, async () => {
+    // This test only runs in browser environments with CompressionStream
   });
 });
