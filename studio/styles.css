@@ -310,6 +310,14 @@ body { background: #0d0d1a; color: #ccc; font-family: -apple-system, BlinkMacSys
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
+/* Cursor feedback per tool */
+.viewport.tool-select { cursor: default; }
+.viewport.tool-marker,
+.viewport.tool-arc,
+.viewport.tool-path,
+.viewport.tool-region { cursor: crosshair; }
+.viewport.tool-draw { cursor: crosshair; }
+
 /* Preview mode */
 .studio.preview .menu-bar,
 .studio.preview .tool-strip,
