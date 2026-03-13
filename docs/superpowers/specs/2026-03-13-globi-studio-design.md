@@ -55,7 +55,7 @@ Top horizontal bar containing:
 - **GLOBI STUDIO** logo/brand (left)
 - **File** — New Scene (Ctrl+N), New from Clipboard (Ctrl+Shift+V), New from File (Ctrl+O), Save as File/Download (Ctrl+S), Export JSON, Export GeoJSON, Export OBJ
 - **Edit** — Undo (Ctrl+Z), Redo (Ctrl+Shift+Z), Delete Selected (Del), Duplicate (Ctrl+D), Select All (Ctrl+A)
-- **View** — Toggle Properties Panel (P), Toggle Timeline (T), Toggle HUD (H), Zoom to Fit (F), Reset Camera (Ctrl+R)
+- **View** — Toggle Properties Panel (P), Toggle Timeline (T), Toggle HUD (H), Zoom to Fit (F), Reset Camera (Shift+R)
 - **Tools** — Custom ChatGPT (external link to public CustomGPT), Claude Cowork (external link)
 - **Help** — Documentation (external link), Keyboard Shortcuts (?), About Globi Studio
 - **Preview button** (right-aligned) — prominent ▶ Preview button with Space shortcut. Activates preview mode: hides all editor UI (tool strip, properties, timeline, menu bar) and plays the scene as the end user would see it. Press Space or Escape to exit.
@@ -258,7 +258,7 @@ docs/ai-companions/
 | Shift+D | Toggle freehand / point-to-point |
 | Space | Toggle Preview mode |
 | Shift+Space | Preview from playhead |
-| Escape | Exit current mode / deselect / exit preview |
+| Escape | Exit (priority: preview exit > tool cancel > deselect) |
 | Delete | Delete selected element |
 | Ctrl+Z | Undo |
 | Ctrl+Shift+Z | Redo |
@@ -272,7 +272,7 @@ docs/ai-companions/
 | T | Toggle Timeline |
 | H | Toggle HUD |
 | F | Zoom to Fit |
-| Ctrl+R | Reset Camera |
+| Shift+R | Reset Camera |
 | ? | Show Keyboard Shortcuts |
 
 ## Non-Functional Requirements
