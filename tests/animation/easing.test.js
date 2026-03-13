@@ -45,6 +45,16 @@ describe('AnimationEngine easing', () => {
     assert.ok(v75.x > 75, `expected > 75, got ${v75.x}`);
   });
 
+  it('supports cubic-bezier(x1,y1,x2,y2)', () => {
+    const engine = new AnimationEngine();
+    engine.register('e1', [
+      { t: 0, value: { x: 0 }, easing: 'cubic-bezier(0.42,0,0.58,1)' },
+      { t: 1000, value: { x: 100 } },
+    ]);
+    const v = engine.sample('e1', 500);
+    assert.ok(v.x > 40 && v.x < 60, `expected 40-60, got ${v.x}`);
+  });
+
   it('keyframes without easing default to linear', () => {
     const engine = new AnimationEngine();
     engine.register('e1', [

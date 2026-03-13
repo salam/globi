@@ -44,6 +44,24 @@ const EASING = {
   'elastic': t => t === 0 || t === 1 ? t : -Math.pow(2, 10 * (t - 1)) * Math.sin((t - 1.1) * 5 * Math.PI),
 };
 
+function parseCubicBezier(str) {
+  const m = str.match(/cubic-bezier\(\s*([^)]+)\s*\)/);
+  if (!m) return null;
+  const [x1, y1, x2, y2] = m[1].split(',').map(s => parseFloat(s.trim()));
+  return (t) => {
+    let guess = t;
+    for (let i = 0; i < 8; i++) {
+      const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+      const curveX = ((ax * guess + bx) * guess + cx) * guess;
+      const dx = (3 * ax * guess + 2 * bx) * guess + cx;
+      if (Math.abs(dx) < 1e-6) break;
+      guess -= (curveX - t) / dx;
+    }
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    return ((ay * guess + by) * guess + cy) * guess;
+  };
+}
+
 export function normalizeKeyframes(keyframes = []) {
   return keyframes
     .map((frame) => ({
@@ -81,7 +99,7 @@ export function interpolateKeyframes(keyframesInput, timeMs) {
     const left = keyframes[i - 1];
     const span = right.t - left.t || 1;
     const alpha = (timeMs - left.t) / span;
-    const easeFn = EASING[left.easing] || EASING.linear;
+    const easeFn = EASING[left.easing] || (left.easing?.startsWith('cubic-bezier') ? parseCubicBezier(left.easing) : null) || EASING.linear;
     return interpolateValue(left.value, right.value, easeFn(alpha));
   }
 
