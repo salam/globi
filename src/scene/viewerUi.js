@@ -12,6 +12,7 @@ const DEFAULT_VIEWER_UI = Object.freeze({
   showMarkerFilter: true,
   showAttribution: true,
   showProjectionToggle: true,
+  showThemeToggle: false,
 });
 
 function isObject(value) {
@@ -46,6 +47,7 @@ export function normalizeViewerUiConfig(input = {}) {
     showMarkerFilter: value.showMarkerFilter ?? DEFAULT_VIEWER_UI.showMarkerFilter,
     showAttribution: value.showAttribution ?? DEFAULT_VIEWER_UI.showAttribution,
     showProjectionToggle: value.showProjectionToggle ?? DEFAULT_VIEWER_UI.showProjectionToggle,
+    showThemeToggle: value.showThemeToggle ?? DEFAULT_VIEWER_UI.showThemeToggle,
   };
 }
 
@@ -64,6 +66,7 @@ export function resolveViewerUiConfig(input = {}) {
     showMarkerFilter: pickBooleanOrDefault(normalized.showMarkerFilter, DEFAULT_VIEWER_UI.showMarkerFilter),
     showAttribution: pickBooleanOrDefault(normalized.showAttribution, DEFAULT_VIEWER_UI.showAttribution),
     showProjectionToggle: coerceBooleanOrDefault(normalized.showProjectionToggle, DEFAULT_VIEWER_UI.showProjectionToggle),
+    showThemeToggle: pickBooleanOrDefault(normalized.showThemeToggle, DEFAULT_VIEWER_UI.showThemeToggle),
   };
 }
 
@@ -93,6 +96,7 @@ export function validateViewerUiConfig(viewerUi, pointer, errors) {
     'showMarkerFilter',
     'showAttribution',
     'showProjectionToggle',
+    'showThemeToggle',
   ];
 
   for (const field of booleanFields) {
