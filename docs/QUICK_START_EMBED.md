@@ -14,15 +14,15 @@ Create an HTML file and load the component code.
     <title>Globe Embed</title>
     <style>
       body { margin: 0; font-family: sans-serif; }
-      globe-viewer { width: 100vw; height: 100vh; display: block; }
+      globi-viewer { width: 100vw; height: 100vh; display: block; }
     </style>
   </head>
   <body>
-    <globe-viewer id="world" language="en" planet="earth"></globe-viewer>
+    <globi-viewer id="world" language="en" planet="earth"></globi-viewer>
 
     <script type="module">
-      import { registerGlobeViewer } from './src/index.js';
-      registerGlobeViewer();
+      import { registerGlobiViewer } from './src/index.js';
+      registerGlobiViewer();
 
       const world = document.getElementById('world');
       world.setPlanetPreset('earth'); // default if omitted
@@ -70,7 +70,7 @@ Optional lighting mode:
 
 Flat map projection mode:
 
-- `<globe-viewer projection="azimuthalEquidistant">` starts in flat map mode
+- `<globi-viewer projection="azimuthalEquidistant">` starts in flat map mode
 - Available projections: `globe` (default), `azimuthalEquidistant`, `orthographic`, `equirectangular`
 - Or set programmatically via scene JSON: `{ projection: 'azimuthalEquidistant' }`
 - A toggle button in the toolbar switches between globe and flat map
@@ -121,7 +121,51 @@ world.addEventListener('markerClick', (event) => {
 - Bottom-right HUD shows a north-pointing arrow compass and a dynamic scale bar in kilometers.
 - Globe idles with a slow self-rotation (uses the selected planet preset rotation direction/speed).
 
-## 5) Notes
+## 5) Agent API (`window.globi`)
+
+Every `<globi-viewer>` exposes a `window.globi` JavaScript API for programmatic and AI-agent control.
+
+```js
+// Read
+window.globi.state()          // { lat, lon, zoom, projection, theme, body }
+window.globi.scene()          // full scene object
+window.globi.visible()        // currently visible markers, arcs, paths, regions
+window.globi.describe('brief') // human-readable view description
+window.globi.llmsTxt()        // structured plain-text for LLM consumption
+window.globi.help()           // full capability manifest
+
+// Navigate
+window.globi.flyTo(47.37, 8.54, 2.5)
+window.globi.setProjection('equirectangular')
+window.globi.rotate(5, 10)
+
+// Mutate
+window.globi.addMarker({ name: 'New', lat: 48.8, lon: 2.35 })
+window.globi.removeMarker('m1')
+window.globi.updateMarker('m1', { category: 'highlight' })
+
+// Export
+window.globi.export('json', 'visible')  // or 'geojson', 'obj', 'full'
+
+// UI
+window.globi.setTheme('wireframe-shaded')
+window.globi.toggleLegend()
+```
+
+Multiple viewers: `window.globiAll` is an array of all active viewer APIs. Each viewer element also has a `.globi` property.
+
+The host element includes `data-globi-*` attributes (`data-globi-role`, `data-globi-body`, `data-globi-projection`, `data-globi-zoom`, `data-globi-marker-count`, `data-globi-actions`) for AI agent discoverability.
+
+## 6) Context menu
+
+Right-click (or long-press on mobile, Shift+F10 on keyboard) anywhere on the viewer to access:
+
+- Export (GeoJSON, JSON, OBJ) for visible or full scene
+- Copy coordinates, view description, or LLMs.txt
+- Drop a new marker at the clicked point
+- Inspect a marker or region under the cursor
+
+## 7) Notes
 - The current renderer is dependency-free and lightweight.
 - It supports textured planet backgrounds and marker image assets.
 - OSM PBF and Shapefile direct import are planned, not fully integrated yet.

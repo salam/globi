@@ -1,5 +1,47 @@
 # Release Notes
 
+## Version 1.3 (Wed, Mar 12 2026)
+
+* Custom context menu — right-click (or long-press on mobile, Shift+F10 on keyboard) to export in GeoJSON/JSON/OBJ, copy coordinates, drop a marker, fly to a point, inspect entities, and copy view descriptions
+* Screen reader descriptions — the viewer now announces a brief natural-language description of the current view via `aria-live`, with brief (~50 word) and detailed (~150 word) levels
+* LLMs.txt output — structured plain-text snapshot of the current view state (visible markers, arcs, paths, regions, filters, available actions) for consumption by AI agents
+* `window.globi` agent API — 28 commands for reading view state, navigating, adding/removing/updating markers/arcs/paths/regions, exporting, switching themes/projections, and toggling UI controls. Call `window.globi.help()` for the full manifest.
+* `data-globi-*` DOM attributes on `<globi-viewer>` for AI agent discoverability (body, projection, zoom, marker count, available actions)
+* Multi-instance support — `window.globiAll` array tracks all viewer instances; ownership transfers automatically on disconnect
+
+## Version 1.2 (Fri, Mar 13 2026)
+
+* New example: "Battle of Midway (1942)" — scrollytelling narrative of the decisive Pacific naval battle with 25 chronological steps, sticky globe on the left, aged-paper text panels on the right, animated carrier positions, air strike arcs, and superscript source citations from 6 published references. Demonstrates controlling the globe from an external text widget via IntersectionObserver.
+* New example: "Hannibal's Route (218 BC)" — traces the full campaign march from Carthage across Iberia, the Pyrenees, Gaul, and the Alps into Italy with 13 historical waypoints and a route path on the grayscale-shaded theme
+* New example: "Indiana Jones Itinerary" — thick red animated flight arcs across all 5 Indiana Jones movies on an equirectangular flat map, with per-movie filter toggles
+
+## Version 1.1.0 (Thu, Mar 12 2026, night)
+
+* Open-sourced under MIT license
+* Added public README.md with logo, feature overview, and inline example links
+* New example: "Moon Landing Sites" — every historical and planned lunar landing (Apollo, Luna, Chang'e, Chandrayaan, SLIM, Artemis)
+* New example: "Mars Landing Sites" — all Mars landers and rovers from Viking to Perseverance
+* New example: "Europa: Subsurface Water" — suspected ocean features on Jupiter's icy moon
+* New example: "Titan: Methane Lakes" — Kraken Mare, Ligeia Mare, and other hydrocarbon seas
+* New example: "Wireframe Earth" — clean B&W wireframe rendering showcase
+* New example: "Grayscale Earth" — desaturated flat cartographic style showcase
+* Added standalone embeddable HTML pages for all 14 examples (`examples/` directory)
+* Added esbuild production bundler (`npm run build` produces `dist/globi.min.js`)
+* Added GitHub Actions: CI workflow (lint + test on push/PR) and release workflow (build + publish on version tags)
+
+## Version 1.0.x (Thu, Mar 12 2026, night)
+
+* Compass arrow now tracks the globe's 3D perspective — it foreshortens as the north pole tilts toward the camera and becomes a glowing dot when looking straight down at the pole
+
+## Version 1.x.x (Thu, Mar 12 2026, late)
+
+* Loading animation — when a data source (e.g. ISS live) is being fetched, the globe spins quickly with a pulsing "Loading…" indicator
+* Set `viewer.loading = true/false` or use the `loading` HTML attribute programmatically
+* Previous rotation speed is automatically restored when loading completes
+* Fixed rgba() colors in region overlays triggering THREE.Color alpha warnings
+* Fixed country border GeoJSON 404 when viewer runs inside a subdirectory
+* Improved per-frame rendering performance: O(1) callout lookups, skip idle visibility checks, reduced allocations
+
 ## Version 1.x.x (Wed, Mar 12 2026, late evening)
 
 * Added 5 theme variants: Photo Realistic (default), Wireframe Shaded, Wireframe Flat, Grayscale Shaded, Grayscale Flat
@@ -161,7 +203,7 @@
 
 ## Release 1.2 (Sun, Mar 1 11:39)
 
-- Added a full globe runtime with a reusable `<globe-viewer>` web component.
+- Added a full globe runtime with a reusable `<globi-viewer>` web component.
 - Added scene schema validation, migration, and localization-ready content fields.
 - Added marker, path, arc, and region rendering with keyboard, drag, zoom, and fullscreen support.
 - Added animation keyframe engine with loop support.

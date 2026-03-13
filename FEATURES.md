@@ -18,6 +18,7 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Apply Viewer UI toggles immediately so globe controls hide/show as soon as options are changed in the editor.
 - [x] Fix compass HUD visibility defaults and make Viewer UI control changes reliable across browsers (`input` + `change` handling).
 - [x] Simplify compass UI to arrow-only and keep the arrow north-oriented.
+- [x] Compass arrow follows globe perspective: foreshortens with 3D tilt and shows dot when north pole faces the camera.
 
 ## Celestial Bodies
 
@@ -44,7 +45,7 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 
 ## Core Globe
 
-- [x] Implement `<globe-viewer>` web component bootstrap (init, destroy, resize).
+- [x] Implement `<globi-viewer>` web component bootstrap (init, destroy, resize).
 - [x] Render textured spherical Earth with configurable planet presets.
 - [x] Offer sun-position-based sphere lighting as an optional mode.
 - [x] Default to Earth when no base data is provided.
@@ -104,6 +105,14 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Implement arc layer (great-circle + max altitude + dash animation).
 - [ ] Implement region layer (GeoJSON polygon/multipolygon with extrusion).
 
+## Loading State
+
+- [x] `loading` attribute/property on `<globi-viewer>` that triggers fast spin + subtle overlay indicator
+- [x] Fast rotation during loading to communicate active data fetching
+- [x] Pulsing dot indicator at bottom-center with "Loading..." text
+- [x] Automatic restore of previous rotation speed when loading completes
+- [x] Editor wires loading state around async example scene fetches
+
 ## Interaction and UI
 - [x] Add marker picking, tooltip/callout rendering, and focus management.
 - [x] Implement `flyTo`/"center marker" API and camera transition presets.
@@ -141,7 +150,12 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Sanitize callout HTML/Markdown to prevent XSS.
 - [x] Smart callout clustering — nearby markers auto-stack (2-3) or collapse into group badges (4+).
 - [x] Add i18n dictionaries for `en`, `de`, `fr`, `it`.
-- [ ] Add screen-reader and keyboard accessibility checks.
+- [x] Add screen-reader and keyboard accessibility checks.
+- [x] Custom context menu (right-click / long-press / Shift+F10) with entity-specific actions, export, and description copy.
+- [x] Screen reader descriptions (brief/detailed) with debounced `aria-live` updates.
+- [x] LLMs.txt machine-readable view state output for AI consumption.
+- [x] `window.globi` agent API — full read/navigate/mutate/UI control for AI agents.
+- [x] DOM `data-globi-*` attributes for agent discoverability.
 
 ## Delivery Plan
 - [x] Phase 1 (Weeks 1-4): core globe, web component, base data model.
@@ -170,7 +184,29 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Marker `timestamp` field for time-based filtering
 - [x] Legend groups markers into sections by filter categories (alphabetical within each section)
 
+## Planetary Examples
+
+- [x] Moon Landing Sites — all historical landings (Apollo, Luna, Chang'e, Chandrayaan, SLIM) + planned Artemis
+- [x] Mars Landing Sites — Viking to Perseverance, all landers and rovers
+- [x] Europa: Subsurface Water — suspected ocean features on Jupiter's icy moon
+- [x] Titan: Methane Lakes — Kraken Mare, Ligeia Mare, and other hydrocarbon seas
+- [x] Wireframe Earth showcase (wireframe-shaded theme)
+- [x] Grayscale Earth showcase (grayscale-flat theme)
+- [x] Hannibal's Route (218 BC) — full campaign from Carthage to Cannae on grayscale-shaded theme
+- [x] Indiana Jones Itinerary — all 5 movies with thick red animated flight arcs, toggleable per movie on flat map
+- [x] Battle of Midway (1942) — scrollytelling example with 25 steps, sticky globe + aged-paper text panels, external widget control via IntersectionObserver, 6 published source citations
+
+## Public Release
+
+- [x] MIT LICENSE file
+- [x] Public README.md with logo, feature overview, example links
+- [x] Standalone embeddable HTML pages for all examples (`examples/` directory)
+- [x] esbuild production bundler (`npm run build` → `dist/globi.min.js`)
+- [x] GitHub Actions CI (lint + test on push/PR) and release (build + publish on tag)
+- [x] Removed `"private": true` from package.json
+
 ## Remaining Gaps
+
 - [ ] Replace placeholder USDZ export with production-grade USD/USDZ packaging.
 - [ ] Integrate real OSM PBF and Shapefile parsers.
 - [ ] Add end-to-end browser tests for embed mode and editor mode.
