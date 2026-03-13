@@ -29,7 +29,8 @@ Two new optional properties on the scene object:
 - Both accept 7-character hex color strings (`/^#[0-9a-fA-F]{6}$/`).
 - `null` or omitted means no tint — theme defaults apply unchanged.
 - Added to `createEmptyScene()` as `null`.
-- Validated in `validateScene()`.
+- Validated in `validateScene()`: if present and not `null`, must match hex regex; otherwise push error.
+- Handled in `normalizeScene()`: malformed values normalize to `null` (no tint). Valid hex strings pass through.
 
 ### Blending Algorithm (HSL hue/saturation replacement)
 
@@ -38,12 +39,16 @@ Two new optional properties on the scene object:
 3. Replace hue and saturation with the tint's H/S; keep original lightness.
 4. Convert back to the palette's native format (hex number, CSS string, or RGB array).
 
+**Achromatic colors:** When the original palette color is achromatic (saturation ≈ 0, e.g. pure white, black, or gray), apply the tint's hue but blend saturation proportionally: `finalSaturation = tintSaturation * 0.3`. This prevents white backgrounds from becoming vivid colors — they gain a subtle warm/cool cast instead.
+
+**RGB array range:** `atmosphereColor` and `rimColor` are 0–1 float RGB arrays. The blending implementation converts 0–1 floats → 0–255 bytes for HSL math, then converts back to 0–1 floats.
+
 ### surfaceTint applies to
 
 - `background` (hex number for WebGL `setClearColor`)
 - `backgroundFlat` (CSS string for 2D canvas)
-- `atmosphereColor` (RGB array `[r, g, b]`)
-- `rimColor` (RGB array `[r, g, b]`)
+- `atmosphereColor` (RGB array `[r, g, b]`, 0–1 floats)
+- `rimColor` (RGB array `[r, g, b]`, 0–1 floats)
 
 ### overlayTint applies to
 
@@ -55,7 +60,8 @@ Two new optional properties on the scene object:
 
 ### What is NOT tinted
 
-Per-entity colors on markers, paths, arcs, and regions. Those are content-author colors and stay as-is.
+- Per-entity colors on markers, paths, arcs, and regions (content-author colors).
+- Non-color properties: `borderOpacity`, `graticuleOpacity`, `graticuleVisible`, `useTextures`, `desaturate`, `shaded`, `flatLighting`, `atmosphereEnabled`. These remain unchanged.
 
 ### Navigation HUD Refactor
 
@@ -68,7 +74,7 @@ The nav HUD (`src/components/navigationHud.js`) currently has hardcoded white co
 
 | File | Change |
 |------|--------|
-| `src/scene/schema.js` | Add `surfaceTint`, `overlayTint` to `createEmptyScene()` + validation |
+| `src/scene/schema.js` | Add `surfaceTint`, `overlayTint` to `createEmptyScene()`, `normalizeScene()`, and `validateScene()` |
 | `src/renderer/themePalette.js` | Add `applyTint(palette, surfaceTint, overlayTint)` helper, extend `getThemePalette()` signature |
 | `src/renderer/threeGlobeRenderer.js` | Pass tint params when calling `getThemePalette()` |
 | `src/renderer/flatMapRenderer.js` | Pass tint params when calling `getThemePalette()` |
@@ -89,17 +95,25 @@ viewer.flyTo({
 
 When `zoomArc: false` (default), behavior is unchanged — zoom is set instantly, only lat/lon animate.
 
+### Option Forwarding
+
+`flyTo()` in `globi-viewer.js` currently calls `#animateFocusTo(target, { durationMs })`, discarding other options. It must forward `zoom` and `zoomArc` to `#animateFocusTo()`. The `zoom` from the flyTo call becomes `targetZoom` in the animation. When `zoomArc` is false, zoom is still animated linearly (no dip) rather than jumping instantly — this is a minor improvement to the existing behavior.
+
 ### Zoom Arc Formula
+
+`interpolateZoomArc()` is a standalone function in `cameraTween.js`, called from `#animateFocusTo()` separately from `interpolateCameraState()` (which continues to handle only lat/lon).
 
 At each frame with progress `t` (0→1, after easing):
 
 ```
-angularDistance = haversine(startLat, startLon, endLat, endLon) in degrees
+angularDistance = greatCircleDistanceDegrees(startLat, startLon, endLat, endLon)
 dipFraction = clamp(angularDistance / 60, 0.05, 0.35)
-dip = dipFraction * startZoom
+dip = dipFraction * max(startZoom, targetZoom)
 zoomOffset = -dip * sin(π * t)
 currentZoom = lerp(startZoom, targetZoom, eased_t) + zoomOffset
 ```
+
+Uses `max(startZoom, targetZoom)` as the dip base to ensure consistent dip magnitude regardless of zoom direction. `greatCircleDistanceDegrees` is an existing utility (or trivially computed as `acos(sin·sin + cos·cos·cos(Δlon))` converted to degrees).
 
 - Short hops (few degrees): ~5% zoom dip, barely noticeable.
 - Medium pans (~30°): ~17% dip, smooth pull-back feel.
@@ -107,10 +121,10 @@ currentZoom = lerp(startZoom, targetZoom, eased_t) + zoomOffset
 
 ### Files Touched
 
-| File | Change |
-|------|--------|
-| `src/components/cameraTween.js` | Add `interpolateZoomArc(startZoom, endZoom, angularDist, t)` |
-| `src/components/globi-viewer.js` | `#animateFocusTo()` reads `zoomArc` option, animates zoom per frame |
+| File                              | Change                                                                       |
+|-----------------------------------|------------------------------------------------------------------------------|
+| `src/components/cameraTween.js`   | Add `interpolateZoomArc(startZoom, endZoom, angularDist, t)`                 |
+| `src/components/globi-viewer.js`  | `flyTo()` forwards zoom + zoomArc; `#animateFocusTo()` animates zoom/frame   |
 
 ## Battle of Midway Integration
 
@@ -121,7 +135,7 @@ currentZoom = lerp(startZoom, targetZoom, eased_t) + zoomOffset
 
 ## Testing
 
-- Unit test for HSL tint blending: input palette + tint → output palette with correct hues.
-- Unit test for `interpolateZoomArc`: verify dip at t=0, t=0.5, t=1 for various angular distances.
-- Unit test for schema validation: `surfaceTint` and `overlayTint` accepted/rejected correctly.
+- Unit test for HSL tint blending: input palette + tint → output palette with correct hues. Includes achromatic edge cases (white, black, gray).
+- Unit test for `interpolateZoomArc`: verify dip at t=0, t=0.5, t=1 for various angular distances. Verify short vs long hop dip magnitudes.
+- Unit test for schema validation: `surfaceTint` and `overlayTint` accepted/rejected correctly. Malformed values normalize to `null`.
 - Manual verification: Battle of Midway example renders with warm tones and smooth zoom arcs.
