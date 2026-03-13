@@ -19,6 +19,23 @@ describe('SelectTool', () => {
     assert.deepEqual(selected, { kind: 'marker', id: 'm1' });
   });
 
+  it('enters point-editing mode on double-click of region', () => {
+    let mode = null;
+    const fakeController = {
+      hitTest: () => ({ kind: 'region', id: 'r1' }),
+      screenToLatLon: () => ({ lat: 0, lon: 0 }),
+    };
+    const tool = new SelectTool({
+      controller: fakeController,
+      onSelect: () => {},
+      onDeselect: () => {},
+      onMove: () => {},
+      onPointEditMode: (entityId) => { mode = entityId; },
+    });
+    tool.handleDoubleClick({ clientX: 100, clientY: 100 });
+    assert.equal(mode, 'r1');
+  });
+
   it('calls onDeselect when clicking empty space', () => {
     let deselected = false;
     const fakeController = {

@@ -1,9 +1,10 @@
 export class SelectTool {
-  constructor({ controller, onSelect, onDeselect, onMove }) {
+  constructor({ controller, onSelect, onDeselect, onMove, onPointEditMode }) {
     this._controller = controller;
     this._onSelect = onSelect;
     this._onDeselect = onDeselect;
     this._onMove = onMove;
+    this._onPointEditMode = onPointEditMode;
     this._dragging = false;
     this._dragEntityId = null;
   }
@@ -28,4 +29,11 @@ export class SelectTool {
   }
 
   handleMouseUp() { this._dragging = false; this._dragEntityId = null; }
+
+  handleDoubleClick(event) {
+    const hit = this._controller.hitTest(event.clientX, event.clientY);
+    if (hit && (hit.kind === 'region' || hit.kind === 'path')) {
+      if (this._onPointEditMode) this._onPointEditMode(hit.id);
+    }
+  }
 }
