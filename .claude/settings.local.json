@@ -142,10 +142,12 @@
       "Bash(node -c src/components/legendSymbol.js)",
       "Bash(grep -l 'importmap\\\\|node_modules\\\\|from.*\\\\.\\\\./' /Users/matthias/Development/globi/examples/*.html)",
       "Bash(node tools/build-site.mjs)",
-      "Bash(du -sh /Users/matthias/Development/globi/_site/assets/*/)"
+      "Bash(du -sh /Users/matthias/Development/globi/_site/assets/*/)",
+      "Bash(gh run:*)"
     ],
     "additionalDirectories": [
-      "/Users/matthias/Development/globi/examples"
+      "/Users/matthias/Development/globi/examples",
+      "/Users/matthias/Development/globi"
     ]
   }
 }

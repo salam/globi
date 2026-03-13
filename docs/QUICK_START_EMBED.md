@@ -2,6 +2,34 @@
 
 This guide shows how to place the globe on any website.
 
+## 0) Install or load from CDN
+
+**Option A — npm install** (for projects with a bundler):
+
+```bash
+npm install globi-viewer
+```
+
+Then import in your JavaScript:
+
+```js
+import { registerGlobiViewer } from 'globi-viewer';
+registerGlobiViewer();
+```
+
+**Option B — unpkg CDN** (zero build step, just a `<script>` tag):
+
+```html
+<script type="module" src="https://unpkg.com/globi-viewer/dist/globi.min.js"></script>
+```
+
+This auto-registers the `<globi-viewer>` web component. No imports needed.
+
+The unminified build and source map are also available:
+
+- `https://unpkg.com/globi-viewer/dist/globi.js`
+- `https://unpkg.com/globi-viewer/dist/globi.js.map`
+
 ## 1) Add a container page
 Create an HTML file and load the component code.
 
@@ -18,11 +46,15 @@ Create an HTML file and load the component code.
     </style>
   </head>
   <body>
+    <!-- Option A: unpkg CDN (simplest) -->
+    <script type="module" src="https://unpkg.com/globi-viewer/dist/globi.min.js"></script>
+
     <globi-viewer id="world" language="en" planet="earth"></globi-viewer>
 
     <script type="module">
-      import { registerGlobiViewer } from './src/index.js';
-      registerGlobiViewer();
+      // If using npm/bundler instead of CDN, uncomment these lines:
+      // import { registerGlobiViewer } from 'globi-viewer';
+      // registerGlobiViewer();
 
       const world = document.getElementById('world');
       world.setPlanetPreset('earth'); // default if omitted

@@ -171,7 +171,7 @@
         "name": "How do I embed it?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Add the script tag and place <globi-viewer scene=\"scene.json\"></globi-viewer> in your HTML. That's it — no build step, no framework."
+          "text": "Add <script src=\"https://unpkg.com/globi-viewer/dist/globi.min.js\"></script> and place <globi-viewer scene=\"scene.json\"></globi-viewer> in your HTML. Or install via npm: npm install globi-viewer. No build step required for CDN usage."
         }
       },
       {
@@ -244,8 +244,10 @@
       <a href="https://github.com/salam/globi" class="btn btn-secondary" target="_blank" rel="noopener" data-i18n="hero.cta_github">View on GitHub</a>
     </div>
     <div class="hero-embed">
+      <code>&lt;script type="module" src="https://unpkg.com/globi-viewer/dist/globi.min.js"&gt;&lt;/script&gt;</code>
       <code>&lt;globi-viewer scene="scene.json"&gt;&lt;/globi-viewer&gt;</code>
     </div>
+    <p class="hero-install" data-i18n="hero.install">Or install via npm: <code>npm install globi-viewer</code></p>
   </section>
 
   <!-- ── Example 1: Hormuz ── -->
@@ -530,11 +532,15 @@
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q9">How do I embed it?</summary>
-        <p data-i18n="faq.a9">Add the script tag and place &lt;globi-viewer scene="scene.json"&gt;&lt;/globi-viewer&gt; in your HTML. That's it — no build step, no framework.</p>
+        <p data-i18n="faq.a9">Add &lt;script src="https://unpkg.com/globi-viewer/dist/globi.min.js"&gt;&lt;/script&gt; and place &lt;globi-viewer scene="scene.json"&gt;&lt;/globi-viewer&gt; in your HTML. Or install via npm: npm install globi-viewer. No build step required for CDN usage.</p>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q10">Can AI agents interact with it?</summary>
         <p data-i18n="faq.a10">Yes. Globi exposes a 28-command agent API via window.globi, plus DOM data attributes and an llms.txt endpoint for machine discovery.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q11">How much does it cost?</summary>
+        <p data-i18n="faq.a11">Globi is completely free and open-source. If you use it and would like to give something back, consider donating through GitHub Sponsors.</p>
       </details>
     </div>
   </section>

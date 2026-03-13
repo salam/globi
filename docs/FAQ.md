@@ -7,6 +7,18 @@ Surface textures for Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptu
 ## Is this only for Earth?
 No. Earth is the default, and you can toggle built-in presets for all 8 planets plus 5 popular moons (`moon`, `io`, `europa`, `ganymede`, `titan`). You can still set custom planet values manually.
 
+## How do I add the globe to my page?
+
+**npm:** `npm install globi-viewer`, then `import { registerGlobiViewer } from 'globi-viewer'`.
+
+**CDN (no build step):** Add a single script tag:
+
+```html
+<script type="module" src="https://unpkg.com/globi-viewer/dist/globi.min.js"></script>
+```
+
+This auto-registers the `<globi-viewer>` custom element. See the [Embed Quick Start](QUICK_START_EMBED.md) for a full example.
+
 ## Do I need React or Vue?
 No. The main viewer is a Web Component (`<globi-viewer>`), so plain HTML works.
 

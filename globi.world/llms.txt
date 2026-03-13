@@ -8,9 +8,19 @@ Globi is a browser-native web component (`<globi-viewer>`) that renders interact
 
 ## Quick Start
 
+CDN (no build step):
 ```html
-<script type="module" src="https://globi.world/globi.js"></script>
+<script type="module" src="https://unpkg.com/globi-viewer/dist/globi.min.js"></script>
 <globi-viewer scene="scene.json"></globi-viewer>
+```
+
+npm:
+```bash
+npm install globi-viewer
+```
+```js
+import { registerGlobiViewer } from 'globi-viewer';
+registerGlobiViewer();
 ```
 
 ## Core Capabilities
@@ -59,6 +69,8 @@ Region: { id, name, geojson: {type: "Polygon", coordinates}, capColor, sideColor
 ## Links
 
 - Homepage: https://globi.world
+- npm: https://www.npmjs.com/package/globi-viewer
+- CDN: https://unpkg.com/globi-viewer/dist/globi.min.js
 - GitHub: https://github.com/salam/globi
 - Editor: https://globi.world/editor/
 - Examples: https://globi.world/examples/

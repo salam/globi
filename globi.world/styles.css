@@ -101,6 +101,11 @@ a:hover { color: var(--accent-hover); }
 
 .gh-link:hover, .sponsor-link:hover { color: var(--text); }
 
+.sponsor-link {
+  background: rgba(219, 97, 162, 0.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
 .sponsor-link svg { color: #db61a2; }
 
 .lang-toggle select {
@@ -196,7 +201,9 @@ a:hover { color: var(--accent-hover); }
 }
 
 .hero-embed {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
   background: white;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -207,6 +214,21 @@ a:hover { color: var(--accent-hover); }
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 13px;
   color: var(--text-muted);
+  display: block;
+  text-align: left;
+}
+
+.hero-install {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.hero-install code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  background: var(--bg-muted, #f5f5f5);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 /* ── Example Sections ── */

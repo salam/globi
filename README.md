@@ -28,7 +28,7 @@ Drop a single HTML tag into any page, feed it a JSON scene, and you get a fully 
 
 ## Quick Start
 
-### Via CDN (coming soon)
+### Via CDN
 
 ```html
 <script type="module" src="https://unpkg.com/globi-viewer/dist/globi.min.js"></script>
@@ -72,40 +72,40 @@ Globi ships with ready-to-use example scenes. Each one is a standalone HTML page
 
 | Preview | Example | Showcased Features |
 | ------- | ------- | ------------------ |
-| <img src="assets/screenshots/all-capitals.png" alt="All World Capitals screenshot" width="240"> | [**All World Capitals**](examples/all-capitals.html)<br>190+ capital cities with UN/NATO membership filters | Markers, callout clustering, category filters, legend grouping, fly-to |
-| <img src="assets/screenshots/continents-and-seas.png" alt="Continents and Seas screenshot" width="240"> | [**Continents & Seas**](examples/continents-and-seas.html)<br>Continental and ocean boundaries from Natural Earth | Regions, geo labels, borders, data attribution |
-| <img src="assets/screenshots/iss-realtime.gif" alt="ISS Real-Time animated preview" width="240"> | [**ISS Real-Time**](examples/iss-realtime.html)<br>Live International Space Station position and orbital path | Real-time data, loading state, pulsating animation, 3D model marker, paths |
-| <img src="assets/screenshots/naval-vessels.png" alt="Naval Vessels screenshot" width="240"> | [**Naval Vessels (OSINT)**](examples/naval-vessels.html)<br>Carrier strike groups from open-source intelligence | Nation filters, time range filter, trail paths, data attribution |
-| <img src="assets/screenshots/vessel-tracking.png" alt="Vessel Tracking screenshot" width="240"> | [**Vessel Tracking (Multi-Source)**](examples/vessel-tracking.html)<br>21 naval vessels from 5 nations with AIS integration | Multi-source data pipeline, nation filters, dashed trail paths |
-| <img src="assets/screenshots/civil-shipping.png" alt="Civil Shipping screenshot" width="240"> | [**Civil Shipping**](examples/civil-shipping.html)<br>Vessel traffic across 9 major shipping straits | Strait filters, category grouping, data attribution |
-| <img src="assets/screenshots/ukraine-conflict.png" alt="Ukraine Conflict screenshot" width="240"> | [**Ukraine Conflict**](examples/ukraine-conflict.html)<br>Open-source conflict context layer | Regions, GeoJSON import, data attribution |
-| <img src="assets/screenshots/hannibal-route.png" alt="Hannibal Route screenshot" width="240"> | [**Hannibal's Route (218 BC)**](examples/hannibal-route.html)<br>Campaign march from Carthage to Cannae with 13 waypoints | Paths, grayscale-shaded theme, historical data, callouts |
-| <img src="assets/screenshots/battle-of-midway.png" alt="Battle of Midway screenshot" width="240"> | [**Battle of Midway (1942)**](examples/battle-of-midway.html)<br>25-step scrollytelling of the Pacific naval battle | Scrollytelling, external widget control, animated arcs, source citations |
-| <img src="assets/screenshots/indiana-jones.gif" alt="Indiana Jones animated preview" width="240"> | [**Indiana Jones Itinerary**](examples/indiana-jones.html)<br>Flight routes from all 5 films with animated red arcs | Animated arcs, per-movie filters, equirectangular flat map |
+| <img src="assets/screenshots/all-capitals.png" alt="All World Capitals screenshot" width="240"> | [**All World Capitals**](https://globi.world/examples/all-capitals.html)<br>190+ capital cities with UN/NATO membership filters | Markers, callout clustering, category filters, legend grouping, fly-to |
+| <img src="assets/screenshots/continents-and-seas.png" alt="Continents and Seas screenshot" width="240"> | [**Continents & Seas**](https://globi.world/examples/continents-and-seas.html)<br>Continental and ocean boundaries from Natural Earth | Regions, geo labels, borders, data attribution |
+| <img src="assets/screenshots/iss-realtime.gif" alt="ISS Real-Time animated preview" width="240"> | [**ISS Real-Time**](https://globi.world/examples/iss-realtime.html)<br>Live International Space Station position and orbital path | Real-time data, loading state, pulsating animation, 3D model marker, paths |
+| <img src="assets/screenshots/naval-vessels.png" alt="Naval Vessels screenshot" width="240"> | [**Naval Vessels (OSINT)**](https://globi.world/examples/naval-vessels.html)<br>Carrier strike groups from open-source intelligence | Nation filters, time range filter, trail paths, data attribution |
+| <img src="assets/screenshots/vessel-tracking.png" alt="Vessel Tracking screenshot" width="240"> | [**Vessel Tracking (Multi-Source)**](https://globi.world/examples/vessel-tracking.html)<br>21 naval vessels from 5 nations with AIS integration | Multi-source data pipeline, nation filters, dashed trail paths |
+| <img src="assets/screenshots/civil-shipping.png" alt="Civil Shipping screenshot" width="240"> | [**Civil Shipping**](https://globi.world/examples/civil-shipping.html)<br>Vessel traffic across 9 major shipping straits | Strait filters, category grouping, data attribution |
+| <img src="assets/screenshots/ukraine-conflict.png" alt="Ukraine Conflict screenshot" width="240"> | [**Ukraine Conflict**](https://globi.world/examples/ukraine-conflict.html)<br>Open-source conflict context layer | Regions, GeoJSON import, data attribution |
+| <img src="assets/screenshots/hannibal-route.png" alt="Hannibal Route screenshot" width="240"> | [**Hannibal's Route (218 BC)**](https://globi.world/examples/hannibal-route.html)<br>Campaign march from Carthage to Cannae with 13 waypoints | Paths, grayscale-shaded theme, historical data, callouts |
+| <img src="assets/screenshots/battle-of-midway.png" alt="Battle of Midway screenshot" width="240"> | [**Battle of Midway (1942)**](https://globi.world/examples/battle-of-midway.html)<br>25-step scrollytelling of the Pacific naval battle | Scrollytelling, external widget control, animated arcs, source citations |
+| <img src="assets/screenshots/indiana-jones.gif" alt="Indiana Jones animated preview" width="240"> | [**Indiana Jones Itinerary**](https://globi.world/examples/indiana-jones.html)<br>Flight routes from all 5 films with animated red arcs | Animated arcs, per-movie filters, equirectangular flat map |
 
 ### Beyond Earth
 
 | Preview | Example | Showcased Features |
 | ------- | ------- | ------------------ |
-| <img src="assets/screenshots/moon-landings.png" alt="Moon Landing Sites screenshot" width="240"> | [**Moon Landing Sites**](examples/moon-landings.html)<br>Every lunar landing — Apollo, Luna, Chang'e, and future Artemis sites | Celestial body switching, body-specific labels, callouts |
-| <img src="assets/screenshots/mars-landings.png" alt="Mars Landing Sites screenshot" width="240"> | [**Mars Landing Sites**](examples/mars-landings.html)<br>Viking to Perseverance — all Mars landers and rovers | Mars textures, landmark labels (Olympus Mons), atmosphere rendering |
-| <img src="assets/screenshots/europa-water.png" alt="Europa Subsurface Water screenshot" width="240"> | [**Europa: Subsurface Water**](examples/europa-water.html)<br>Suspected ocean features on Jupiter's icy moon | Progressive texture loading, region overlays on ice moon |
-| <img src="assets/screenshots/titan-lakes.png" alt="Titan Methane Lakes screenshot" width="240"> | [**Titan: Methane Lakes**](examples/titan-lakes.html)<br>Kraken Mare, Ligeia Mare, and other hydrocarbon seas | Thick atmosphere rendering, region overlays, body-specific labels |
+| <img src="assets/screenshots/moon-landings.png" alt="Moon Landing Sites screenshot" width="240"> | [**Moon Landing Sites**](https://globi.world/examples/moon-landings.html)<br>Every lunar landing — Apollo, Luna, Chang'e, and future Artemis sites | Celestial body switching, body-specific labels, callouts |
+| <img src="assets/screenshots/mars-landings.png" alt="Mars Landing Sites screenshot" width="240"> | [**Mars Landing Sites**](https://globi.world/examples/mars-landings.html)<br>Viking to Perseverance — all Mars landers and rovers | Mars textures, landmark labels (Olympus Mons), atmosphere rendering |
+| <img src="assets/screenshots/europa-water.png" alt="Europa Subsurface Water screenshot" width="240"> | [**Europa: Subsurface Water**](https://globi.world/examples/europa-water.html)<br>Suspected ocean features on Jupiter's icy moon | Progressive texture loading, region overlays on ice moon |
+| <img src="assets/screenshots/titan-lakes.png" alt="Titan Methane Lakes screenshot" width="240"> | [**Titan: Methane Lakes**](https://globi.world/examples/titan-lakes.html)<br>Kraken Mare, Ligeia Mare, and other hydrocarbon seas | Thick atmosphere rendering, region overlays, body-specific labels |
 
 ### Theme Variants
 
 | Preview | Example | Showcased Features |
 | ------- | ------- | ------------------ |
-| <img src="assets/screenshots/wireframe.png" alt="Wireframe Globe screenshot" width="240"> | [**Wireframe Globe**](examples/wireframe.html)<br>Clean black-and-white wireframe rendering | Wireframe-shaded theme, graticule grid, borders |
-| <img src="assets/screenshots/grayscale.png" alt="Grayscale Globe screenshot" width="240"> | [**Grayscale Globe**](examples/grayscale.html)<br>Desaturated flat-lit cartographic style | Grayscale-flat theme, even lighting, cartographic style |
+| <img src="assets/screenshots/wireframe.png" alt="Wireframe Globe screenshot" width="240"> | [**Wireframe Globe**](https://globi.world/examples/wireframe.html)<br>Clean black-and-white wireframe rendering | Wireframe-shaded theme, graticule grid, borders |
+| <img src="assets/screenshots/grayscale.png" alt="Grayscale Globe screenshot" width="240"> | [**Grayscale Globe**](https://globi.world/examples/grayscale.html)<br>Desaturated flat-lit cartographic style | Grayscale-flat theme, even lighting, cartographic style |
 
-> Browse all examples at [`examples/index.html`](examples/index.html).
+> Browse all examples at [globi.world/examples](https://globi.world/examples/).
 
 ### Embedding an Example
 
 ```html
 <iframe
-  src="https://yoursite.com/globi/examples/moon-landings.html"
+  src="https://globi.world/examples/moon-landings.html"
   width="100%" height="600"
   style="border: none; border-radius: 8px;"
   allow="fullscreen"
