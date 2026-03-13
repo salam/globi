@@ -36,9 +36,36 @@ export class DrawTool {
     this._onPlace = onPlace;
     this._drawing = false;
     this._points = [];
+    this.mode = 'freehand';
+    this._ptp_points = [];
   }
+
+  toggleMode() {
+    this.mode = this.mode === 'freehand' ? 'point-to-point' : 'freehand';
+    this._ptp_points = [];
+  }
+
+  handleClick(event) {
+    if (this.mode !== 'point-to-point') return;
+    const latLon = this._controller.screenToLatLon(event.clientX, event.clientY);
+    if (latLon) this._ptp_points.push({ lat: latLon.lat, lon: latLon.lon, alt: 0 });
+  }
+
+  finish() {
+    if (this.mode !== 'point-to-point') return;
+    if (this._ptp_points.length < 1) return;
+    counter++;
+    this._onPlace({
+      id: `draw-${Date.now()}-${counter}`,
+      name: { en: `Drawing ${counter}` },
+      points: this._ptp_points,
+      color: '#00aaff', strokeWidth: 2,
+    });
+    this._ptp_points = [];
+  }
+
   activate() {}
-  deactivate() { this._drawing = false; this._points = []; }
+  deactivate() { this._drawing = false; this._points = []; this._ptp_points = []; }
 
   handleMouseDown(event) {
     const latLon = this._controller.screenToLatLon(event.clientX, event.clientY);

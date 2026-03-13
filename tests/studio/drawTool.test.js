@@ -23,6 +23,33 @@ describe('simplifyRDP', () => {
   });
 });
 
+describe('DrawTool point-to-point mode', () => {
+  it('toggles between freehand and point-to-point', () => {
+    const fakeController = { screenToLatLon: () => ({ lat: 0, lon: 0 }) };
+    const tool = new DrawTool({ controller: fakeController, onPlace: () => {} });
+    assert.equal(tool.mode, 'freehand');
+    tool.toggleMode();
+    assert.equal(tool.mode, 'point-to-point');
+    tool.toggleMode();
+    assert.equal(tool.mode, 'freehand');
+  });
+
+  it('in point-to-point mode, clicks add waypoints like PathTool', () => {
+    let created = null;
+    let count = 0;
+    const pts = [{ lat: 0, lon: 0 }, { lat: 10, lon: 10 }, { lat: 20, lon: 20 }];
+    const fakeController = { screenToLatLon: () => pts[count++] };
+    const tool = new DrawTool({ controller: fakeController, onPlace: (p) => { created = p; } });
+    tool.toggleMode();
+    tool.handleClick({});
+    tool.handleClick({});
+    tool.handleClick({});
+    tool.finish();
+    assert.ok(created);
+    assert.equal(created.points.length, 3);
+  });
+});
+
 describe('DrawTool', () => {
   it('collects points during drag and creates path on finish', () => {
     let created = null;
