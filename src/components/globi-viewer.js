@@ -1814,7 +1814,7 @@ export class GlobiViewerElement extends HTMLElement {
         try {
           sessionStorage.setItem('globi-studio-scene', json);
         } catch (_) { /* quota exceeded — Studio will start empty */ }
-        window.open('studio/index.html', '_blank');
+        window.open('/studio/index.html', '_blank');
         break;
       }
     }
