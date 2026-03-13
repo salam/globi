@@ -1809,6 +1809,14 @@ export class GlobiViewerElement extends HTMLElement {
         if (output) this.#downloadText(output, `globi-scene.${data.format}`, data.format === 'json' ? 'application/json' : 'text/plain');
         break;
       }
+      case 'openStudio': {
+        const json = JSON.stringify(scene);
+        try {
+          sessionStorage.setItem('globi-studio-scene', json);
+        } catch (_) { /* quota exceeded — Studio will start empty */ }
+        window.open('studio/index.html', '_blank');
+        break;
+      }
     }
   }
 
