@@ -74,6 +74,8 @@ export function buildMenuItems({ entityAtPoint, latLon }) {
   });
   items.push({ label: 'Copy LLMs.txt', action: 'copyLlmsTxt' });
   items.push({ label: 'Copy coordinates', action: 'copyCoordinates', data: latLon });
+  items.push({ type: 'separator', label: '' });
+  items.push({ label: 'Open Studio', action: 'openStudio' });
 
   return items;
 }
