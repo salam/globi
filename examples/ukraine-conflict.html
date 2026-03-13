@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Globi — Ukraine Conflict</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../node_modules/three/build/three.module.js",
+        "three/addons/": "../node_modules/three/examples/jsm/",
+        "earcut": "../node_modules/earcut/src/earcut.js"
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #020b18; overflow: hidden; }
+    globi-viewer { width: 100vw; height: 100vh; display: block; }
+    .overlay { position: fixed; top: 16px; left: 16px; color: rgba(255,255,255,0.7); font: 14px/1.4 system-ui; z-index: 10; }
+    .overlay a { color: rgba(255,255,255,0.5); text-decoration: none; }
+    .overlay a:hover { color: white; }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <strong>Ukraine Conflict</strong><br>
+    <a href="index.html">All examples</a> &middot; <a href="../editor/index.html">Open in editor</a>
+  </div>
+  <globi-viewer id="viewer"></globi-viewer>
+  <script type="module">
+    import { registerGlobiViewer } from '../src/components/globi-viewer.js';
+    registerGlobiViewer();
+    await customElements.whenDefined('globi-viewer');
+    import { loadExampleScene } from '../src/examples/loaders.js';
+    const viewer = document.getElementById('viewer');
+    const scene = await loadExampleScene('ukraine-conflict-open-source');
+    viewer.setScene(scene);
+  </script>
+</body>
+</html>

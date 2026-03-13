@@ -863,10 +863,10 @@ git restore --staged :/ && git add src/controller/globeController.js src/rendere
 
 ---
 
-### Task 9: Add Projection Toggle to globe-viewer.js
+### Task 9: Add Projection Toggle to globi-viewer.js
 
 **Files:**
-- Modify: `src/components/globe-viewer.js` (lines 339-346 template, lines 374-376 observedAttributes, lines 479-483 events)
+- Modify: `src/components/globi-viewer.js` (lines 339-346 template, lines 374-376 observedAttributes, lines 479-483 events)
 
 - [ ] **Step 1: Add `projection` to observedAttributes**
 
@@ -905,7 +905,7 @@ Open editor (`npm run serve:editor`), verify:
 - [ ] **Step 7: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js && git commit -m "feat: add projection toggle button to globe-viewer" -- src/components/globe-viewer.js
+git restore --staged :/ && git add src/components/globi-viewer.js && git commit -m "feat: add projection toggle button to globi-viewer" -- src/components/globi-viewer.js
 ```
 
 ---
@@ -1012,14 +1012,14 @@ git restore --staged :/ && git add src/renderer/flatMapRenderer.js && git commit
 
 ---
 
-### Task 14: Pointer Events for Flat Map in globe-viewer.js
+### Task 14: Pointer Events for Flat Map in globi-viewer.js
 
 **Files:**
-- Modify: `src/components/globe-viewer.js` (lines 1035-1137 pointer handlers)
+- Modify: `src/components/globi-viewer.js` (lines 1035-1137 pointer handlers)
 
 - [ ] **Step 1: Update pointer handlers for flat map drag lifecycle**
 
-Add `startDrag()` and `endDrag()` proxy methods to `GlobeController` that delegate to `#activeRenderer` (if the method exists). Then in `globe-viewer.js`:
+Add `startDrag()` and `endDrag()` proxy methods to `GlobeController` that delegate to `#activeRenderer` (if the method exists). Then in `globi-viewer.js`:
 In `#onPointerDown()`: call `this._controller.startDrag()`.
 In `#onPointerUp()`: call `this._controller.endDrag()`.
 The globe renderer ignores these calls (no such methods), the flat map renderer uses them for low-res texture mode.
@@ -1027,7 +1027,7 @@ The existing `panBy()` and `screenToLatLon()` calls already delegate through the
 
 - [ ] **Step 2: Implement zoom-into-cursor**
 
-In `globe-viewer.js`, modify `#onWheel()` to support zoom-into-cursor for flat map mode. Before calling `zoomBy()`, get the cursor's lat/lon via `screenToLatLon()`. After zooming, adjust center toward that lat/lon proportionally to the zoom delta. This gives web-map-style zoom behavior:
+In `globi-viewer.js`, modify `#onWheel()` to support zoom-into-cursor for flat map mode. Before calling `zoomBy()`, get the cursor's lat/lon via `screenToLatLon()`. After zooming, adjust center toward that lat/lon proportionally to the zoom delta. This gives web-map-style zoom behavior:
 
 ```javascript
 // In #onWheel():
@@ -1061,7 +1061,7 @@ Verify:
 - [ ] **Step 5: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js src/controller/globeController.js && git commit -m "feat: wire pointer events and zoom-into-cursor for flat map" -- src/components/globe-viewer.js src/controller/globeController.js
+git restore --staged :/ && git add src/components/globi-viewer.js src/controller/globeController.js && git commit -m "feat: wire pointer events and zoom-into-cursor for flat map" -- src/components/globi-viewer.js src/controller/globeController.js
 ```
 
 ---
@@ -1069,7 +1069,7 @@ git restore --staged :/ && git add src/components/globe-viewer.js src/controller
 ### Task 14b: Scale Bar for Flat Map
 
 **Files:**
-- Modify: `src/components/globe-viewer.js` (scale bar computation)
+- Modify: `src/components/globi-viewer.js` (scale bar computation)
 - Modify: `src/renderer/flatMapRenderer.js`
 
 - [ ] **Step 1: Add `getScaleAtCenter()` to FlatMapRenderer**
@@ -1092,7 +1092,7 @@ getScaleAtCenter() {
 
 Note: Verify that `scene.planet.radius` exists and uses Earth-radii units by reading `src/scene/celestial.js` before implementing.
 
-- [ ] **Step 2: Wire scale bar in globe-viewer.js**
+- [ ] **Step 2: Wire scale bar in globi-viewer.js**
 
 In the scale bar update logic, if flat map is active, use `getScaleAtCenter()` instead of the existing globe-based computation. Add `getScaleAtCenter()` proxy to `GlobeController`.
 
@@ -1103,7 +1103,7 @@ Verify: scale bar shows correct distance in flat map mode, updates on zoom.
 - [ ] **Step 4: Commit**
 
 ```bash
-git restore --staged :/ && git add src/renderer/flatMapRenderer.js src/components/globe-viewer.js && git commit -m "feat: scale bar for flat map mode" -- src/renderer/flatMapRenderer.js src/components/globe-viewer.js
+git restore --staged :/ && git add src/renderer/flatMapRenderer.js src/components/globi-viewer.js && git commit -m "feat: scale bar for flat map mode" -- src/renderer/flatMapRenderer.js src/components/globi-viewer.js
 ```
 
 ---

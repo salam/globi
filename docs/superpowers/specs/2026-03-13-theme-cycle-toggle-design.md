@@ -21,7 +21,7 @@ The button displays a **24×24px square thumbnail** that represents the **curren
 
 | Theme | Background | Circle |
 |---|---|---|
-| `photo` | Dark (`#1a1a2e`) | Filled circle, top half = planet `baseColor`, bottom-right crescent = darker shade |
+| `photo` | Dark (`#0a0e1a`) | Filled circle, top half = planet `baseColor`, bottom-right crescent = darker shade |
 | `wireframe-shaded` | White (`#ffffff`) | Black stroked circle with a horizontal + vertical arc (wireframe look), stroke ~1.5px |
 | `wireframe-flat` | White (`#ffffff`) | Black stroked circle only, stroke ~1px (simpler than shaded) |
 | `grayscale-shaded` | White (`#ffffff`) | Gray filled circle (`#888`) with a subtle lighter-to-darker gradient left-to-right |
@@ -57,11 +57,11 @@ Add `showThemeToggle: boolean` (default `false`) to:
 ### `globi-viewer.js`
 
 1. **Add `#themeToggleButton`** field — references the button DOM element
-2. **Create button in `#buildControls()`** — insert before projection toggle
+2. **Add button to static HTML template** inside `<div class="controls">`, placed before `.projection-toggle`. Acquire via `this.shadowRoot.querySelector('.theme-toggle')` in `connectedCallback`, matching the existing pattern for all other control buttons.
 3. **SVG generation helper** — `#buildThemeThumbnailSvg(theme, baseColor)` returns the inline SVG string for the current theme + planet color
 4. **Click handler** — cycles `VALID_THEMES` array: find current index, advance by 1 mod length, call `this.setTheme(nextTheme)`
-5. **Update on `renderScene()`** — refresh thumbnail SVG when theme or planet changes
-6. **Visibility** — `this.#themeToggleButton.hidden = !this.#viewerUi.showThemeToggle`
+5. **Update in `#applyViewerUi()`** — refresh thumbnail SVG when theme or planet changes. This is the correct hook because `setTheme()` triggers `sceneChange` → `#applyViewerUi`, so external theme changes (attribute, editor dropdown, API) all update the thumbnail automatically.
+6. **Visibility** — `this.#themeToggleButton.hidden = !this.#viewerUi.showThemeToggle` (in `#applyViewerUi`)
 
 ### CSS (inside Shadow DOM stylesheet)
 
@@ -72,22 +72,22 @@ Add `showThemeToggle: boolean` (default `false`) to:
 
 ### `src/examples/loaders.js`
 
-Each scene object returned by `loadExampleScene()` gets `viewerUi: { showThemeToggle: true }` merged into its return value. Since most examples don't set `viewerUi` at all, adding it at the scene level is sufficient. The normalize function fills in defaults for the other fields.
+Wrap the final return of `loadExampleScene()` to merge `showThemeToggle: true` into the scene's `viewerUi`:
+
+```js
+const scene = await dispatchToLoader(id, options);
+return { ...scene, viewerUi: { ...scene.viewerUi, showThemeToggle: true } };
+```
+
+This is a single edit point that covers all 15 example loaders.
 
 ### `examples/battle-of-midway.html`
 
-Add `showThemeToggle: true` to the inline `viewerUi` object.
+Add `showThemeToggle: true` to the inline `viewerUi` object (this example doesn't use `loadExampleScene`).
 
-## Theme Ordering Constant
+## Theme Ordering
 
-Add to `themePalette.js`:
-```js
-export const THEME_CYCLE_ORDER = [
-  'photo', 'wireframe-shaded', 'wireframe-flat', 'grayscale-shaded', 'grayscale-flat',
-];
-```
-
-This is the canonical cycle order. `VALID_THEMES` already has this order but making it explicit avoids coupling to array order.
+Use the existing `VALID_THEMES` array from `themePalette.js` directly for cycle order. No separate `THEME_CYCLE_ORDER` constant — it would duplicate `VALID_THEMES` and create two sources of truth. The array already has the correct order: `['photo', 'wireframe-shaded', 'wireframe-flat', 'grayscale-shaded', 'grayscale-flat']`.
 
 ## Test Coverage
 
@@ -96,13 +96,12 @@ This is the canonical cycle order. `VALID_THEMES` already has this order but mak
 1. `showThemeToggle` defaults to `false` in `getDefaultViewerUiConfig()`
 2. `normalizeViewerUiConfig({ showThemeToggle: true })` preserves the value
 3. `validateViewerUiConfig` accepts boolean `showThemeToggle`
-4. `THEME_CYCLE_ORDER` matches `VALID_THEMES` contents (same set)
-5. Theme cycle logic: for each theme, next theme is correct (wraps at end)
-6. `resolvePlanetConfig` returns a `baseColor` for every preset (thumbnail needs it)
+4. Theme cycle logic: for each theme in `VALID_THEMES`, next theme is `VALID_THEMES[(i+1) % length]` (wraps at end)
+5. `resolvePlanetConfig` returns a `baseColor` for every preset (thumbnail needs it)
 
 ## Out of Scope
 
 - Keyboard shortcuts for theme cycling
 - Theme persistence across page reloads
 - Animated transitions between themes
-- Editor integration (editor has its own theme dropdown)
+- Editor integration — the editor already listens for `themeChange` events and syncs its own dropdown automatically, so no editor code changes are needed

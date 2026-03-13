@@ -4,20 +4,20 @@
 Implement a reusable, framework-agnostic globe product with clear separation between rendering core, domain model, and authoring tools.
 
 ## Top-Level Modules
-- `globe-viewer` (Web Component): public API and event bridge.
+- `globi-viewer` (Web Component): public API and event bridge.
 - `rendering-core`: OpenGlobus-backed scene/layer runtime.
 - `scene-store`: canonical state for entities and animation timelines.
 - `editor-app`: WYSIWYG authoring interface.
 - `import-export`: data adapters and serializers.
 
 ## Proposed Package Split
-- `packages/globe-viewer`
+- `packages/globi-viewer`
 - `packages/rendering-core`
 - `packages/scene-schema`
 - `apps/editor`
 - `packages/io`
 
-## Public API Contract (`<globe-viewer>`)
+## Public API Contract (`<globi-viewer>`)
 - Methods:
   - `setPlanet(config)`
   - `setScene(sceneData)`

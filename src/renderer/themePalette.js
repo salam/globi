@@ -55,7 +55,7 @@ const PALETTES = {
     labelStyles: BW_LABEL_STYLES,
     leaderColor: '#333333',
     calloutTextColor: 'rgba(34, 34, 34, 0.9)',
-    landmassColor: 'rgba(200, 200, 200, 0.35)',
+    landmassColor: 'rgba(200, 200, 200, 0.6)',
   },
   'wireframe-flat': {
     background: 0xffffff,

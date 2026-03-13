@@ -38,7 +38,7 @@ body {
   position: relative;
 }
 
-globe-viewer {
+globi-viewer {
   width: 100%;
   height: calc(80vh - 32px);
 }
@@ -184,6 +184,7 @@ textarea {
   color: #f4f7ff;
   padding: 12px;
   box-shadow: 0 12px 30px rgba(3, 9, 22, 0.4);
+  z-index: 30;
 }
 
 .inspect-panel.hidden {
@@ -239,7 +240,7 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  globe-viewer {
+  globi-viewer {
     height: 55vh;
   }
 }

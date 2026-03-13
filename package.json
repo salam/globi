@@ -1,16 +1,49 @@
 {
-  "name": "globi",
+  "name": "globi-viewer",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
+  "description": "Lightweight, interactive 3D globe and flat-map visualization for the browser. Supports 13 celestial bodies, markers, paths, arcs, regions, and animations.",
+  "license": "MIT",
+  "author": "Matthias",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salam/globi"
+  },
+  "keywords": [
+    "globe",
+    "3d",
+    "map",
+    "visualization",
+    "webgl",
+    "threejs",
+    "geopolitics",
+    "geography",
+    "education",
+    "web-component"
+  ],
+  "main": "dist/globi.min.js",
+  "module": "dist/globi.js",
+  "unpkg": "dist/globi.min.js",
+  "files": [
+    "dist/",
+    "src/",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node --test",
     "lint": "node tools/lint.mjs",
     "check": "npm run lint && npm run test",
-    "serve:editor": "python3 -m http.server 4173"
+    "build": "node tools/build.mjs",
+    "build:site": "node tools/build-site.mjs",
+    "serve:editor": "python3 -m http.server 4173",
+    "screenshots": "node tools/capture-screenshots.mjs"
   },
   "dependencies": {
     "earcut": "^3.0.2",
     "three": "^0.183.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "playwright": "^1.58.2"
   }
 }

@@ -9,7 +9,7 @@ test('getBodyLabels returns Earth labels by default', () => {
   assert.ok(labels.length >= 12);
   const regions = labels.filter(l => l.style === 'region');
   const oceans = labels.filter(l => l.style === 'ocean');
-  assert.equal(regions.length, 7);
+  assert.equal(regions.length, 8);
   assert.equal(oceans.length, 5);
 });
 
@@ -52,7 +52,7 @@ test('GeoLabelManager creates meshes for Earth labels', () => {
   const manager = new GeoLabelManager();
   const group = new Group();
   manager.update(group, { showLabels: true, bodyId: 'earth' });
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
 });
 
 test('GeoLabelManager creates meshes for Mars labels', () => {
@@ -70,7 +70,7 @@ test('GeoLabelManager rebuilds labels when bodyId changes', () => {
   const group = new Group();
 
   manager.update(group, { showLabels: true, bodyId: 'earth' });
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
   const earthLabels = group.children.map(c => c.userData.label);
   assert.ok(earthLabels.includes('AFRICA'));
 
@@ -86,11 +86,11 @@ test('GeoLabelManager toggles visibility without rebuilding', () => {
   const manager = new GeoLabelManager();
   const group = new Group();
   manager.update(group, { showLabels: true, bodyId: 'earth' });
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
 
   manager.update(group, { showLabels: false, bodyId: 'earth' });
   assert.equal(group.visible, false);
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
 
   manager.update(group, { showLabels: true, bodyId: 'earth' });
   assert.equal(group.visible, true);
@@ -153,14 +153,14 @@ test('GeoLabelManager accepts labelStyles override', () => {
     feature: 'rgba(51, 51, 51, 0.45)',
   };
   manager.update(group, { showLabels: true, bodyId: 'earth', labelStyles: overrides });
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
 });
 
 test('GeoLabelManager rebuilds when labelStyles change', () => {
   const manager = new GeoLabelManager();
   const group = new Group();
   manager.update(group, { showLabels: true, bodyId: 'earth' });
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
 
   const overrides = {
     continent: 'rgba(34, 34, 34, 0.5)',
@@ -169,5 +169,5 @@ test('GeoLabelManager rebuilds when labelStyles change', () => {
     feature: 'rgba(51, 51, 51, 0.45)',
   };
   manager.update(group, { showLabels: true, bodyId: 'earth', labelStyles: overrides });
-  assert.equal(group.children.length, 12);
+  assert.equal(group.children.length, 13);
 });

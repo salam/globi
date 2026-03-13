@@ -87,7 +87,7 @@ Schwerpunkte:
 
 ### Technologieauswahl
 - **Rendering**: WebGL mit Three.js; optional Globe.gl/Cesium-Konzepte für bestimmte Layer.
-- **Komponente**: Custom Element, z. B. `<globe-viewer>`.
+- **Komponente**: Custom Element, z. B. `<globi-viewer>`.
 - **State-Management**: Zentraler `SceneStore` für Entitäten + Animationen.
 - **Editor**: Separate React- oder Vue-App mit Vorschau.
 - **i18n**: JSON-Sprachdateien via i18n-Library.
@@ -105,7 +105,7 @@ Schwerpunkte:
 
 #### Initialisierung
 ```html
-<globe-viewer id="world" planet="earth" language="de"></globe-viewer>
+<globi-viewer id="world" planet="earth" language="de"></globi-viewer>
 <script>
   const globe = document.getElementById('world');
   globe.setMarkers([

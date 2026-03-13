@@ -216,6 +216,9 @@ __marimo__/
 durations.svg
 .codespeak/ignored/
 
+# Site build output
+_site/
+
 # Superpowers brainstorm sessions
 .superpowers/
 
@@ -236,3 +239,9 @@ assets/textures/io/
 assets/textures/europa/
 assets/textures/ganymede/
 assets/textures/titan/
+
+
+
+
+.GIT_NEXT_COMMIT_MESSAGE.md
+_site

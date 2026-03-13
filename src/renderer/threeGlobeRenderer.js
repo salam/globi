@@ -1347,6 +1347,14 @@ export class ThreeGlobeRenderer {
       if (key !== this.#lastCameraJson) {
         this.#lastCameraJson = key;
         this.#calloutManager.updateVisibility(cp.clone(), gq);
+        // Cull leader lines for callouts that fall outside the container
+        const el = this.#webglRenderer?.domElement;
+        if (el && this.#globeGroup) {
+          this.#calloutManager.cullOffscreenLines(
+            this.#camera, this.#globeGroup,
+            el.clientWidth, el.clientHeight,
+          );
+        }
       }
     }
 

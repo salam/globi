@@ -19,12 +19,12 @@ OpenGlobus is a strong technical base for rendering, layers, controls, and geosp
 | Import (GeoJSON/OSM/Shapefile) | Ingest external GIS data | API list includes `GeoJson` format support | Partial | Add OSM/Shapefile ingestion pipeline and validation |
 | Export (OBJ/USDZ + JSON/GeoJSON) | Scene/model export | No official OBJ/USDZ exporter documented | Gap | Implement export service (three.js exporter or backend converter) |
 | i18n and localized content | UI strings + per-language marker content | No dedicated i18n framework documented | Gap | Add i18n layer in host app + localized data model |
-| Embedding model | Web Component for framework-agnostic embed | OpenGlobus is JS library, not a ready-made custom element | Partial | Ship `<globe-viewer>` wrapper with stable public API |
+| Embedding model | Web Component for framework-agnostic embed | OpenGlobus is JS library, not a ready-made custom element | Partial | Ship `<globi-viewer>` wrapper with stable public API |
 | Accessibility and content safety | Keyboard/screen reader/XSS-safe callouts | Not a primary documented feature | Gap | Add accessibility semantics and HTML sanitization in app layer |
 
 ## Practical Recommendation
 Use OpenGlobus as the rendering/runtime core and implement a product shell around it:
-- Web Component wrapper (`<globe-viewer>`) with stable API.
+- Web Component wrapper (`<globi-viewer>`) with stable API.
 - Scene/domain model (`Marker`, `Path`, `Arc`, `Region`, `Animation`).
 - Editor app for content creation.
 - Import/export pipeline and i18n/a11y/security layers.

@@ -4,7 +4,7 @@
 
 **Goal:** Display data source attribution on the globe viewer with an abbreviated bottom-right label and a slide-in panel with full details, dynamically updated based on viewport visibility.
 
-**Architecture:** Extend the scene schema with `dataSources[]` and `sourceId` on entities. A new `AttributionManager` handles DOM creation, visibility computation, and panel state. The globe-viewer web component wires it into the existing camera-update pipeline.
+**Architecture:** Extend the scene schema with `dataSources[]` and `sourceId` on entities. A new `AttributionManager` handles DOM creation, visibility computation, and panel state. The globi-viewer web component wires it into the existing camera-update pipeline.
 
 **Tech Stack:** Vanilla JS, Three.js (for `projectPointToClient`), Shadow DOM, CSS transitions, `node:test` for testing.
 
@@ -516,14 +516,14 @@ git commit -m "feat: expose getCanvasRect on renderer and controller" -- src/ren
 
 ---
 
-### Task 5: Integrate AttributionManager into globe-viewer.js
+### Task 5: Integrate AttributionManager into globi-viewer.js
 
 **Files:**
-- Modify: `src/components/globe-viewer.js`
+- Modify: `src/components/globi-viewer.js`
 
 - [ ] **Step 1: Add CSS styles for attribution to the TEMPLATE**
 
-In the `<style>` section of `TEMPLATE` in `src/components/globe-viewer.js`, add before `</style>`:
+In the `<style>` section of `TEMPLATE` in `src/components/globi-viewer.js`, add before `</style>`:
 
 ```css
 .attribution-label {
@@ -653,7 +653,7 @@ In the `<style>` section of `TEMPLATE` in `src/components/globe-viewer.js`, add 
 
 - [ ] **Step 2: Import and wire up AttributionManager**
 
-At the top of `src/components/globe-viewer.js`, add:
+At the top of `src/components/globi-viewer.js`, add:
 ```js
 import { AttributionManager } from '../renderer/attributionManager.js';
 ```
@@ -748,8 +748,8 @@ Expected: All tests pass
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/components/globe-viewer.js
-git commit -m "feat: integrate AttributionManager into globe-viewer" -- src/components/globe-viewer.js
+git add src/components/globi-viewer.js
+git commit -m "feat: integrate AttributionManager into globi-viewer" -- src/components/globi-viewer.js
 ```
 
 ---

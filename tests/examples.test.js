@@ -12,7 +12,19 @@ import {
   loadCarriersOpenSourceExample,
   loadVesselTrackingExample,
   loadCivilShippingExample,
+  loadMoonLandingSitesExample,
+  loadMarsLandingSitesExample,
+  loadEuropaWaterExample,
+  loadTitanLakesExample,
+  loadWireframeEarthExample,
+  loadGrayscaleEarthExample,
+  loadHannibalRouteExample,
+  loadIndianaJonesItinerary,
+  _resetLandmassCache,
 } from '../src/examples/loaders.js';
+
+// BUG14: reset landmass cache before each test so stub fetch is always called
+test.beforeEach(() => { _resetLandmassCache(); });
 
 const NATURAL_EARTH_LAND_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson';
 
@@ -87,7 +99,7 @@ function createFetchStub(routes) {
 test('listExampleDefinitions exposes loadable examples', () => {
   const examples = listExampleDefinitions();
 
-  assert.equal(examples.length, 8);
+  assert.equal(examples.length, 16);
   assert.deepEqual(
     examples.map((entry) => entry.id),
     [
@@ -99,6 +111,14 @@ test('listExampleDefinitions exposes loadable examples', () => {
       EXAMPLE_IDS.CARRIERS_TRACKING,
       EXAMPLE_IDS.VESSEL_TRACKING,
       EXAMPLE_IDS.CIVIL_SHIPPING,
+      EXAMPLE_IDS.MOON_LANDING_SITES,
+      EXAMPLE_IDS.MARS_LANDING_SITES,
+      EXAMPLE_IDS.EUROPA_WATER,
+      EXAMPLE_IDS.TITAN_LAKES,
+      EXAMPLE_IDS.WIREFRAME_EARTH,
+      EXAMPLE_IDS.GRAYSCALE_EARTH,
+      EXAMPLE_IDS.HANNIBAL_ROUTE,
+      EXAMPLE_IDS.INDIANA_JONES,
     ]
   );
   const carrierExample = examples.find((entry) => entry.id === EXAMPLE_IDS.CARRIERS_TRACKING);
@@ -107,6 +127,20 @@ test('listExampleDefinitions exposes loadable examples', () => {
   assert.equal(vesselExample?.label, '6) Vessel Tracking (Multi-Source)');
   const civilExample = examples.find((entry) => entry.id === EXAMPLE_IDS.CIVIL_SHIPPING);
   assert.equal(civilExample?.label, '7) Civil Shipping (Global Straits)');
+  const moonExample = examples.find((entry) => entry.id === EXAMPLE_IDS.MOON_LANDING_SITES);
+  assert.equal(moonExample?.label, '8) Moon Landing Sites');
+  const marsExample = examples.find((entry) => entry.id === EXAMPLE_IDS.MARS_LANDING_SITES);
+  assert.equal(marsExample?.label, '9) Mars Landing Sites');
+  const europaExample = examples.find((entry) => entry.id === EXAMPLE_IDS.EUROPA_WATER);
+  assert.equal(europaExample?.label, '10) Europa Water/Ocean Features');
+  const titanExample = examples.find((entry) => entry.id === EXAMPLE_IDS.TITAN_LAKES);
+  assert.equal(titanExample?.label, '11) Titan Methane Lakes');
+  const wireframeExample = examples.find((entry) => entry.id === EXAMPLE_IDS.WIREFRAME_EARTH);
+  assert.equal(wireframeExample?.label, '12) Wireframe Earth');
+  const grayscaleExample = examples.find((entry) => entry.id === EXAMPLE_IDS.GRAYSCALE_EARTH);
+  assert.equal(grayscaleExample?.label, '13) Grayscale Earth');
+  const indyExample = examples.find((entry) => entry.id === EXAMPLE_IDS.INDIANA_JONES);
+  assert.equal(indyExample?.label, '15) Indiana Jones Itinerary');
 });
 
 test('loadAllCapitalsExample maps capitals to marker entities with membership filters', async () => {
@@ -151,10 +185,9 @@ test('loadAllCapitalsExample maps capitals to marker entities with membership fi
 
   assert.equal(scene.planet.id, 'earth');
   assert.equal(scene.planet.lightingMode, 'sun');
-  assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
+  assert.equal(scene.planet.textureUri.includes('land_ocean_ice'), true);
   assert.equal(scene.markers.length, 4);
-  assert.equal(scene.regions.length, 2);
-  assert.ok(scene.regions.every((region) => region.id.startsWith('landmass-')));
+  assert.equal(scene.regions.length, 0);
 
   // Bern: UN member, not NATO
   const bern = scene.markers.find((m) => m.id === 'cap-che');
@@ -211,20 +244,24 @@ test('loadIssRealtimeExample builds ISS marker and orbit path from API responses
 
   assert.equal(Boolean(currentMarker), true);
   assert.equal(currentMarker.pulse, true, 'ISS current marker should have pulse enabled');
+  assert.ok(currentMarker.velocityKmh > 0, 'ISS marker stores velocity');
+  assert.equal(currentMarker.fetchedAtMs, 10000000 * 1000, 'ISS marker stores fetch time');
+  assert.ok(Array.isArray(currentMarker.orbitWaypoints), 'ISS marker has orbit waypoints');
+  assert.ok(currentMarker.orbitWaypoints.length >= 2, 'orbit waypoints have at least 2 entries');
+  assert.ok(currentMarker.orbitWaypoints.every((wp) => typeof wp.timestampMs === 'number'));
   assert.equal(historyMarkers.length, 3);
   assert.ok(historyMarkers.every((entry) => entry.visualType === 'dot'));
   assert.ok(historyMarkers.every((entry) => entry.id.startsWith('iss-history-')));
   assert.ok(historyMarkers.every((entry) => entry.callout.includes('Time:')));
   assert.ok(historyMarkers.every((entry) => entry.description.en.includes('ISS position at')));
-  // BUG6: orbit path must include the current live position as the final point
-  assert.equal(scene.paths.length, 1);
-  assert.equal(scene.paths[0].points.length, 4); // 3 history + 1 current
-  assert.equal(scene.paths[0].id, 'iss-recent-orbit');
-  const lastPoint = scene.paths[0].points[scene.paths[0].points.length - 1];
-  assert.equal(lastPoint.lat, currentMarker.lat);
-  assert.equal(lastPoint.lon, currentMarker.lon);
-  assert.equal(scene.regions.length, 2);
-  assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
+
+  // Orbit is split into past (solid) and no future (all timestamps <= now in stub)
+  const pastPath = scene.paths.find((p) => p.id === 'iss-recent-orbit');
+  assert.ok(pastPath, 'Past orbit path exists');
+  assert.ok(!pastPath.dashPattern, 'Past orbit path has no dash pattern');
+
+  assert.equal(scene.regions.length, 0);
+  assert.equal(scene.planet.textureUri.includes('land_ocean_ice'), true);
 });
 
 test('loadContinentsAndSeasExample maps continent and sea features into regions and labels', async () => {
@@ -259,11 +296,10 @@ test('loadContinentsAndSeasExample maps continent and sea features into regions 
 
   const scene = await loadContinentsAndSeasExample({ fetchImpl });
 
-  assert.equal(scene.regions.length, 3);
-  assert.ok(scene.regions.some((entry) => entry.id === 'landmass-1-test-mainland'));
+  assert.equal(scene.regions.length, 1);
   assert.ok(scene.markers.some((entry) => entry.id === 'label-test-continent'));
   assert.ok(scene.markers.some((entry) => entry.id === 'sea-label-test-sea'));
-  assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
+  assert.equal(scene.planet.textureUri.includes('land_ocean_ice'), true);
 });
 
 test('loadUkraineConflictOpenSourceExample returns non-tactical advisory scene', async () => {
@@ -285,9 +321,9 @@ test('loadUkraineConflictOpenSourceExample returns non-tactical advisory scene',
 
   const scene = await loadUkraineConflictOpenSourceExample({ fetchImpl });
 
-  assert.equal(scene.regions.length, 3);
+  assert.equal(scene.regions.length, 1);
   assert.ok(scene.markers.some((entry) => entry.id === 'ukr-advisory'));
-  assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
+  assert.equal(scene.planet.textureUri.includes('land_ocean_ice'), true);
 });
 
 test('loadCarriersOpenSourceExample returns OSINT vessel markers with timestamps and trails', async () => {
@@ -354,8 +390,8 @@ test('loadCarriersOpenSourceExample returns OSINT vessel markers with timestamps
   assert.equal(scene.paths[0].points.length, 3);
 
   assert.equal(scene.markers.length, 3); // advisory + 2 vessels
-  assert.equal(scene.regions.length, 2);
-  assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
+  assert.equal(scene.regions.length, 0);
+  assert.equal(scene.planet.textureUri.includes('land_ocean_ice'), true);
 
   // Scene includes nation filter
   assert.equal(scene.filters.length, 1);
@@ -451,8 +487,8 @@ test('loadVesselTrackingExample creates markers and trail paths from vessel data
   assert.equal(scene.timeRange.max, '2026-03-09');
 
   assert.equal(scene.theme, 'dark');
-  assert.equal(scene.regions.length, 2);
-  assert.equal(scene.planet.textureUri.includes('nasa.gov'), true);
+  assert.equal(scene.regions.length, 0);
+  assert.equal(scene.planet.textureUri.includes('land_ocean_ice'), true);
 });
 
 test('loadCivilShippingExample creates markers for vessels in shipping straits', async () => {
@@ -523,7 +559,7 @@ test('loadCivilShippingExample creates markers for vessels in shipping straits',
   assert.ok(scene.filters[0].options.some((o) => o.value === 'all'));
 
   assert.equal(scene.theme, 'dark');
-  assert.equal(scene.regions.length, 2);
+  assert.equal(scene.regions.length, 0);
   assert.equal(scene.paths.length, 0);
 });
 
@@ -561,9 +597,6 @@ test('loadAllCapitalsExample includes dataSources and sourceId on entities', asy
 
   const marker = scene.markers.find((m) => m.id === 'cap-tst');
   assert.equal(marker.sourceId, 'rest-countries');
-
-  const landmass = scene.regions.find((r) => r.id.startsWith('landmass-'));
-  assert.equal(landmass.sourceId, 'natural-earth');
 });
 
 test('loadContinentsAndSeasExample includes dataSources with natural-earth', async () => {
@@ -574,7 +607,6 @@ test('loadContinentsAndSeasExample includes dataSources with natural-earth', asy
   const scene = await loadContinentsAndSeasExample({ fetchImpl });
 
   assert.ok(scene.dataSources.some((ds) => ds.id === 'natural-earth'));
-  assert.ok(scene.regions.every((r) => r.sourceId === 'natural-earth'));
 });
 
 test('loadIssRealtimeExample includes dataSources for ISS and Natural Earth', async () => {
@@ -666,6 +698,13 @@ test('loadExampleScene routes ids to matching loaders', async () => {
   const carriers = await loadExampleScene(EXAMPLE_IDS.CARRIERS_TRACKING, options);
   const vessels = await loadExampleScene(EXAMPLE_IDS.VESSEL_TRACKING, options);
   const civil = await loadExampleScene(EXAMPLE_IDS.CIVIL_SHIPPING, options);
+  const moon = await loadExampleScene(EXAMPLE_IDS.MOON_LANDING_SITES, options);
+  const mars = await loadExampleScene(EXAMPLE_IDS.MARS_LANDING_SITES, options);
+  const europa = await loadExampleScene(EXAMPLE_IDS.EUROPA_WATER, options);
+  const titan = await loadExampleScene(EXAMPLE_IDS.TITAN_LAKES, options);
+  const wireframe = await loadExampleScene(EXAMPLE_IDS.WIREFRAME_EARTH, options);
+  const grayscale = await loadExampleScene(EXAMPLE_IDS.GRAYSCALE_EARTH, options);
+  const indy = await loadExampleScene(EXAMPLE_IDS.INDIANA_JONES, options);
 
   assert.equal(Array.isArray(capitals.markers), true);
   assert.equal(Array.isArray(continents.markers), true);
@@ -674,18 +713,476 @@ test('loadExampleScene routes ids to matching loaders', async () => {
   assert.equal(Array.isArray(carriers.markers), true);
   assert.equal(Array.isArray(vessels.markers), true);
   assert.equal(Array.isArray(civil.markers), true);
-  assert.ok(capitals.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.ok(continents.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.ok(iss.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.ok(ukraine.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.ok(carriers.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.ok(vessels.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.ok(civil.regions.some((entry) => entry.id.startsWith('landmass-')));
-  assert.equal(capitals.planet.textureUri.includes('nasa.gov'), true);
-  assert.equal(continents.planet.textureUri.includes('nasa.gov'), true);
-  assert.equal(iss.planet.textureUri.includes('nasa.gov'), true);
-  assert.equal(ukraine.planet.textureUri.includes('nasa.gov'), true);
-  assert.equal(carriers.planet.textureUri.includes('nasa.gov'), true);
-  assert.equal(vessels.planet.textureUri.includes('nasa.gov'), true);
-  assert.equal(civil.planet.textureUri.includes('nasa.gov'), true);
+  assert.equal(Array.isArray(moon.markers), true);
+  assert.equal(Array.isArray(mars.markers), true);
+  assert.equal(Array.isArray(europa.markers), true);
+  assert.equal(Array.isArray(titan.markers), true);
+  assert.equal(Array.isArray(wireframe.markers), true);
+  assert.equal(Array.isArray(grayscale.markers), true);
+  assert.equal(Array.isArray(indy.markers), true);
+  assert.equal(capitals.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(continents.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(iss.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(ukraine.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(carriers.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(vessels.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(civil.planet.textureUri.includes('land_ocean_ice'), true);
+  assert.equal(moon.planet.id, 'moon');
+  assert.equal(mars.planet.id, 'mars');
+  assert.equal(europa.planet.id, 'europa');
+  assert.equal(titan.planet.id, 'titan');
+  assert.equal(wireframe.theme, 'wireframe-shaded');
+  assert.equal(grayscale.theme, 'grayscale-flat');
+  assert.equal(indy.projection, 'equirectangular');
+  assert.ok(indy.arcs.length > 0);
+});
+
+// ── Moon Landing Sites ───────────────────────────────────────────────────────
+
+test('loadMoonLandingSitesExample returns markers for all Moon landing sites', async () => {
+  const scene = await loadMoonLandingSitesExample({ locale: 'en' });
+
+  assert.equal(scene.planet.id, 'moon');
+  assert.equal(scene.theme, 'dark');
+  assert.ok(scene.markers.length >= 20, 'should have at least 20 landing sites');
+
+  // Apollo 11 present
+  const apollo11 = scene.markers.find((m) => m.id === 'moon-apollo-11');
+  assert.ok(apollo11);
+  assert.ok(apollo11.name.en.includes('Apollo 11'));
+  assert.ok(apollo11.name.en.includes('1969'));
+  assert.equal(apollo11.category, 'crewed');
+  assert.equal(apollo11.color, '#f5d547');
+
+  // Robotic missions
+  const luna9 = scene.markers.find((m) => m.id === 'moon-luna-9');
+  assert.ok(luna9);
+  assert.equal(luna9.category, 'robotic');
+  assert.equal(luna9.color, '#c0c0c0');
+
+  // Chang'e 4 (far side)
+  const change4 = scene.markers.find((m) => m.id === 'moon-change-4');
+  assert.ok(change4);
+  assert.ok(change4.description.en.includes('CNSA'));
+
+  // Chandrayaan-3
+  const chandrayaan = scene.markers.find((m) => m.id === 'moon-chandrayaan-3');
+  assert.ok(chandrayaan);
+  assert.ok(chandrayaan.description.en.includes('ISRO'));
+
+  // SLIM
+  const slim = scene.markers.find((m) => m.id === 'moon-slim');
+  assert.ok(slim);
+  assert.ok(slim.description.en.includes('JAXA'));
+
+  // Planned missions
+  const artemis = scene.markers.find((m) => m.id === 'moon-artemis-iii');
+  assert.ok(artemis);
+  assert.equal(artemis.category, 'planned');
+  assert.equal(artemis.color, '#67c5db');
+
+  // Filters
+  assert.equal(scene.filters.length, 1);
+  assert.equal(scene.filters[0].id, 'mission-type');
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'crewed'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'robotic'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'planned'));
+
+  // Data sources
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'nasa'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'roscosmos'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'cnsa'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'isro'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'jaxa'));
+
+  // No textureUri — planet preset handles it
+  assert.equal(scene.planet.textureUri, undefined);
+});
+
+// ── Mars Landing Sites ───────────────────────────────────────────────────────
+
+test('loadMarsLandingSitesExample returns markers for all Mars landing sites', async () => {
+  const scene = await loadMarsLandingSitesExample({ locale: 'en' });
+
+  assert.equal(scene.planet.id, 'mars');
+  assert.equal(scene.theme, 'dark');
+  assert.ok(scene.markers.length >= 13, 'should have at least 13 Mars sites');
+
+  // Curiosity
+  const curiosity = scene.markers.find((m) => m.id === 'mars-curiosity');
+  assert.ok(curiosity);
+  assert.equal(curiosity.category, 'rover');
+  assert.ok(curiosity.description.en.includes('Gale Crater'));
+
+  // Viking 1 lander
+  const viking1 = scene.markers.find((m) => m.id === 'mars-viking-1');
+  assert.ok(viking1);
+  assert.equal(viking1.category, 'lander');
+
+  // Failed mission
+  const beagle = scene.markers.find((m) => m.id === 'mars-beagle-2');
+  assert.ok(beagle);
+  assert.equal(beagle.category, 'failed');
+  assert.ok(beagle.description.en.includes('ESA'));
+
+  // Zhurong
+  const zhurong = scene.markers.find((m) => m.id === 'mars-zhurong');
+  assert.ok(zhurong);
+  assert.ok(zhurong.description.en.includes('CNSA'));
+
+  // Filters
+  assert.equal(scene.filters.length, 1);
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'rover'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'lander'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'failed'));
+
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'nasa'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'esa'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'roscosmos'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'cnsa'));
+});
+
+// ── Europa Water Features ────────────────────────────────────────────────────
+
+test('loadEuropaWaterExample returns markers for Europa geological features', async () => {
+  const scene = await loadEuropaWaterExample({ locale: 'en' });
+
+  assert.equal(scene.planet.id, 'europa');
+  assert.equal(scene.theme, 'dark');
+  assert.ok(scene.markers.length >= 10, 'should have at least 10 Europa features');
+
+  // Chaos terrain
+  const conamara = scene.markers.find((m) => m.id === 'europa-conamara-chaos');
+  assert.ok(conamara);
+  assert.equal(conamara.category, 'chaos');
+
+  // Lineae
+  const cadmus = scene.markers.find((m) => m.id === 'europa-cadmus-linea');
+  assert.ok(cadmus);
+  assert.equal(cadmus.category, 'linea');
+
+  // Craters
+  const pwyll = scene.markers.find((m) => m.id === 'europa-pwyll-crater');
+  assert.ok(pwyll);
+  assert.equal(pwyll.category, 'crater');
+
+  // Plumes
+  const plume = scene.markers.find((m) => m.id === 'europa-plume-south-1');
+  assert.ok(plume);
+  assert.equal(plume.category, 'plume');
+
+  // Filters
+  assert.equal(scene.filters.length, 1);
+  assert.equal(scene.filters[0].id, 'feature-type');
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'chaos'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'linea'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'plume'));
+
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'nasa'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'esa'));
+});
+
+// ── Titan Lakes ──────────────────────────────────────────────────────────────
+
+test('loadTitanLakesExample returns markers for Titan methane lakes and seas', async () => {
+  const scene = await loadTitanLakesExample({ locale: 'en' });
+
+  assert.equal(scene.planet.id, 'titan');
+  assert.equal(scene.theme, 'dark');
+  assert.ok(scene.markers.length >= 9, 'should have at least 9 Titan features');
+
+  // Kraken Mare (largest)
+  const kraken = scene.markers.find((m) => m.id === 'titan-kraken-mare');
+  assert.ok(kraken);
+  assert.equal(kraken.category, 'sea');
+  assert.ok(kraken.description.en.includes('methane'));
+
+  // Ontario Lacus (southern hemisphere)
+  const ontario = scene.markers.find((m) => m.id === 'titan-ontario-lacus');
+  assert.ok(ontario);
+  assert.equal(ontario.category, 'lake');
+
+  // Vid Flumina (channel)
+  const vid = scene.markers.find((m) => m.id === 'titan-vid-flumina');
+  assert.ok(vid);
+  assert.equal(vid.category, 'channel');
+
+  // Huygens landing site
+  const huygens = scene.markers.find((m) => m.id === 'titan-huygens-site');
+  assert.ok(huygens);
+  assert.equal(huygens.category, 'landing');
+  assert.equal(huygens.sourceId, 'esa');
+
+  // Filters
+  assert.equal(scene.filters.length, 1);
+  assert.equal(scene.filters[0].id, 'feature-type');
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'sea'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'lake'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'channel'));
+
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'nasa'));
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'esa'));
+});
+
+// ── Wireframe Earth ──────────────────────────────────────────────────────────
+
+test('loadWireframeEarthExample returns capitals scene with wireframe-shaded theme', async () => {
+  const fetchImpl = createFetchStub(withLandRoute({
+    'https://restcountries.com/v3.1/all?fields=name,capital,capitalInfo,cca3,region,subregion,latlng,unMember': [
+      { name: { common: 'Test' }, capital: ['Testville'], capitalInfo: { latlng: [10, 20] }, cca3: 'TST', unMember: false },
+    ],
+  }));
+  const scene = await loadWireframeEarthExample({ fetchImpl });
+
+  assert.equal(scene.theme, 'wireframe-shaded');
+  assert.equal(scene.planet.id, 'earth');
+  assert.ok(scene.markers.length >= 1);
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'rest-countries'));
+});
+
+// ── Grayscale Earth ──────────────────────────────────────────────────────────
+
+test('loadGrayscaleEarthExample returns continents scene with grayscale-flat theme', async () => {
+  const fetchImpl = createFetchStub(withLandRoute({
+    'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_geography_regions_polys.geojson': { type: 'FeatureCollection', features: [] },
+    'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_geography_marine_polys.geojson': { type: 'FeatureCollection', features: [] },
+  }));
+  const scene = await loadGrayscaleEarthExample({ fetchImpl });
+
+  assert.equal(scene.theme, 'grayscale-flat');
+  assert.equal(scene.planet.id, 'earth');
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'natural-earth'));
+});
+
+// ── loadExampleScene routes new example IDs ──────────────────────────────────
+
+test('loadExampleScene routes Moon landing sites', async () => {
+  const scene = await loadExampleScene(EXAMPLE_IDS.MOON_LANDING_SITES);
+  assert.equal(scene.planet.id, 'moon');
+  assert.ok(scene.markers.length > 0);
+});
+
+test('loadExampleScene routes Mars landing sites', async () => {
+  const scene = await loadExampleScene(EXAMPLE_IDS.MARS_LANDING_SITES);
+  assert.equal(scene.planet.id, 'mars');
+  assert.ok(scene.markers.length > 0);
+});
+
+test('loadExampleScene routes Europa water features', async () => {
+  const scene = await loadExampleScene(EXAMPLE_IDS.EUROPA_WATER);
+  assert.equal(scene.planet.id, 'europa');
+  assert.ok(scene.markers.length > 0);
+});
+
+test('loadExampleScene routes Titan lakes', async () => {
+  const scene = await loadExampleScene(EXAMPLE_IDS.TITAN_LAKES);
+  assert.equal(scene.planet.id, 'titan');
+  assert.ok(scene.markers.length > 0);
+});
+
+// BUG23: all planetary example marker longitudes must be within [-180, 180]
+test('planetary examples have all marker longitudes within [-180, 180]', async () => {
+  const examples = [
+    { loader: loadMarsLandingSitesExample, name: 'Mars' },
+    { loader: loadEuropaWaterExample, name: 'Europa' },
+    { loader: loadTitanLakesExample, name: 'Titan' },
+  ];
+  for (const { loader, name } of examples) {
+    const scene = await loader({ locale: 'en' });
+    for (const marker of scene.markers) {
+      assert.ok(
+        marker.lon >= -180 && marker.lon <= 180,
+        `${name} marker ${marker.id} lon=${marker.lon} out of [-180, 180]`,
+      );
+    }
+    if (scene.camera) {
+      assert.ok(
+        scene.camera.lon >= -180 && scene.camera.lon <= 180,
+        `${name} camera lon=${scene.camera.lon} out of [-180, 180]`,
+      );
+    }
+  }
+});
+
+test('loadExampleScene routes Wireframe Earth', async () => {
+  const fetchImpl = createFetchStub(withLandRoute({
+    'https://restcountries.com/v3.1/all?fields=name,capital,capitalInfo,cca3,region,subregion,latlng,unMember': [],
+  }));
+  const scene = await loadExampleScene(EXAMPLE_IDS.WIREFRAME_EARTH, { fetchImpl });
+  assert.equal(scene.theme, 'wireframe-shaded');
+});
+
+test('loadExampleScene routes Grayscale Earth', async () => {
+  const fetchImpl = createFetchStub(withLandRoute({
+    'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_geography_regions_polys.geojson': { type: 'FeatureCollection', features: [] },
+    'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_geography_marine_polys.geojson': { type: 'FeatureCollection', features: [] },
+  }));
+  const scene = await loadExampleScene(EXAMPLE_IDS.GRAYSCALE_EARTH, { fetchImpl });
+  assert.equal(scene.theme, 'grayscale-flat');
+});
+
+// ── Hannibal's Route ─────────────────────────────────────────────────────────
+
+test('loadHannibalRouteExample returns grayscale-shaded scene with markers and path', async () => {
+  const scene = await loadHannibalRouteExample();
+
+  assert.equal(scene.theme, 'grayscale-shaded');
+  assert.equal(scene.planet.id, 'earth');
+  assert.ok(scene.markers.length >= 10, 'should have at least 10 waypoint markers');
+  assert.ok(scene.paths.length === 1, 'should have exactly one route path');
+  assert.equal(scene.paths[0].id, 'hannibal-march');
+  assert.ok(scene.paths[0].points.length >= 10, 'route path should have at least 10 points');
+  assert.equal(scene.paths[0].color, '#8b0000');
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'hannibal-route'));
+  assert.equal(scene.camera.lat, 42.0);
+  assert.equal(scene.camera.lon, 5.0);
+});
+
+test('loadHannibalRouteExample markers include Carthage and Cannae', async () => {
+  const scene = await loadHannibalRouteExample();
+  const ids = scene.markers.map((m) => m.id);
+  assert.ok(ids.includes('hb-carthage'), 'should include Carthage');
+  assert.ok(ids.includes('hb-cannae'), 'should include Cannae');
+});
+
+test('loadExampleScene routes Hannibal route', async () => {
+  const scene = await loadExampleScene(EXAMPLE_IDS.HANNIBAL_ROUTE);
+  assert.equal(scene.theme, 'grayscale-shaded');
+  assert.ok(scene.markers.length > 0);
+  assert.ok(scene.paths.length === 1);
+});
+
+// ── Indiana Jones Itinerary ───────────────────────────────────────────────────
+
+test('loadIndianaJonesItinerary returns flat map scene with arcs and movie filters', async () => {
+  const scene = await loadIndianaJonesItinerary({ locale: 'en' });
+
+  assert.equal(scene.projection, 'equirectangular');
+  assert.equal(scene.theme, 'satellite');
+  assert.equal(scene.planet.id, 'earth');
+
+  // 5 movies with cities: 5 + 3 + 5 + 4 + 5 = 22 markers
+  assert.ok(scene.markers.length >= 20, `should have at least 20 city markers, got ${scene.markers.length}`);
+
+  // Arcs: 4 + 2 + 4 + 3 + 4 = 17 arcs
+  assert.ok(scene.arcs.length >= 15, `should have at least 15 arcs, got ${scene.arcs.length}`);
+
+  // All arcs use the thick red style
+  for (const arc of scene.arcs) {
+    assert.equal(arc.color, '#cc0000', `arc ${arc.id} should be red`);
+    assert.equal(arc.strokeWidth, 4, `arc ${arc.id} should have strokeWidth 4`);
+    assert.equal(arc.maxAltitude, 0.15, `arc ${arc.id} should have maxAltitude 0.15`);
+    assert.equal(arc.animationTime, 2000, `arc ${arc.id} should animate over 2000ms`);
+    assert.equal(arc.sourceId, 'indiana-jones');
+  }
+
+  // All markers are red dots with always-visible callouts
+  for (const marker of scene.markers) {
+    assert.equal(marker.color, '#cc0000');
+    assert.equal(marker.visualType, 'dot');
+    assert.equal(marker.calloutMode, 'always');
+    assert.equal(marker.sourceId, 'indiana-jones');
+  }
+
+  // Movie filter with 6 options (all + 5 movies)
+  assert.equal(scene.filters.length, 1);
+  assert.equal(scene.filters[0].id, 'movie');
+  assert.equal(scene.filters[0].options.length, 6);
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'all'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'raiders'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'temple'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'crusade'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'crystal'));
+  assert.ok(scene.filters[0].options.some((o) => o.value === 'dial'));
+
+  // Data source
+  assert.ok(scene.dataSources.some((ds) => ds.id === 'indiana-jones'));
+});
+
+test('loadIndianaJonesItinerary markers include key cities from each movie', async () => {
+  const scene = await loadIndianaJonesItinerary();
+  const ids = scene.markers.map((m) => m.id);
+
+  // Raiders
+  assert.ok(ids.includes('indy-raiders-marshall-college'), 'should include Marshall College');
+  assert.ok(ids.includes('indy-raiders-cairo'), 'should include Cairo');
+
+  // Temple of Doom
+  assert.ok(ids.includes('indy-temple-shanghai'), 'should include Shanghai');
+  assert.ok(ids.includes('indy-temple-pankot-palace'), 'should include Pankot Palace');
+
+  // Last Crusade
+  assert.ok(ids.includes('indy-crusade-venice'), 'should include Venice');
+  assert.ok(ids.includes('indy-crusade-berlin'), 'should include Berlin');
+
+  // Crystal Skull
+  assert.ok(ids.includes('indy-crystal-nevada'), 'should include Nevada');
+  assert.ok(ids.includes('indy-crystal-nazca'), 'should include Nazca');
+
+  // Dial of Destiny
+  assert.ok(ids.includes('indy-dial-new-york'), 'should include New York');
+  assert.ok(ids.includes('indy-dial-athens'), 'should include Athens');
+});
+
+test('loadIndianaJonesItinerary arcs connect consecutive cities per movie', async () => {
+  const scene = await loadIndianaJonesItinerary();
+
+  // Raiders: Marshall College → Nepal (first leg)
+  const raidersLeg0 = scene.arcs.find((a) => a.id === 'indy-raiders-leg-0');
+  assert.ok(raidersLeg0, 'Raiders first leg should exist');
+  assert.equal(raidersLeg0.name.en, 'Marshall College, CT → Nepal');
+
+  // Temple of Doom: Shanghai → Nang Tao
+  const templeLeg0 = scene.arcs.find((a) => a.id === 'indy-temple-leg-0');
+  assert.ok(templeLeg0);
+  assert.equal(templeLeg0.name.en, 'Shanghai → Nang Tao');
+
+  // Last Crusade: last leg Berlin → Iskenderun
+  const crusadeLeg3 = scene.arcs.find((a) => a.id === 'indy-crusade-leg-3');
+  assert.ok(crusadeLeg3);
+  assert.equal(crusadeLeg3.name.en, 'Berlin → Iskenderun');
+});
+
+test('loadIndianaJonesItinerary movie categories are assigned correctly', async () => {
+  const scene = await loadIndianaJonesItinerary();
+
+  const raidersMarkers = scene.markers.filter((m) => m.category === 'indy-raiders');
+  assert.equal(raidersMarkers.length, 5);
+
+  const templeMarkers = scene.markers.filter((m) => m.category === 'indy-temple');
+  assert.equal(templeMarkers.length, 3);
+
+  const crusadeMarkers = scene.markers.filter((m) => m.category === 'indy-crusade');
+  assert.equal(crusadeMarkers.length, 5);
+
+  const crystalMarkers = scene.markers.filter((m) => m.category === 'indy-crystal');
+  assert.equal(crystalMarkers.length, 4);
+
+  const dialMarkers = scene.markers.filter((m) => m.category === 'indy-dial');
+  assert.equal(dialMarkers.length, 5);
+});
+
+test('loadExampleScene routes Indiana Jones itinerary', async () => {
+  const scene = await loadExampleScene(EXAMPLE_IDS.INDIANA_JONES);
+  assert.equal(scene.projection, 'equirectangular');
+  assert.ok(scene.markers.length > 0);
+  assert.ok(scene.arcs.length > 0);
+});
+
+// BUG14: landmass loading disabled — verify no fetch is made
+test('BUG14: loadLandmassRegions does not fetch when disabled', async () => {
+  const fetchImpl = createFetchStub(withLandRoute({
+    'https://restcountries.com/v3.1/all?fields=name,capital,capitalInfo,cca3,region,subregion,latlng,unMember': [],
+  }));
+
+  let landCallCount = 0;
+  const trackingFetch = async (url) => {
+    if (url === NATURAL_EARTH_LAND_URL) landCallCount++;
+    return fetchImpl(url);
+  };
+
+  _resetLandmassCache();
+  await loadAllCapitalsExample({ fetchImpl: trackingFetch });
+
+  assert.equal(landCallCount, 0, 'landmass GeoJSON should not be fetched');
 });

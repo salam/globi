@@ -13,7 +13,7 @@ import { getThemePalette } from './themePalette.js';
 import { resolveTexturePaths } from './textureLoader.js';
 
 const ZOOM_MIN = 0.3;
-const ZOOM_MAX = 12;
+const ZOOM_MAX = 100;
 
 function clamp(v, lo, hi) {
   return Math.min(hi, Math.max(lo, v));
@@ -43,6 +43,7 @@ export class FlatMapRenderer {
   #markerFilter = null;
   #calloutFilter = null;
   #arcFilter = null;
+  #imageCache = new Map();
   #pathFilter = null;
   #dirty = false;
   #lowRes = false;
@@ -384,7 +385,7 @@ export class FlatMapRenderer {
     const scene = this.#scene;
 
     // 1. Background
-    const palette = getThemePalette(scene?.theme ?? 'photo');
+    const palette = getThemePalette(scene?.theme ?? 'photo', scene?.surfaceTint ?? null, scene?.overlayTint ?? null);
     this.#palette = palette;
     ctx.fillStyle = palette.backgroundFlat;
     ctx.fillRect(0, 0, width, height);
@@ -402,7 +403,10 @@ export class FlatMapRenderer {
     // 4. Regions
     this.#renderRegions(ctx, scene.regions || []);
 
-    // 5. Borders
+    // 5a. Landmass fill (gray solid for wireframe themes)
+    this.#renderLandmassFill(ctx, scene);
+
+    // 5b. Borders
     this.#renderBorders(ctx, scene);
 
     // 6. Paths
@@ -711,6 +715,16 @@ export class FlatMapRenderer {
     }
   }
 
+  #loadMarkerImage(uri) {
+    if (this.#imageCache.has(uri)) return this.#imageCache.get(uri);
+    const img = new Image();
+    img.src = uri;
+    const entry = { img, loaded: false };
+    img.onload = () => { entry.loaded = true; this.#render(); };
+    this.#imageCache.set(uri, entry);
+    return entry;
+  }
+
   #renderMarkers(ctx, markers) {
     const proj = getProjection(this.#projectionName);
     if (!proj) return;
@@ -721,20 +735,78 @@ export class FlatMapRenderer {
       const { x, y } = proj.project(marker.lat, marker.lon, this.#centerLat, this.#centerLon);
       const { px, py } = this.#projectionToPixel(x, y);
 
-      // All marker types fall back to dot
-      const radius = marker.size || 6;
       ctx.save();
-      ctx.fillStyle = marker.color || '#e44';
-      ctx.beginPath();
-      ctx.arc(px, py, radius, 0, Math.PI * 2);
-      ctx.fill();
-      if (marker.strokeColor) {
-        ctx.strokeStyle = marker.strokeColor;
-        ctx.lineWidth = marker.strokeWidth || 1;
-        ctx.stroke();
+
+      if (marker.visualType === 'image' && marker.assetUri) {
+        const entry = this.#loadMarkerImage(marker.assetUri);
+        if (entry.loaded) {
+          const scale = marker.markerScale || 0.014;
+          const size = Math.max(16, scale * 1600);
+          ctx.drawImage(entry.img, px - size / 2, py - size / 2, size, size);
+        } else {
+          // Fallback dot while loading
+          ctx.fillStyle = marker.color || '#e44';
+          ctx.beginPath();
+          ctx.arc(px, py, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        const radius = marker.size || 6;
+        ctx.fillStyle = marker.color || '#e44';
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+        if (marker.strokeColor) {
+          ctx.strokeStyle = marker.strokeColor;
+          ctx.lineWidth = marker.strokeWidth || 1;
+          ctx.stroke();
+        }
       }
+
       ctx.restore();
     }
+  }
+
+  #renderLandmassFill(ctx, scene) {
+    if (!this.#borderData) return;
+    const p = this.#palette;
+    if (!p || !p.landmassColor) return;
+
+    const bodyId = scene?.planet?.id || 'earth';
+    if (bodyId !== 'earth') return;
+
+    const proj = getProjection(this.#projectionName);
+    if (!proj) return;
+    const w = this.#canvas ? this.#canvas.width : 0;
+
+    ctx.save();
+    ctx.fillStyle = p.landmassColor;
+
+    for (const feature of this.#borderData.features) {
+      const geom = feature.geometry;
+      const rings = geom.type === 'MultiPolygon'
+        ? geom.coordinates.flat()
+        : geom.coordinates;
+
+      for (const ring of rings) {
+        ctx.beginPath();
+        let prevPx = null;
+        for (const coord of ring) {
+          const { x, y } = proj.project(coord[1], coord[0], this.#centerLat, this.#centerLon);
+          const { px, py } = this.#projectionToPixel(x, y);
+          if (prevPx === null) {
+            ctx.moveTo(px, py);
+          } else if (Math.abs(px - prevPx) > w / 2) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+          prevPx = px;
+        }
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   #renderBorders(ctx, scene) {

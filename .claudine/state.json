@@ -1,12 +1,376 @@
 {
   "conversations": [
     {
-      "id": "ddc6c238-48b2-4c06-83d1-647c733311e2",
-      "title": "The different bodies should also have different surfaces, and the correct atm...",
+      "id": "e794868d-8e15-4b6b-b49b-30f9b7c1152e",
+      "title": "build everything, so that I can commit and publish everything. and help me wh...",
+      "description": "▸ Let me understand the project structure and build setup first.",
+      "category": "user-story",
+      "status": "in-review",
+      "lastMessage": "[...] e before, or is the Sponsor link what you're referring to? Could you clarify what the donate link should point to?",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": true,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Read",
+        "summary": ".../globi.world/index.html",
+        "outputHint": "40 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T19:55:26.456Z",
+      "updatedAt": "2026-03-13T20:17:25.194Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/e794868d-8e15-4b6b-b49b-30f9b7c1152e.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "1a0d62e3-3eab-4392-afb8-2df790a7128b",
+      "title": "Write a short description for npm packaging.",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] md:34](README.md#L34) — CDN script tag\n- [RELEASE_NOTES.md:20](RELEASE_NOTES.md#L20) — install command and CDN URL",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/RELEASE_NOTES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/README.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T19:58:36.099Z",
+      "updatedAt": "2026-03-13T20:08:18.782Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/1a0d62e3-3eab-4392-afb8-2df790a7128b.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "09319ab8-4e6b-4278-89b8-6444897f81aa",
+      "title": "Translate all strings in the website to all languages available. incl. title,...",
+      "description": "▸ Let me first examine the website to understand what strings need translation.",
+      "category": "task",
+      "status": "in-progress",
+      "lastMessage": "[...] XXXX`), making direct Edit impractical for this size. I'll use a Node.js script to patch the translations cleanly.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node tools/patch-i18n.mjs",
+        "status": "running"
+      },
+      "createdAt": "2026-03-13T19:53:16.024Z",
+      "updatedAt": "2026-03-13T20:02:18.173Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/09319ab8-4e6b-4278-89b8-6444897f81aa.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "8af73629-ada0-4600-b28e-88ad1b38a6bf",
+      "title": "Create a little homepage at./globi.world/ for this project Globi (will be hos...",
       "description": "▸",
       "category": "feature",
-      "status": "needs-input",
-      "lastMessage": "| 7: Docs | 11-12 | FEATURES.md, RELEASE_NOTES.md, visual testing |\nReady to execute?",
+      "status": "in-review",
+      "lastMessage": "Done — dolly shot now zooms to 2.7 (the globe renderer's maximum).",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi.world/app.js",
+        "outputHint": "The file /Users/matthias/Development/globi/globi.world/app.js has been updated. All occurrences of '...",
+        "status": "completed"
+      },
+      "referencedImage": "/Users/matthias/Development/globi/assets/globi-logo.png",
+      "createdAt": "2026-03-13T16:44:04.619Z",
+      "updatedAt": "2026-03-13T19:53:40.941Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/8af73629-ada0-4600-b28e-88ad1b38a6bf.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "63d45e66-86b0-4b02-9dfc-59985393e196",
+      "title": "Example 2 and original standalone midway example: show the coasts, outlines, ...",
+      "description": "▸ Let me understand the task. You want the Battle of Midway example to show the smaller islands in the area (not just Midway itself) with their coasts, outlines, and shapes. Let me first look at th...",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] le-overview zoom levels. The regions persist across all scrollytelling steps since they're part of the base scene.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T19:31:26.026Z",
+      "updatedAt": "2026-03-13T19:40:52.479Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/63d45e66-86b0-4b02-9dfc-59985393e196.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "1724ede1-4514-4665-82e2-485a9fb343e6",
+      "title": "Similar to the webpage https://claudine.pro, add a widget to subscribe for th...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] les.css) — newsletter + footer link styling\n- [app.js](globi.world/app.js) — i18n strings + subscribe form handler",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Read",
+        "summary": ".../globi.world/index.html",
+        "outputHint": "45 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T19:36:23.563Z",
+      "updatedAt": "2026-03-13T19:39:52.229Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/1724ede1-4514-4665-82e2-485a9fb343e6.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "6f3967c5-6297-4584-bfbf-28051141d11a",
+      "title": "Add the option in the component to show the landmasses in gray in the wirefra...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] ices to follow the sphere curvature.\nReload the wireframe example — the interiors should now be filled completely.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git restore --staged :/ && git add src/renderer/landmassManager.js && git com...",
+        "outputHint": "[main 9143dcd] fix: subdivide landmass triangles so interior follows sphere curvature\n 1 file change...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T18:55:56.338Z",
+      "updatedAt": "2026-03-13T19:29:32.080Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/6f3967c5-6297-4584-bfbf-28051141d11a.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "3363423c-7a7d-407a-a504-63fc3e55b8f0",
+      "title": "Add the Logo and \"Globi\" in the beginning of the title.",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] uage` now sets `document.title` from that key — so the browser tab title stays in sync with the selected language.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi.world/app.js",
+        "outputHint": "The file /Users/matthias/Development/globi/globi.world/app.js has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T18:55:21.085Z",
+      "updatedAt": "2026-03-13T19:24:10.935Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/3363423c-7a7d-407a-a504-63fc3e55b8f0.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "97c309c4-3b85-4aab-9d07-44ab16dc8814",
+      "title": "BUG: the country boundaries vectors are also loaded for other planets than ea...",
+      "description": "▸",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...] blue for Earth, red for Mars, etc.)\n- **Syncs automatically** when theme changes externally (via `#applyViewerUi`)",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git log --oneline -6",
+        "outputHint": "15 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T10:27:23.716Z",
+      "updatedAt": "2026-03-13T17:12:39.917Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/97c309c4-3b85-4aab-9d07-44ab16dc8814.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "397b7f57-1801-470f-aa59-f6a464863e01",
+      "title": "Create an example that works with a text widget outside of the globi-view:",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] rker's affiliation\n- The highlight marker uses `markerScale: 0.028` for a visible selection ring around the target",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/BUGFIXES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/BUGFIXES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "referencedImage": "/tmp/midway-check.png",
+      "createdAt": "2026-03-12T23:37:08.598Z",
+      "updatedAt": "2026-03-13T17:09:49.177Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/397b7f57-1801-470f-aa59-f6a464863e01.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "e97eba41-eeb0-4c08-a1d6-4cb4321c6b43",
+      "title": "Regarding Publishing on unpkg– do everything in the project/workspace, I need...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] 2 pre-existing test failures in `geo-label-manager.test.js` (labelStyles override) — not related to these changes.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "npm pack --dry-run 2>&1 | tail -5",
+        "outputHint": "5 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T16:22:27.850Z",
+      "updatedAt": "2026-03-13T16:24:20.905Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/e97eba41-eeb0-4c08-a1d6-4cb4321c6b43.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "a7ea2237-ecf8-4c9a-86e8-026ef8c85cb6",
+      "title": "In the README.md include a highlevel description of the set of features inclu...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] ME and examples gallery now both have screenshot thumbnails wired in. Is there anything else you'd like to adjust?",
       "agents": [
         {
           "id": "claude-main",
@@ -22,15 +386,1251 @@
       "isRateLimited": false,
       "lastActivity": {
         "toolName": "Bash",
-        "summary": "git restore --staged :/ && git add \"docs/superpowers/plans/2026-03-11-realist...",
-        "outputHint": "[main 2983926] docs: add implementation plan for realistic celestial bodies\n 1 file changed, 1793 in...",
+        "summary": "pkill -f \"python3 -m http.server 4173\" 2>/dev/null; echo \"done\"",
+        "outputHint": "done",
+        "status": "completed"
+      },
+      "referencedImage": "/Users/matthias/Development/globi/assets/screenshots/all-capitals.png",
+      "createdAt": "2026-03-13T08:19:36.627Z",
+      "updatedAt": "2026-03-13T10:36:59.498Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/a7ea2237-ecf8-4c9a-86e8-026ef8c85cb6.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "ac40b139-928b-499f-83e5-b745519be34a",
+      "title": "BUG: http://localhost:4173/examples/indiana-jones.html crashes when switching...",
+      "description": "▸ Let me investigate this bug systematically.",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...] sts/three-renderer.test.js) — palette verification test for BUG29\n- [BUGFIXES.md](BUGFIXES.md) — added BUG29 entry",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-13T08:35:00.844Z",
+      "updatedAt": "2026-03-13T10:32:32.659Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/ac40b139-928b-499f-83e5-b745519be34a.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "28d9fbfc-9b7e-4568-a43e-93e1daca60ef",
+      "title": "chrome-extension://h…ound-redux-new.js:1 Uncaught (in promise) Error: No tab ...",
+      "description": "▸ These are all **LastPass browser extension** errors — they're not related to your globi project. The LastPass extension is spamming Chrome's context menu API by trying to create duplicate menu it...",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] us filter: `-LastPass -runtime.lastError`\nIs there something specific in your globi project you'd like to work on?",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": true,
+      "isRateLimited": false,
+      "createdAt": "2026-03-13T09:49:03.956Z",
+      "updatedAt": "2026-03-13T09:49:10.689Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/28d9fbfc-9b7e-4568-a43e-93e1daca60ef.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code"
+    },
+    {
+      "id": "abd8b9dc-e52d-49d5-ad21-fd9e78ea86f6",
+      "title": "How could the library @globi.min.js be 25% of the size it is now?",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] apse triple-clone to single clone** (#1) — fewer deep copies of the scene graph\nWant me to implement any of these?",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": true,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node tools/build.mjs 2>&1 && npm test 2>&1 | grep \"^# \\|^not ok\"",
+        "outputHint": "417 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T23:58:34.811Z",
+      "updatedAt": "2026-03-13T08:07:54.880Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/abd8b9dc-e52d-49d5-ad21-fd9e78ea86f6.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "cb85c84d-f7ea-492d-b2bb-b4ab7dffc75b",
+      "title": "Add custom context menu items such as USDz export, and different gis formats,...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] h()` which returns the full event path including Shadow DOM internals, correctly detecting clicks inside the menu.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git commit -m \"docs: add BUG26 context menu Shadow DOM fix to BUGFIXES.md\" --...",
+        "outputHint": "[main 4219a24] docs: add BUG26 context menu Shadow DOM fix to BUGFIXES.md\n 1 file changed, 24 insert...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T23:00:38.288Z",
+      "updatedAt": "2026-03-13T08:04:51.288Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/cb85c84d-f7ea-492d-b2bb-b4ab7dffc75b.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "97ce3407-c45f-4be4-959c-ff9e25e583f4",
+      "title": "Rename the globe-viewer to globi-viewer.",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "- All documentation references\nZero occurrences of `<globe-viewer>` remain in the codebase.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Grep",
+        "summary": "\"GlobeViewerElement|registerGlobeViewer\" (in .../Development/globi)",
+        "outputHint": "No files found",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T23:32:40.314Z",
+      "updatedAt": "2026-03-12T23:41:28.022Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/97ce3407-c45f-4be4-959c-ff9e25e583f4.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code"
+    },
+    {
+      "id": "4c53dd5e-abcd-4d19-980d-23aa53f5d779",
+      "title": "Create an artistic example that has flight itinerary of Indiana Jones in the ...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] rc 2 from 4–6s, etc. — one flight leg after another across all 17 arcs (total ~34 seconds for the full itinerary).",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/examples.test.js tests/flat-map-renderer.test.js tests/thre...",
+        "outputHint": "6 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T22:57:02.880Z",
+      "updatedAt": "2026-03-12T23:40:16.239Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/4c53dd5e-abcd-4d19-980d-23aa53f5d779.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "85f9d389-4b58-4c6a-a220-823efddac0b0",
+      "title": "Uncaught IndexSizeError: Failed to execute 'createImageData' on 'OffscreenCan...",
+      "description": "▸",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...]  (width <= 0 || height <= 0) return;` — so the entire projection is skipped when the canvas hasn't been sized yet.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/BUGFIXES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/BUGFIXES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T23:29:16.430Z",
+      "updatedAt": "2026-03-12T23:30:24.852Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/85f9d389-4b58-4c6a-a220-823efddac0b0.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "c849041e-2829-4ace-8752-820d9679f4b7",
+      "title": "Check if this can be published publicly, or if it contains infsec problems.",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "3. Call `viewer.setScene(scene)` (the correct method name)\nTry refreshing now.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Grep",
+        "summary": "\"registerGlobeViewer|whenDefined|setScene\" (in .../globi/examples)",
+        "outputHint": "56 lines of output",
+        "status": "completed"
+      },
+      "referencedImage": "/Users/matthias/Development/globi/assets/globi-logo.png",
+      "createdAt": "2026-03-12T22:47:51.614Z",
+      "updatedAt": "2026-03-12T23:24:52.595Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/c849041e-2829-4ace-8752-820d9679f4b7.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "7c49b446-b219-4e1e-b339-da6d163ce6a6",
+      "title": "Load Example Scene",
+      "description": "▸",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "- **Titan**: 6 markers + camera (e.g. Kraken Mare: -310 → 50)\nAll 40 tests pass.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/BUGFIXES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/BUGFIXES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T23:20:25.310Z",
+      "updatedAt": "2026-03-12T23:23:22.368Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/7c49b446-b219-4e1e-b339-da6d163ce6a6.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "1d08e799-a72c-44d3-97e9-af8ea393a9fe",
+      "title": "Create another example of the Hannibal's travel route of his army. Use the gr...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] d\nAll 34 example tests pass. The 5 failures in the full suite are pre-existing (GeoLabelManager, navigation zoom).",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/*.test.js 2>&1 | grep \"not ok\"",
+        "outputHint": "5 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T23:11:31.988Z",
+      "updatedAt": "2026-03-12T23:18:01.647Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/1d08e799-a72c-44d3-97e9-af8ea393a9fe.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "44e23266-627a-46d3-b0ec-91336da73d2e",
+      "title": "Mouse cursor should be little hand when hovering over a clickable marker or c...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] inside the shadow DOM. Added `z-index: 30` to `.inspect-panel` in [editor/styles.css:187](editor/styles.css#L187).",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/callout-manager.test.js tests/marker-manager.test.js tests/...",
+        "outputHint": "10 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T22:37:28.601Z",
+      "updatedAt": "2026-03-12T22:51:59.555Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/44e23266-627a-46d3-b0ec-91336da73d2e.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "c3732bf6-d554-41e2-932c-bf7a75c8a2f1",
+      "title": "Fix the downloading of all textures of all remaining missing planets/moons.",
+      "description": "▸ Let me investigate the current texture loading setup to understand what's missing.",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "  - `ganymede/2k_surface.jpg` (77K) — Voyager / Galileo SSI mosaic\n  - `titan/2k_surface.jpg` (74K) — Cassini ISS mosaic",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/*.test.js 2>&1 | grep \"^not ok\"",
+        "outputHint": "5 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T00:42:00.271Z",
+      "updatedAt": "2026-03-12T22:39:09.282Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/c3732bf6-d554-41e2-932c-bf7a75c8a2f1.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "b21986d9-5016-4475-bd89-fdeb550d94f3",
+      "title": "As an alternative to the spherical globe projection, provide a mode with a fl...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...]  shown. This handles fullscreen, window resizes, or any layout change that happened while the renderer was hidden.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/controller.test.js tests/flat-map-renderer.test.js 2>&1 | g...",
+        "outputHint": "# tests 23\n# pass 23\n# fail 0",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T11:07:45.287Z",
+      "updatedAt": "2026-03-12T22:34:52.942Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/b21986d9-5016-4475-bd89-fdeb550d94f3.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "0344783e-eb05-4cfd-a227-ec332fa13b74",
+      "title": "Add a black and white color variant, where the background is completely white...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] p canvas filter. This should give a much brighter, paper-like appearance on the white background. Reload to check.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "npm test 2>&1 | grep \"^not ok\"",
+        "outputHint": "5 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T14:47:08.937Z",
+      "updatedAt": "2026-03-12T22:33:26.521Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/0344783e-eb05-4cfd-a227-ec332fa13b74.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "d75ba520-5dcb-48d0-9e22-f632f57385f7",
+      "title": "The little red compass arrow in the bottom right should always be rotated and...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "| 70° | Very foreshortened | Fading in |\n| 85°+ (near pole) | Nearly edge-on | Fully visible |",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/FEATURES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/FEATURES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T21:47:47.198Z",
+      "updatedAt": "2026-03-12T21:59:41.429Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/d75ba520-5dcb-48d0-9e22-f632f57385f7.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "9db05a8a-3d16-45bb-b0a9-5a4373e4747d",
+      "title": "When examples are loaded, besides the country borders, there are also yellow ...",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] nslucent green regions — since country borders already outline the landmasses, they were redundant visual clutter.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/*.test.js 2>&1 | grep -E \"^(ok|not ok|# (pass|fail|tests))\"",
+        "outputHint": "360 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T21:44:53.622Z",
+      "updatedAt": "2026-03-12T21:51:05.923Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/9db05a8a-3d16-45bb-b0a9-5a4373e4747d.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "ae82c8ef-8aff-4deb-a3e8-4ad047e8a96b",
+      "title": "BUG: in the ISS example, the marker with the 3d model should not show the sph...",
+      "description": "▸ Let me investigate these three bugs. I'll start by reading the relevant code files.",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...] tion pipeline.\nYou should now see the pulse rings, orbit interpolation, and the projected line log in the console.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/marker-manager.test.js tests/examples.test.js tests/schema-...",
+        "outputHint": "15 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T12:18:21.788Z",
+      "updatedAt": "2026-03-12T21:43:40.498Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/ae82c8ef-8aff-4deb-a3e8-4ad047e8a96b.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "ce55f968-620c-4fc8-9a0c-94ebefcec103",
+      "title": "Bug:",
+      "description": "▸ Let me investigate this bug.",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...] Markers` and `filterCallouts` now go through this converter, matching the contract that `GlobeController` expects.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/BUGFIXES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/BUGFIXES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T21:13:07.393Z",
+      "updatedAt": "2026-03-12T21:17:01.198Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/ce55f968-620c-4fc8-9a0c-94ebefcec103.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "fbed3d0a-0947-484a-af02-59e03895e37f",
+      "title": "BUG:",
+      "description": "▸ The issue is that `rgba()` colors with alpha are being passed to `THREE.Color`, which doesn't support alpha. Let me find where this happens.",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...]  wired loading state around example load\n- [tests/loading-state.test.js](tests/loading-state.test.js) — unit tests",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/*.test.js 2>&1 | grep \"^not ok\"",
+        "outputHint": "4 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T13:18:01.955Z",
+      "updatedAt": "2026-03-12T20:49:16.671Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/fbed3d0a-0947-484a-af02-59e03895e37f.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "b8236582-452b-4ded-b984-964142051300",
+      "title": "Add a data source attribution feature to properly show the used sources. For ...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "Moved to `right: 12px; bottom: 6px`. Reload to see the change.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git restore --staged :/ && git add src/components/globe-viewer.js && git comm...",
+        "outputHint": "[main cf95e85] style: move attribution label to bottom-right\n 1 file changed, 1 insertion(+), 1 dele...",
+        "status": "completed"
+      },
+      "referencedImage": "/Users/matthias/Development/globi/assets/noun-attribution-6854685.svg",
+      "createdAt": "2026-03-12T08:51:34.366Z",
+      "updatedAt": "2026-03-12T13:44:15.215Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/b8236582-452b-4ded-b984-964142051300.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "8bc62859-69e9-4259-ae02-a7eb8d6c1b47",
+      "title": "The sun lighting is not working anymore.",
+      "description": "▸ Let me investigate the sun lighting implementation to understand what's broken.",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...]  [earth-builder.test.js](tests/earth-builder.test.js); all 322 tests pass (3 pre-existing zoom failures unrelated)",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/BUGFIXES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/BUGFIXES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T13:12:00.192Z",
+      "updatedAt": "2026-03-12T13:33:28.517Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/8bc62859-69e9-4259-ae02-a7eb8d6c1b47.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "efae0833-5a94-48d0-b6f4-ed20455e74a4",
+      "title": "Stack overlapping callouts smartly, so it's visible that there are several ca...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] NGTH = 0.25`. Only when zooming past 1x do they shrink — at zoom 2 they're 1/4 length, at zoom 3 they're 1/9, etc.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "npm test 2>&1 | grep -E \"(not ok|^# (pass|fail|tests))\"",
+        "outputHint": "6 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T08:53:40.119Z",
+      "updatedAt": "2026-03-12T13:20:32.997Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/efae0833-5a94-48d0-b6f4-ed20455e74a4.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "5e273aa2-1801-42df-987c-6b975820378f",
+      "title": "In the ISS example, anticipate the current speed of the ISS and animate the m...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] I returns new data (~30-60s)\n- **C) No callout during animation** — hide it while moving, show on hover/click only",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "createdAt": "2026-03-12T12:59:56.049Z",
+      "updatedAt": "2026-03-12T13:07:54.766Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/5e273aa2-1801-42df-987c-6b975820378f.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code"
+    },
+    {
+      "id": "a07039f0-4ee3-481d-8ade-116624447fcc",
+      "title": "Where is the marker filter widget displayed if there is one activated?",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] ts pass, lint clean. Please reload the editor and open the legend on \"All Capitals\" to verify the section headers.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Edit",
+        "summary": ".../globi/RELEASE_NOTES.md",
+        "outputHint": "The file /Users/matthias/Development/globi/RELEASE_NOTES.md has been updated successfully.",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T08:43:59.852Z",
+      "updatedAt": "2026-03-12T12:52:25.842Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/a07039f0-4ee3-481d-8ade-116624447fcc.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "e6106581-7d88-4b90-bb4a-9c63f8ef48c2",
+      "title": "Add an option in the dropdown to unload all examples.",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] )\n**Tests:** 2 new tests added — both pass. The 3 pre-existing failures in `three-renderer.test.js` are unrelated.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/*.test.js 2>&1 | grep \"not ok\"",
+        "outputHint": "not ok 195 - zoomBy clamps within range\nnot ok 196 - zoom cannot push camera inside the globe surfac...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T08:56:26.950Z",
+      "updatedAt": "2026-03-12T09:00:50.484Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/e6106581-7d88-4b90-bb4a-9c63f8ef48c2.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "ab1bed88-2fb8-47ba-b593-5337ed02dec5",
+      "title": "The current marker dots are too big. Make them smaller. And also are wrongly ...",
+      "description": "▸",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...] 6-13](tests/marker-manager.test.js#L6-L13)** — Updated test to verify dot markers are `Mesh` objects, not Sprites.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Read",
+        "summary": ".../renderer/markerManager.js",
+        "outputHint": "30 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T08:55:03.679Z",
+      "updatedAt": "2026-03-12T08:56:19.645Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/ab1bed88-2fb8-47ba-b593-5337ed02dec5.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "f94b3c8b-1af8-4a35-8ae7-62f8d9accc2e",
+      "title": "In the examples, pan scroll the main marker to the center, e.g. the current I...",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] target after `renderToViewer()`\nAll 9 example tests pass. The 3 pre-existing renderer test failures are unrelated.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T08:45:09.625Z",
+      "updatedAt": "2026-03-12T08:48:54.388Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/f94b3c8b-1af8-4a35-8ae7-62f8d9accc2e.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "67a06cbe-1f3f-4c3b-b55f-4204e86440a5",
+      "title": "Load Example Scene",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] ls-civil-sample.json`\nReload the editor and the Naval Vessels (OSINT) and Civil Shipping examples should work now.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test 2>&1 | grep -i \"vessel\\|carrier\\|civil\\|osint\\|shipping\"",
+        "outputHint": "6 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T08:39:34.310Z",
+      "updatedAt": "2026-03-12T08:41:46.937Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/67a06cbe-1f3f-4c3b-b55f-4204e86440a5.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "484a77db-344d-43a5-a4c7-00b88e4ec509",
+      "title": "Don't allow to zoom through the surface of a planetary body. Stop at the surf...",
+      "description": "▸ Let me investigate the current zoom/camera implementation to understand how zooming works and where to add the surface limit.",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] urface for both `zoomBy` and `flyTo`\n- Updated [BUGFIXES.md](BUGFIXES.md) and [RELEASE_NOTES.md](RELEASE_NOTES.md)",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T00:29:25.574Z",
+      "updatedAt": "2026-03-12T00:41:46.631Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/484a77db-344d-43a5-a4c7-00b88e4ec509.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "16c242ff-aa04-488c-92be-a3faaafeef7d",
+      "title": "Earth has wrongly places labels for OCEANIA (it's on AUSTRALIA), AFRICA is mi...",
+      "description": "▸ Let me look at the Earth landmark labels configuration to fix these issues.",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "[...] g all labels of that style.\nPlease check the globe visually and let me know if any further adjustments are needed.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/geo-label-manager.test.js 2>&1 | tail -10",
+        "outputHint": "10 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T00:26:19.014Z",
+      "updatedAt": "2026-03-12T00:30:44.738Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/16c242ff-aa04-488c-92be-a3faaafeef7d.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "67fda0ad-d9c6-43e0-bbfd-b348f8e8d36e",
+      "title": "ISS example throws the following logs:",
+      "description": "▸ The ISS example is loading a NASA texture from an external URL that blocks cross-origin requests. Let me check the example code.",
+      "category": "bug",
+      "status": "in-review",
+      "lastMessage": "- [BUGFIXES.md](BUGFIXES.md) — Logged as BUG9.\nAll 203 tests pass.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T00:20:41.417Z",
+      "updatedAt": "2026-03-12T00:25:49.933Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/67fda0ad-d9c6-43e0-bbfd-b348f8e8d36e.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "07286ba3-2f6d-4442-a21e-6cbe5db61caf",
+      "title": "Make it more production-quality 3D effects. I want to have a better texture f...",
+      "description": "▸",
+      "category": "user-story",
+      "status": "in-review",
+      "lastMessage": "[...] rroring + orientation (UV flip `1-t` + canvas 180° rotation)\n- **BUG8d** — Marker centering obliquity compensation",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test 2>&1 | tail -5",
+        "outputHint": "5 lines of output",
+        "status": "completed"
+      },
+      "referencedImage": "/Users/matthias/Development/globi/assets/earth_day_2k.jpg",
+      "createdAt": "2026-03-11T13:26:19.723Z",
+      "updatedAt": "2026-03-12T00:19:47.768Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/07286ba3-2f6d-4442-a21e-6cbe5db61caf.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "ddc6c238-48b2-4c06-83d1-647c733311e2",
+      "title": "The different bodies should also have different surfaces, and the correct atm...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...]  to -65° to better align with the GRS on the Solar System Scope texture.\nHard-refresh to see the corrected labels.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "git restore --staged :/ && git add \"src/renderer/geoLabelManager.js\" \"src/ren...",
+        "outputHint": "[main eb29fd9] fix: restore correct label UV mapping and adjust GRS longitude\n 2 files changed, 2 in...",
         "status": "completed"
       },
       "createdAt": "2026-03-11T21:09:29.208Z",
-      "updatedAt": "2026-03-11T23:18:33.448Z",
+      "updatedAt": "2026-03-12T00:19:12.990Z",
       "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/ddc6c238-48b2-4c06-83d1-647c733311e2.jsonl",
       "workspacePath": "/Users/matthias/Development/globi",
-      "provider": "claude-code"
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "3e330468-b3a2-4d3d-8a0c-d8bc491ffc29",
+      "title": "clicking the call-out (not only the pin anchor itself) should also show the i...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...] hitTest` (3D raycast), so clicking a callout label returns the marker hit instead of the region polygon behind it.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "node --test tests/*.test.js 2>&1 | tail -10",
+        "outputHint": "10 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-12T00:03:10.134Z",
+      "updatedAt": "2026-03-12T00:13:14.621Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/3e330468-b3a2-4d3d-8a0c-d8bc491ffc29.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "codex-019cdf57-a7fa-7183-99aa-b83c7083eee7",
+      "title": "grab-panning works in vertical direction, but is inverse switched in horizont...",
+      "description": "",
+      "category": "task",
+      "status": "todo",
+      "lastMessage": "",
+      "agents": [
+        {
+          "id": "codex-main",
+          "name": "Codex",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "createdAt": "2026-03-12T00:00:03.388Z",
+      "updatedAt": "2026-03-12T00:00:03.392Z",
+      "filePath": "/Users/matthias/.codex/sessions/2026/03/12/rollout-2026-03-12T00-59-49-019cdf57-a7fa-7183-99aa-b83c7083eee7.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "codex"
+    },
+    {
+      "id": "266a8a0a-d794-416d-8412-012194cc67db",
+      "title": "Show inspect popup only when the inspect mode is toggled on.",
+      "description": "▸",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] (like the ISS model). When a child mesh is hit, it walks up the parent chain to find the `markerId` in `userData`.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Bash",
+        "summary": "npm test 2>&1 | tail -10",
+        "outputHint": "10 lines of output",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T23:37:44.804Z",
+      "updatedAt": "2026-03-11T23:53:56.253Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/266a8a0a-d794-416d-8412-012194cc67db.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "4e11e50c-2235-4b1d-ac2e-1356dadcaa60",
+      "title": "The example with the ISS has no segment between the last 10 mins and the curr...",
+      "description": "▸",
+      "category": "feature",
+      "status": "in-review",
+      "lastMessage": "[...]  194 tests pass. Reload the ISS example to verify the orbit line now connects through to the current ISS position.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": false
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Write",
+        "summary": ".../globi/.GIT_NEXT_COMMIT_MESSAGE.md",
+        "outputHint": "The file /Users/matthias/Development/globi/.GIT_NEXT_COMMIT_MESSAGE.md has been updated successfully...",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T20:52:00.185Z",
+      "updatedAt": "2026-03-11T23:53:36.961Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/4e11e50c-2235-4b1d-ac2e-1356dadcaa60.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
+    },
+    {
+      "id": "290edc29-99ff-407f-888f-a81a00a1ddce",
+      "title": "how can I run the example page?",
+      "description": "▸ Let me check how the project is set up.",
+      "category": "task",
+      "status": "in-review",
+      "lastMessage": "[...] server on **port 4173**. Then open [http://localhost:4173/editor/](http://localhost:4173/editor/) in your browser.",
+      "agents": [
+        {
+          "id": "claude-main",
+          "name": "Claude",
+          "avatar": "",
+          "isActive": true
+        }
+      ],
+      "gitBranch": "main",
+      "hasError": false,
+      "isInterrupted": false,
+      "hasQuestion": false,
+      "isRateLimited": false,
+      "lastActivity": {
+        "toolName": "Glob",
+        "summary": "\"editor*\"",
+        "outputHint": "No files found",
+        "status": "completed"
+      },
+      "createdAt": "2026-03-11T23:20:52.079Z",
+      "updatedAt": "2026-03-11T23:21:03.686Z",
+      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/290edc29-99ff-407f-888f-a81a00a1ddce.jsonl",
+      "workspacePath": "/Users/matthias/Development/globi",
+      "provider": "claude-code",
+      "previousStatus": "in-review"
     },
     {
       "id": "8f5b1969-1865-4a57-922f-ca5e93e1af41",
@@ -44,7 +1644,7 @@
           "id": "claude-main",
           "name": "Claude",
           "avatar": "",
-          "isActive": true
+          "isActive": false
         }
       ],
       "gitBranch": "main",
@@ -67,39 +1667,6 @@
       "previousStatus": "in-review"
     },
     {
-      "id": "07286ba3-2f6d-4442-a21e-6cbe5db61caf",
-      "title": "Make it more production-quality 3D effects. I want to have a better texture f...",
-      "description": "▸",
-      "category": "user-story",
-      "status": "in-review",
-      "lastMessage": "[...] gitude) first then X (latitude), which decouples them exactly — every location now centers precisely at (0, 0, 1).",
-      "agents": [
-        {
-          "id": "claude-main",
-          "name": "Claude",
-          "avatar": "",
-          "isActive": true
-        }
-      ],
-      "gitBranch": "main",
-      "hasError": false,
-      "isInterrupted": false,
-      "hasQuestion": false,
-      "isRateLimited": false,
-      "lastActivity": {
-        "toolName": "Bash",
-        "summary": "git restore --staged :/ && git add src/renderer/threeGlobeRenderer.js && git ...",
-        "outputHint": "[main d978e09] fix: correct globe centering by using XYZ Euler order instead of YXZ\n 1 file changed,...",
-        "status": "completed"
-      },
-      "createdAt": "2026-03-11T13:26:19.723Z",
-      "updatedAt": "2026-03-11T21:40:10.096Z",
-      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/07286ba3-2f6d-4442-a21e-6cbe5db61caf.jsonl",
-      "workspacePath": "/Users/matthias/Development/globi",
-      "provider": "claude-code",
-      "previousStatus": "in-review"
-    },
-    {
       "id": "c7babcd5-f5fb-4412-be30-79e1b4179cb1",
       "title": "Grap-draging should work the way that where the mouse down or touch happens i...",
       "description": "▸",
@@ -111,7 +1678,7 @@
           "id": "claude-main",
           "name": "Claude",
           "avatar": "",
-          "isActive": true
+          "isActive": false
         }
       ],
       "gitBranch": "main",
@@ -128,39 +1695,6 @@
       "createdAt": "2026-03-11T20:56:35.960Z",
       "updatedAt": "2026-03-11T21:39:14.277Z",
       "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/c7babcd5-f5fb-4412-be30-79e1b4179cb1.jsonl",
-      "workspacePath": "/Users/matthias/Development/globi",
-      "provider": "claude-code",
-      "previousStatus": "in-review"
-    },
-    {
-      "id": "4e11e50c-2235-4b1d-ac2e-1356dadcaa60",
-      "title": "The example with the ISS has no segment between the last 10 mins and the curr...",
-      "description": "▸",
-      "category": "feature",
-      "status": "in-review",
-      "lastMessage": "[...] ove the dot marker. No external model download needed — it's lightweight and always available.\n128/128 tests pass.",
-      "agents": [
-        {
-          "id": "claude-main",
-          "name": "Claude",
-          "avatar": "",
-          "isActive": true
-        }
-      ],
-      "gitBranch": "main",
-      "hasError": false,
-      "isInterrupted": false,
-      "hasQuestion": false,
-      "isRateLimited": false,
-      "lastActivity": {
-        "toolName": "Edit",
-        "summary": ".../globi/RELEASE_NOTES.md",
-        "outputHint": "The file /Users/matthias/Development/globi/RELEASE_NOTES.md has been updated successfully.",
-        "status": "completed"
-      },
-      "createdAt": "2026-03-11T20:52:00.185Z",
-      "updatedAt": "2026-03-11T20:56:31.853Z",
-      "filePath": "/Users/matthias/.claude/projects/-Users-matthias-Development-globi/4e11e50c-2235-4b1d-ac2e-1356dadcaa60.jsonl",
       "workspacePath": "/Users/matthias/Development/globi",
       "provider": "claude-code",
       "previousStatus": "in-review"
@@ -285,5 +1819,5 @@
       "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%20%20%20%20%20%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%2310b981%22%20opacity%3D%220.1%22%2F%3E%0A%20%20%20%20%20%20%20%20%3Crect%20x%3D%229%22%20y%3D%2215%22%20width%3D%2214%22%20height%3D%2214%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Cpolygon%20points%3D%2222%2C22%2028%2C34%2016%2C34%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Ccircle%20cx%3D%2228%22%20cy%3D%2234%22%20r%3D%225%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%3Crect%20x%3D%2230%22%20y%3D%2236%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22hsl(334%2C%2060%25%2C%2050%25)%22%20opacity%3D%220.7%22%2F%3E%0A%20%20%20%20%20%20%3C%2Fsvg%3E"
     }
   ],
-  "lastUpdated": "2026-03-11T23:18:34.236Z"
+  "lastUpdated": "2026-03-13T20:17:25.591Z"
 }

@@ -399,7 +399,7 @@ git restore --staged :/ && git add tests/surface-grab-drag.test.js && git commit
 ### Task 5: Rewrite `#onPointerDown` for surface grab
 
 **Files:**
-- Modify: `src/components/globe-viewer.js:805-821`
+- Modify: `src/components/globi-viewer.js:805-821`
 
 - [ ] **Step 1: Rewrite `#onPointerDown`**
 
@@ -439,13 +439,13 @@ Expected: PASS (no test changes yet, just structural refactor)
 - [ ] **Step 3: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js && git commit -m "refactor: rewrite onPointerDown for surface grab" -- src/components/globe-viewer.js
+git restore --staged :/ && git add src/components/globi-viewer.js && git commit -m "refactor: rewrite onPointerDown for surface grab" -- src/components/globi-viewer.js
 ```
 
 ### Task 6: Rewrite `#onPointerMove` for surface grab with off-disk fallback
 
 **Files:**
-- Modify: `src/components/globe-viewer.js:823-841`
+- Modify: `src/components/globi-viewer.js:823-841`
 
 - [ ] **Step 1: Rewrite `#onPointerMove`**
 
@@ -515,13 +515,13 @@ Expected: PASS
 - [ ] **Step 4: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js && git commit -m "feat: rewrite onPointerMove for surface grab with off-disk fallback" -- src/components/globe-viewer.js
+git restore --staged :/ && git add src/components/globi-viewer.js && git commit -m "feat: rewrite onPointerMove for surface grab with off-disk fallback" -- src/components/globi-viewer.js
 ```
 
 ### Task 7: Rewrite `#onPointerUp` — remove inertia
 
 **Files:**
-- Modify: `src/components/globe-viewer.js:844-884`
+- Modify: `src/components/globi-viewer.js:844-884`
 
 - [ ] **Step 1: Rewrite `#onPointerUp` and remove `#startInertia`**
 
@@ -556,7 +556,7 @@ Expected: PASS
 - [ ] **Step 3: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js && git commit -m "feat: remove inertia, resume idle rotation on pointer up" -- src/components/globe-viewer.js
+git restore --staged :/ && git add src/components/globi-viewer.js && git commit -m "feat: remove inertia, resume idle rotation on pointer up" -- src/components/globi-viewer.js
 ```
 
 ## Chunk 3: Cleanup and Full Test Suite
@@ -564,11 +564,11 @@ git restore --staged :/ && git add src/components/globe-viewer.js && git commit 
 ### Task 8: Clean up unused inertia state
 
 **Files:**
-- Modify: `src/components/globe-viewer.js`
+- Modify: `src/components/globi-viewer.js`
 
 - [ ] **Step 1: Remove unused inertia references**
 
-Search for `#inertiaFrame`, `vx`, `vy` in `globe-viewer.js`. Remove:
+Search for `#inertiaFrame`, `vx`, `vy` in `globi-viewer.js`. Remove:
 - The `#inertiaFrame` field declaration (if separate from initialization)
 - Any remaining `vx`/`vy` references on the drag state
 - The `cancelAnimationFrame(this.#inertiaFrame)` in `#onPointerDown` (already handled — inertia no longer exists, but the field may still be referenced in `disconnectedCallback`)
@@ -583,7 +583,7 @@ Expected: PASS
 - [ ] **Step 3: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js && git commit -m "chore: remove unused inertia state from globe-viewer" -- src/components/globe-viewer.js
+git restore --staged :/ && git add src/components/globi-viewer.js && git commit -m "chore: remove unused inertia state from globi-viewer" -- src/components/globi-viewer.js
 ```
 
 ### Task 9: Update existing tests and add API test for new renderer method

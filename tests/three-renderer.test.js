@@ -39,9 +39,31 @@ test('panBy changes camera state', () => {
 test('zoomBy clamps within range', () => {
   const renderer = new ThreeGlobeRenderer();
   renderer.zoomBy(100);
-  assert.ok(renderer.getCameraState().zoom <= 4);
+  // ZOOM_MAX ≈ 2.727 — camera must not penetrate the surface
+  assert.ok(renderer.getCameraState().zoom <= 2.8);
   renderer.zoomBy(-100);
   assert.ok(renderer.getCameraState().zoom >= 0.3);
+});
+
+// BUG11 — camera must not zoom through the planetary surface
+test('zoom cannot push camera inside the globe surface', () => {
+  const renderer = new ThreeGlobeRenderer();
+  // Try to zoom in as far as possible
+  renderer.zoomBy(100);
+  const state = renderer.getCameraState();
+  // Camera distance = 3 / zoom; must stay >= 1.1 (outside atmosphere)
+  const cameraDistance = 3 / state.zoom;
+  assert.ok(cameraDistance >= 1.1,
+    `camera distance ${cameraDistance.toFixed(3)} must be >= 1.1 (outside surface)`);
+});
+
+test('flyTo zoom is clamped to surface limit', () => {
+  const renderer = new ThreeGlobeRenderer();
+  renderer.flyTo({ lat: 0, lon: 0 }, { zoom: 10 });
+  const state = renderer.getCameraState();
+  const cameraDistance = 3 / state.zoom;
+  assert.ok(cameraDistance >= 1.1,
+    `flyTo camera distance ${cameraDistance.toFixed(3)} must be >= 1.1`);
 });
 
 test('flyTo sets camera to target coordinates', () => {
@@ -73,4 +95,20 @@ test('pauseIdleRotation and resumeIdleRotation are functions', () => {
   const renderer = new ThreeGlobeRenderer();
   assert.equal(typeof renderer.pauseIdleRotation, 'function');
   assert.equal(typeof renderer.resumeIdleRotation, 'function');
+});
+
+// BUG28 — verify getThemePalette returns correct properties for each theme
+test('getThemePalette returns correct useTextures for each theme', async () => {
+  const { getThemePalette } = await import('../src/renderer/themePalette.js');
+  const photo = getThemePalette('photo');
+  const wireframe = getThemePalette('wireframe-shaded');
+  const grayscale = getThemePalette('grayscale-flat');
+
+  assert.equal(photo.useTextures, true, 'photo should use textures');
+  assert.equal(wireframe.useTextures, false, 'wireframe should not use textures');
+  assert.equal(grayscale.useTextures, true, 'grayscale should use textures');
+  assert.equal(grayscale.desaturate, 1.0, 'grayscale should have desaturate=1');
+  assert.equal(grayscale.flatLighting, true, 'grayscale-flat should have flatLighting=true');
+  assert.equal(photo.background, 0x020b18, 'photo background should be dark');
+  assert.equal(wireframe.background, 0xffffff, 'wireframe background should be white');
 });

@@ -1,0 +1,323 @@
+[
+  {
+    "id": "us-cvn78-ford",
+    "name": "USS Gerald R. Ford (CVN-78)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 20.5,
+    "lon": 38.2,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "338803000",
+    "trail": [
+      { "lat": 36.9, "lon": -76.3, "timestamp": "2025-06-24T00:00:00Z", "source": "osint" },
+      { "lat": 18.5, "lon": -66.0, "timestamp": "2025-12-01T00:00:00Z", "source": "osint" },
+      { "lat": 35.9, "lon": 14.5, "timestamp": "2026-02-01T00:00:00Z", "source": "osint" },
+      { "lat": 30.0, "lon": 32.6, "timestamp": "2026-03-05T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "us-cvn72-lincoln",
+    "name": "USS Abraham Lincoln (CVN-72)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 23.0,
+    "lon": 63.0,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "369970406",
+    "trail": [
+      { "lat": 2.5, "lon": 101.5, "timestamp": "2026-01-01T00:00:00Z", "source": "osint" },
+      { "lat": 10.0, "lon": 75.0, "timestamp": "2026-02-01T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "us-cvn77-bush",
+    "name": "USS George H.W. Bush (CVN-77)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 36.9,
+    "lon": -76.3,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "port",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "369970663",
+    "trail": []
+  },
+  {
+    "id": "us-cvn68-nimitz",
+    "name": "USS Nimitz (CVN-68)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 45.0,
+    "lon": -125.0,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "303981000",
+    "trail": [
+      { "lat": 47.56, "lon": -122.63, "timestamp": "2026-03-07T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "us-cvn73-washington",
+    "name": "USS George Washington (CVN-73)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 35.29,
+    "lon": 139.68,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "port",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "368913000",
+    "trail": []
+  },
+  {
+    "id": "us-cvn71-roosevelt",
+    "name": "USS Theodore Roosevelt (CVN-71)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 32.4,
+    "lon": -118.5,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "366984000",
+    "trail": []
+  },
+  {
+    "id": "us-cvn70-vinson",
+    "name": "USS Carl Vinson (CVN-70)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 32.71,
+    "lon": -117.18,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "369970409",
+    "trail": []
+  },
+  {
+    "id": "us-cvn69-eisenhower",
+    "name": "USS Dwight D. Eisenhower (CVN-69)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 36.95,
+    "lon": -76.33,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "368892000",
+    "trail": []
+  },
+  {
+    "id": "us-cvn75-truman",
+    "name": "USS Harry S. Truman (CVN-75)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 36.93,
+    "lon": -76.31,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "368800000",
+    "trail": []
+  },
+  {
+    "id": "us-cvn76-reagan",
+    "name": "USS Ronald Reagan (CVN-76)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 47.55,
+    "lon": -122.65,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "369970410",
+    "trail": []
+  },
+  {
+    "id": "us-cvn74-stennis",
+    "name": "USS John C. Stennis (CVN-74)",
+    "nation": "US",
+    "type": "carrier",
+    "lat": 37.0,
+    "lon": -76.46,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": []
+  },
+  {
+    "id": "fr-r91-cdg",
+    "name": "Charles de Gaulle (R91)",
+    "nation": "FR",
+    "type": "carrier",
+    "lat": 35.2,
+    "lon": 24.9,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": [
+      { "lat": 43.12, "lon": 5.93, "timestamp": "2026-01-27T00:00:00Z", "source": "osint" },
+      { "lat": 55.6, "lon": 13.0, "timestamp": "2026-02-15T00:00:00Z", "source": "osint" },
+      { "lat": 36.0, "lon": -5.4, "timestamp": "2026-03-06T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "fr-l9014-tonnerre",
+    "name": "Tonnerre (L9014)",
+    "nation": "FR",
+    "type": "lhd",
+    "lat": 34.8,
+    "lon": 28.0,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": [
+      { "lat": 43.12, "lon": 5.93, "timestamp": "2026-03-06T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "fr-l9013-mistral",
+    "name": "Mistral (L9013)",
+    "nation": "FR",
+    "type": "lhd",
+    "lat": 70.0,
+    "lon": 20.0,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": []
+  },
+  {
+    "id": "fr-l9015-dixmude",
+    "name": "Dixmude (L9015)",
+    "nation": "FR",
+    "type": "lhd",
+    "lat": 13.0,
+    "lon": 43.5,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": [
+      { "lat": 43.12, "lon": 5.93, "timestamp": "2026-02-17T00:00:00Z", "source": "osint" },
+      { "lat": 35.5, "lon": 20.0, "timestamp": "2026-03-01T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "gb-r08-qe",
+    "name": "HMS Queen Elizabeth (R08)",
+    "nation": "GB",
+    "type": "carrier",
+    "lat": 56.03,
+    "lon": -3.44,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": []
+  },
+  {
+    "id": "gb-r09-pow",
+    "name": "HMS Prince of Wales (R09)",
+    "nation": "GB",
+    "type": "carrier",
+    "lat": 50.8,
+    "lon": -1.1,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "port",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": []
+  },
+  {
+    "id": "ru-kuznetsov",
+    "name": "Admiral Kuznetsov",
+    "nation": "RU",
+    "type": "carrier",
+    "lat": 68.97,
+    "lon": 33.08,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "decommissioned",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": []
+  },
+  {
+    "id": "cn-cv16-liaoning",
+    "name": "CNS Liaoning (CV-16)",
+    "nation": "CN",
+    "type": "carrier",
+    "lat": 36.07,
+    "lon": 120.38,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "port",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": [
+      { "lat": 24.78, "lon": 141.32, "timestamp": "2025-06-01T00:00:00Z", "source": "osint" },
+      { "lat": 26.5, "lon": 127.8, "timestamp": "2025-12-01T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "cn-cv17-shandong",
+    "name": "CNS Shandong (CV-17)",
+    "nation": "CN",
+    "type": "carrier",
+    "lat": 18.23,
+    "lon": 109.53,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "maintenance",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": [
+      { "lat": 23.5, "lon": 119.5, "timestamp": "2025-04-01T00:00:00Z", "source": "osint" }
+    ]
+  },
+  {
+    "id": "cn-cv18-fujian",
+    "name": "CNS Fujian (CV-18)",
+    "nation": "CN",
+    "type": "carrier",
+    "lat": 36.5,
+    "lon": 121.5,
+    "timestamp": "2026-03-09T00:00:00Z",
+    "status": "deployed",
+    "source": "osint",
+    "confidence": "approximate",
+    "mmsi": "",
+    "trail": [
+      { "lat": 24.0, "lon": 118.5, "timestamp": "2025-12-01T00:00:00Z", "source": "osint" },
+      { "lat": 36.07, "lon": 120.38, "timestamp": "2026-01-01T00:00:00Z", "source": "osint" }
+    ]
+  }
+]

@@ -37,7 +37,7 @@
 |---|---|
 | `src/scene/schema.js` | Add `calloutMode` + `calloutLabel` to normalizeMarker/validateScene |
 | `src/controller/globeController.js` | Import ThreeGlobeRenderer; remove imperative renderScene calls |
-| `src/components/globe-viewer.js` | Remove idle rotation rAF; add CSS2D container; WebGL error handling |
+| `src/components/globi-viewer.js` | Remove idle rotation rAF; add CSS2D container; WebGL error handling |
 | `src/index.js` | Update exports |
 | `package.json` | Add `three` dependency |
 | `tests/renderer.test.js` | Update to test ThreeGlobeRenderer |
@@ -1808,14 +1808,14 @@ git restore --staged :/ && git add src/controller/globeController.js && git comm
 
 ---
 
-### Task 12: Update globe-viewer.js — remove idle rotation, add CSS2D container
+### Task 12: Update globi-viewer.js — remove idle rotation, add CSS2D container
 
 **Files:**
-- Modify: `src/components/globe-viewer.js`
+- Modify: `src/components/globi-viewer.js`
 
 - [ ] **Step 1: Remove idle rotation rAF**
 
-The renderer now handles idle rotation internally. In `globe-viewer.js`:
+The renderer now handles idle rotation internally. In `globi-viewer.js`:
 - Remove the `#startIdleRotation()` method entirely
 - Remove the `#stopIdleRotation()` method entirely
 - Remove `#idleFrame` and `#idleLastTs` properties
@@ -1842,7 +1842,7 @@ Expected: ALL PASS (or investigate failures)
 - [ ] **Step 4: Commit**
 
 ```bash
-git restore --staged :/ && git add src/components/globe-viewer.js && git commit -m "refactor: remove idle rotation from viewer, renderer handles it" -- src/components/globe-viewer.js
+git restore --staged :/ && git add src/components/globi-viewer.js && git commit -m "refactor: remove idle rotation from viewer, renderer handles it" -- src/components/globi-viewer.js
 ```
 
 ---

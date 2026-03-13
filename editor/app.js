@@ -1,8 +1,13 @@
 import {
-  registerGlobeViewer,
+  registerGlobiViewer,
   createEmptyScene,
   getCelestialPreset,
   listCelestialPresets,
+  bindControlEvents,
+  mergeViewerUiConfig,
+  normalizeViewerUiConfig,
+} from '../src/index.js';
+import {
   geocodePlaceName,
   createMarkerFromGeocode,
   exportSceneToJSON,
@@ -11,14 +16,13 @@ import {
   importGeoJSONToScene,
   exportSceneToOBJ,
   exportSceneToUSDZ,
+} from '../src/io/index.js';
+import {
   listExampleDefinitions,
   loadExampleScene,
-  bindControlEvents,
-  mergeViewerUiConfig,
-  normalizeViewerUiConfig,
-} from '../src/index.js';
+} from '../src/examples/index.js';
 
-registerGlobeViewer();
+registerGlobiViewer();
 
 const viewer = document.getElementById('viewer');
 const markerForm = document.getElementById('marker-form');
@@ -883,6 +887,8 @@ viewer.addEventListener('inspectToggle', (event) => {
 viewer.addEventListener('planetChange', (event) => {
   const planet = event.detail;
   if (planet?.id) {
+    const hadContent = scene.markers.length > 0 || scene.paths.length > 0
+      || scene.arcs.length > 0 || scene.regions.length > 0;
     const lightingMode = scene.planet?.lightingMode === 'sun' ? 'sun' : 'fixed';
     const lightingTimestamp = scene.planet?.lightingTimestamp ?? '';
     scene = {
@@ -897,12 +903,16 @@ viewer.addEventListener('planetChange', (event) => {
     celestialBodySelect.value = planet.id;
     backdropUriInput.value = planet.backdropUri ?? '';
     sunLightingToggle.checked = lightingMode === 'sun';
-    jsonBuffer.value = exportSceneToJSON(scene);
+    if (hadContent) {
+      unloadExampleScene();
+    } else {
+      jsonBuffer.value = exportSceneToJSON(scene);
+    }
   }
 });
 
 viewer.addEventListener('themeChange', (event) => {
-  const theme = event.detail === 'light' ? 'light' : 'dark';
+  const theme = event.detail || 'photo';
   scene = {
     ...scene,
     theme,
@@ -1045,6 +1055,8 @@ celestialBodySelect.addEventListener('change', () => {
   const preset = getCelestialPreset(celestialBodySelect.value);
   const lightingMode = scene.planet?.lightingMode === 'sun' ? 'sun' : 'fixed';
   const lightingTimestamp = scene.planet?.lightingTimestamp ?? '';
+  const hadContent = scene.markers.length > 0 || scene.paths.length > 0
+    || scene.arcs.length > 0 || scene.regions.length > 0;
   scene = {
     ...scene,
     planet: {
@@ -1054,7 +1066,11 @@ celestialBodySelect.addEventListener('change', () => {
       lightingTimestamp,
     },
   };
-  renderToViewer();
+  if (hadContent) {
+    unloadExampleScene();
+  } else {
+    renderToViewer();
+  }
 });
 
 themeModeSelect.addEventListener('change', () => {
@@ -1087,6 +1103,47 @@ sunLightingToggle.addEventListener('change', () => {
   renderToViewer();
 });
 
+let issRefreshInterval = null;
+
+function clearIssRefresh() {
+  if (issRefreshInterval) {
+    clearInterval(issRefreshInterval);
+    issRefreshInterval = null;
+  }
+}
+
+function startIssRefresh() {
+  clearIssRefresh();
+  console.log('[ISS] periodic refresh started (every 120s)');
+  issRefreshInterval = setInterval(async () => {
+    console.log('[ISS] refreshing position data...');
+    try {
+      const refreshed = await loadExampleScene('iss-realtime', {
+        locale: scene.locale,
+      });
+      scene = { ...refreshed, locale: scene.locale };
+      renderToViewer();
+      const iss = scene.markers?.find((m) => m.id === 'iss-current');
+      console.log(`[ISS] refresh OK — lat=${(iss?.lat ?? 0).toFixed(2)} lon=${(iss?.lon ?? 0).toFixed(2)} waypoints=${iss?.orbitWaypoints?.length ?? 0}`);
+    } catch (err) {
+      console.warn('[ISS] refresh failed:', err.message);
+    }
+  }, 120_000);
+}
+
+function unloadExampleScene() {
+  clearIssRefresh();
+  scene = {
+    ...createEmptyScene(scene.locale),
+    planet: scene.planet,
+    theme: scene.theme,
+    viewerUi: currentViewerUi(),
+  };
+  renderToViewer();
+  exampleSceneSelect.value = EXAMPLE_SCENES[0]?.id ?? '';
+  setExampleStatus('Example unloaded.');
+}
+
 loadExampleButton.addEventListener('click', async () => {
   const selectedId = String(exampleSceneSelect.value ?? '').trim();
   if (!selectedId) {
@@ -1094,8 +1151,16 @@ loadExampleButton.addEventListener('click', async () => {
     return;
   }
 
+  clearIssRefresh();
+
+  if (selectedId === 'none') {
+    unloadExampleScene();
+    return;
+  }
+
   loadExampleButton.disabled = true;
   setExampleStatus('Loading example...');
+  viewer.loading = true;
   try {
     const loaded = await loadExampleScene(selectedId, {
       locale: scene.locale,
@@ -1104,11 +1169,26 @@ loadExampleButton.addEventListener('click', async () => {
       ...loaded,
       locale: scene.locale,
     };
+    viewer.loading = false;
     renderToViewer();
+    if (loaded.camera) {
+      viewer.flyTo(
+        { lat: loaded.camera.lat, lon: loaded.camera.lon },
+        { durationMs: 800 }
+      );
+    }
     setExampleStatus(`Loaded: ${selectedId}`);
+
+    // Start periodic ISS refresh for real-time tracking
+    if (selectedId === 'iss-realtime') {
+      const iss = scene.markers?.find((m) => m.id === 'iss-current');
+      console.log(`[ISS] initial load — lat=${(iss?.lat ?? 0).toFixed(2)} lon=${(iss?.lon ?? 0).toFixed(2)} waypoints=${iss?.orbitWaypoints?.length ?? 0} pulse=${iss?.pulse}`);
+      startIssRefresh();
+    }
   } catch (error) {
     setExampleStatus(`Example failed: ${error.message}`, true);
   } finally {
+    viewer.loading = false;
     loadExampleButton.disabled = false;
   }
 });

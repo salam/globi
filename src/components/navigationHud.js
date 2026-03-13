@@ -53,10 +53,24 @@ export function chooseScaleKilometers(targetKilometers) {
   return Number(selected.toPrecision(12));
 }
 
-export function computeNorthArrowRotation(camera = {}) {
+/**
+ * Compute 2D rotation angle and 3D perspective tilt for the compass arrow.
+ *
+ * rotation — screen-plane angle (degrees) the arrow must rotate so its tip
+ *            points toward geographic north.
+ * tilt     — how much the north-pole direction vector tilts toward the camera
+ *            (degrees, 0 = flat in screen plane, 90 = pointing straight at
+ *            the viewer).  Used as a CSS rotateX value (negated) to foreshorten
+ *            the arrow with perspective.
+ * dotOpacity — 0–1 opacity for a circular "dot" indicator that fades in when
+ *              the arrow is too foreshortened to see (north pole nearly facing
+ *              the camera).
+ */
+export function computeNorthArrowState(camera = {}) {
   const centerLat = clampLatitude(camera.centerLat ?? 0);
   const centerLon = normalizeLongitude(camera.centerLon ?? 0);
 
+  /* --- 2D rotation (same algorithm as before) --- */
   const sampleLat = clampLatitude(centerLat + 0.25);
   const width = 200;
   const height = 200;
@@ -75,18 +89,26 @@ export function computeNorthArrowRotation(camera = {}) {
     }
   );
 
-  if (!projectedNorth.visible) {
-    return 0;
+  let rotation = 0;
+  if (projectedNorth.visible) {
+    const dx = projectedNorth.x - centerX;
+    const dy = projectedNorth.y - centerY;
+    if (Math.hypot(dx, dy) >= 0.000001) {
+      rotation = Number(((Math.atan2(dx, -dy) * 180) / Math.PI).toFixed(1));
+    }
   }
 
-  const dx = projectedNorth.x - centerX;
-  const dy = projectedNorth.y - centerY;
-  if (Math.hypot(dx, dy) < 0.000001) {
-    return 0;
-  }
+  /* --- 3D tilt (perspective foreshortening) ---
+   * The north pole in world-space after the globe's Euler rotation sits at
+   * (0, cos(centerLat), sin(centerLat)).  sin(centerLat) is the depth
+   * component (toward the camera), so the tilt angle equals |centerLat|.
+   * Clamped to 85° so the arrow never fully disappears.                   */
+  const tilt = Math.min(85, Math.abs(centerLat));
 
-  const rotation = (Math.atan2(dx, -dy) * 180) / Math.PI;
-  return Number(rotation.toFixed(1));
+  /* Dot indicator fades in above 65° tilt, fully opaque at 85°. */
+  const dotOpacity = Math.max(0, Math.min(1, (tilt - 65) / 20));
+
+  return { rotation, tilt, dotOpacity };
 }
 
 export function computeScaleBar(options = {}) {

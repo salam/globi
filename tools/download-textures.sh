@@ -4,7 +4,6 @@ set -eo pipefail
 ASSETS_DIR="$(cd "$(dirname "$0")/.." && pwd)/assets/textures"
 
 SSS_BASE="https://www.solarsystemscope.com/textures/download"
-NASA_BASE="https://astropedia.astrogeology.usgs.gov/download"
 
 echo "Downloading celestial body textures..."
 echo "Target: $ASSETS_DIR"
@@ -57,11 +56,16 @@ download "moon/2k_surface.jpg"         "$SSS_BASE/2k_moon.jpg"
 download "moon/8k_surface.jpg"         "$SSS_BASE/8k_moon.jpg"
 
 echo ""
-echo "--- NASA/JPL USGS Astrogeology (public domain) ---"
-download "io/2k_surface.jpg"           "${NASA_BASE}/Io/Voyager-Galileo/Io_GalileoSSI-Voyager_Global_Mosaic_ClrMerge_1km.jpg"
-download "europa/2k_surface.jpg"       "${NASA_BASE}/Europa/Voyager-Galileo/Europa_Voyager_GalileoSSI_global_mosaic_500m.jpg"
-download "ganymede/2k_surface.jpg"     "${NASA_BASE}/Ganymede/Voyager-Galileo/Ganymede_Voyager_GalileoSSI_global_mosaic_1km.jpg"
-download "titan/2k_surface.jpg"        "${NASA_BASE}/Titan/Cassini/Titan_ISS_P19658_Mosaic_Global_4008.jpg"
+echo "--- NASA Earth Observatory (public domain) ---"
+download "earth/land_ocean_ice_2048.png" "https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57730/land_ocean_ice_2048.png"
+
+echo ""
+echo "--- USGS Astrogeology CKAN (public domain) ---"
+CKAN_BASE="https://astrogeology.usgs.gov/ckan/dataset"
+download "io/2k_surface.jpg"           "${CKAN_BASE}/f6924861-ce9c-490d-8a4b-7812a20f2de5/resource/a9fab679-8081-4144-9f58-45848836c8f5/download/full.jpg"
+download "europa/2k_surface.jpg"       "${CKAN_BASE}/4080036f-afc5-422e-abe9-1c0c8e4f98ea/resource/3647e7b3-425e-4dcf-951b-cc4a22fb0129/download/europa_voyager_galileossi_global_mosaic_500m_1024.jpg"
+download "ganymede/2k_surface.jpg"     "${CKAN_BASE}/e1422336-3291-4b65-b903-c942d53de073/resource/eb32abd7-fee2-47d1-9f96-9d7d8824cc3a/download/ganymede_voyager_galileossi_global_clrmosaic_1024.jpg"
+download "titan/2k_surface.jpg"        "${CKAN_BASE}/8ee17e4e-26c6-4e22-9c23-bc9a4c7ed35e/resource/c3f3006c-3174-4716-920f-44f5dc749a4a/download/titan_iss_p19658_mosaic_global_1024.jpg"
 
 echo ""
 echo "Done. Run this script again to fill in any failed downloads."

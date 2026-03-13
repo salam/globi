@@ -4,7 +4,7 @@
 
 ### Scope
 - Repository/package layout.
-- `<globe-viewer>` shell with lifecycle + resize.
+- `<globi-viewer>` shell with lifecycle + resize.
 - Earth rendering with interaction baseline (rotate/zoom/pan/fullscreen).
 - Initial scene schema + validation.
 

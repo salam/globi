@@ -109,3 +109,39 @@ test('createBodyMesh with wireframeMode "shaded" works', () => {
   const mesh = createBodyMesh({ wireframeMode: 'shaded' });
   assert.ok(mesh instanceof Mesh);
 });
+
+// BUG18: sunLocked uniform tests
+test('createEarthMesh has sunLocked uniform, defaults to false', () => {
+  const earth = createEarthMesh();
+  assert.ok('sunLocked' in earth.material.uniforms);
+  assert.equal(earth.material.uniforms.sunLocked.value, false);
+});
+
+test('createEarthMesh sunLocked=true sets uniform', () => {
+  const earth = createEarthMesh({ sunLocked: true });
+  assert.equal(earth.material.uniforms.sunLocked.value, true);
+});
+
+test('createBodyMesh has sunLocked uniform for all shader modes', () => {
+  for (const mode of ['dayNight', 'single', 'venusAtmosphere']) {
+    const body = createBodyMesh({ shaderMode: mode });
+    assert.ok('sunLocked' in body.material.uniforms, `sunLocked missing in ${mode}`);
+    assert.equal(body.material.uniforms.sunLocked.value, false);
+  }
+});
+
+test('createBodyMesh sunLocked=true propagates to uniform', () => {
+  const body = createBodyMesh({ shaderMode: 'dayNight', sunLocked: true });
+  assert.equal(body.material.uniforms.sunLocked.value, true);
+});
+
+test('createAtmosphereMesh has sunLocked uniform, defaults to false', () => {
+  const atmos = createAtmosphereMesh();
+  assert.ok('sunLocked' in atmos.material.uniforms);
+  assert.equal(atmos.material.uniforms.sunLocked.value, false);
+});
+
+test('createAtmosphereMesh sunLocked=true sets uniform', () => {
+  const atmos = createAtmosphereMesh({ sunLocked: true });
+  assert.equal(atmos.material.uniforms.sunLocked.value, true);
+});

@@ -9,6 +9,19 @@ import {
 import earcut from 'earcut';
 import { latLonToCartesian } from '../math/geo.js';
 
+/**
+ * Parse a CSS color string; extract alpha from rgba() for THREE.Color compatibility.
+ */
+function parseColor(cssColor, fallbackColor, fallbackOpacity) {
+  if (typeof cssColor !== 'string') return { color: fallbackColor, opacity: fallbackOpacity };
+  const m = cssColor.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/);
+  if (m) {
+    const alpha = m[4] !== undefined ? parseFloat(m[4]) : fallbackOpacity;
+    return { color: `rgb(${m[1]}, ${m[2]}, ${m[3]})`, opacity: alpha };
+  }
+  return { color: cssColor, opacity: fallbackOpacity };
+}
+
 export class RegionManager {
   #group = null;
 
@@ -54,10 +67,11 @@ export class RegionManager {
         geom.setIndex(Array.from(indices));
         geom.computeVertexNormals();
 
+        const cap = parseColor(region.capColor, '#4caf50', 0.3);
         const mat = new MeshBasicMaterial({
-          color: region.capColor ?? '#4caf50',
+          color: cap.color,
           transparent: true,
-          opacity: 0.3,
+          opacity: cap.opacity,
           side: DoubleSide,
           depthWrite: false,
         });
@@ -103,10 +117,11 @@ export class RegionManager {
     geom.setIndex(sideIndices);
     geom.computeVertexNormals();
 
+    const side = parseColor(region.sideColor, '#2e7d32', 0.3);
     const mat = new MeshBasicMaterial({
-      color: region.sideColor ?? '#2e7d32',
+      color: side.color,
       transparent: true,
-      opacity: 0.3,
+      opacity: side.opacity,
       side: DoubleSide,
       depthWrite: false,
     });

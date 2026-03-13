@@ -49,3 +49,27 @@ test('resolveTexturePaths returns Saturn ring path', () => {
   const paths = resolveTexturePaths({ id: 'saturn' });
   assert.equal(paths.ring, '/assets/textures/saturn/2k_ring_alpha.png');
 });
+
+// BUG16: custom textureUri prevents hi-res upgrade
+test('BUG16: resolveTexturePaths returns null surfaceHi when textureUri is set', () => {
+  const paths = resolveTexturePaths({
+    id: 'earth',
+    textureUri: '/assets/textures/earth/land_ocean_ice_2048.png',
+  });
+  assert.equal(paths.surface, '/assets/textures/earth/land_ocean_ice_2048.png');
+  assert.equal(paths.surfaceHi, null, 'Custom textureUri has no hi-res counterpart');
+  assert.equal(paths.nightHi, null);
+});
+
+// BUG16: default Earth preset (empty textureUri) provides hi-res paths
+test('BUG16: default Earth preset has surfaceHi for zoom upgrade', () => {
+  const paths = resolveTexturePaths({ id: 'earth', textureUri: '' });
+  assert.equal(paths.surfaceHi, '/assets/textures/earth/8k_day.jpg');
+  assert.equal(paths.nightHi, '/assets/textures/earth/8k_night.jpg');
+});
+
+// BUG16: shouldUpgradeTexture boundary at threshold 2.0
+test('BUG16: shouldUpgradeTexture at exact threshold', () => {
+  assert.equal(shouldUpgradeTexture(2.0, 8192), false, 'At threshold exactly, no upgrade');
+  assert.equal(shouldUpgradeTexture(2.01, 8192), true, 'Just above threshold triggers upgrade');
+});

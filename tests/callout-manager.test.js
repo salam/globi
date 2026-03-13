@@ -359,6 +359,69 @@ test('CalloutManager preserves marker-specific color over leaderColor', () => {
   assert.equal(data.get('m1').color, '#ff0000');
 });
 
+// BUG12b: updateVisibility must keep large-cluster members hidden when not expanded
+test('CalloutManager updateVisibility hides large-cluster members when collapsed', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  const center = { lat: 45, lon: 45 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: 45 + i * 0.1, lon: 45 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  // Camera facing front — cluster center at lat=45 lon=45 is front-facing
+  const camPos = new Vector3(0, 0, 3);
+  const globeQuat = new Quaternion();
+  manager.updateVisibility(camPos, globeQuat);
+  // Badge should be visible, but individual members must stay hidden
+  for (let i = 0; i < 4; i++) {
+    const data = manager.getCalloutData().get(`m${i}`);
+    assert.equal(data.visible, false, `member m${i} should be hidden when cluster is collapsed`);
+  }
+});
+
+test('CalloutManager updateVisibility shows large-cluster members when expanded', () => {
+  const manager = new CalloutManager();
+  const group = new Group();
+  // Use lon=-90 so markers face the camera at z=+3 (negated-z coordinate system)
+  const center = { lat: 0, lon: -90 };
+  const markers = Array.from({ length: 4 }, (_, i) => ({
+    id: `m${i}`, lat: i * 0.1, lon: -90 + i * 0.1, alt: 0,
+    name: { en: `M${i}` }, calloutMode: 'always',
+    _clusterId: 'cluster_0', _clusterIndex: i, _clusterSize: 4,
+    _clusterCenter: center,
+  }));
+  manager.update(group, markers, 'en');
+  manager.toggleCluster('cluster_0');
+  const camPos = new Vector3(0, 0, 3);
+  const globeQuat = new Quaternion();
+  manager.updateVisibility(camPos, globeQuat);
+  for (let i = 0; i < 4; i++) {
+    const data = manager.getCalloutData().get(`m${i}`);
+    assert.equal(data.visible, true, `member m${i} should be visible when cluster is expanded`);
+  }
+});
+
+// Zoom-aware leader length: higher zoom = shorter leader
+test('CalloutManager uses shorter leader lines at higher zoom', () => {
+  const manager = new CalloutManager();
+  const group1 = new Group();
+  const group2 = new Group();
+  const markers = [
+    { id: 'm1', lat: 10, lon: 20, alt: 0, name: { en: 'Test' }, calloutMode: 'always' },
+  ];
+  manager.update(group1, markers, 'en', { zoom: 1 });
+  const pos1 = manager.getCalloutData().get('m1').labelPosition.clone();
+  manager.update(group2, markers, 'en', { zoom: 2 });
+  const pos2 = manager.getCalloutData().get('m1').labelPosition.clone();
+  // At zoom 2, the label should be closer to the surface than at zoom 1
+  const dist1 = pos1.length();
+  const dist2 = pos2.length();
+  assert.ok(dist2 < dist1, `zoom=2 label distance ${dist2} should be < zoom=1 distance ${dist1}`);
+});
+
 test('CalloutManager filterCallouts dims badge when no members match', () => {
   const manager = new CalloutManager();
   const group = new Group();

@@ -23,6 +23,8 @@ export class CalloutManager {
   #group = null;
   #calloutData = new Map();
   #css2dObjects = [];
+  #css2dByMarkerId = new Map();
+  #css2dByClusterId = new Map();
   #clusterBadgeIds = new Set();
   #expandedClusters = new Set();
   #textColor = null;
@@ -33,10 +35,14 @@ export class CalloutManager {
     return marker.name?.[locale] ?? marker.name?.en ?? '';
   }
 
-  update(group, markers, locale = 'en', { leaderColor = LEADER_COLOR_DEFAULT, textColor = null } = {}) {
+  update(group, markers, locale = 'en', { leaderColor = LEADER_COLOR_DEFAULT, textColor = null, zoom = 1 } = {}) {
     this.#group = group;
     this.#textColor = textColor;
     this.#clear();
+    // Only shorten leaders when zoomed in (zoom > 1). At zoom <= 1, keep base length.
+    // Divide by zoom² so the leader shrinks in screen-space (zoom alone is cancelled by camera).
+    const effectiveZoom = Math.max(zoom, 1);
+    const leaderLength = LEADER_LENGTH / (effectiveZoom * effectiveZoom);
 
     // First pass: collect cluster info for large clusters (4+)
     const largeClusterCenters = new Map(); // clusterId -> { center, count, color }
@@ -65,7 +71,7 @@ export class CalloutManager {
       const surfacePos = latLonToCartesian(center.lat ?? 0, center.lon ?? 0, 1, 0);
       const surfaceVec = new Vector3(surfacePos.x, surfacePos.y, surfacePos.z);
       const direction = surfaceVec.clone().normalize();
-      const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
+      const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(leaderLength));
 
       const lineGeo = new BufferGeometry();
       lineGeo.setAttribute('position', new Float32BufferAttribute([
@@ -77,8 +83,10 @@ export class CalloutManager {
         transparent: true,
         opacity: LEADER_OPACITY,
         depthWrite: false,
+        depthTest: false,
       });
       const line = new Line(lineGeo, lineMat);
+      line.renderOrder = 2;
       line.userData = { clusterId, isLeaderLine: true };
       group.add(line);
 
@@ -116,7 +124,7 @@ export class CalloutManager {
         const surfacePos = latLonToCartesian(marker.lat ?? 0, marker.lon ?? 0, 1, marker.alt ?? 0);
         const surfaceVec = new Vector3(surfacePos.x, surfacePos.y, surfacePos.z);
         const direction = surfaceVec.clone().normalize();
-        const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(LEADER_LENGTH));
+        const labelPos = surfaceVec.clone().add(direction.clone().multiplyScalar(leaderLength));
         const markerColor = marker.color || leaderColor;
 
         this.#calloutData.set(marker.id, {
@@ -144,11 +152,11 @@ export class CalloutManager {
       }
 
       const labelPos = lineOrigin.clone().normalize()
-        .multiplyScalar(lineOrigin.length() + LEADER_LENGTH)
-        .add(lineOrigin.clone().normalize().multiplyScalar(LEADER_LENGTH));
+        .multiplyScalar(lineOrigin.length() + leaderLength)
+        .add(lineOrigin.clone().normalize().multiplyScalar(leaderLength));
       // Simpler: label goes along the normal of the surface position
       const labelPosSimple = surfaceVec.clone().add(
-        surfaceVec.clone().normalize().multiplyScalar(LEADER_LENGTH),
+        surfaceVec.clone().normalize().multiplyScalar(leaderLength),
       );
 
       const markerColor = marker.color || leaderColor;
@@ -167,8 +175,10 @@ export class CalloutManager {
           transparent: true,
           opacity: LEADER_OPACITY,
           depthWrite: false,
+          depthTest: false,
         });
         line = new Line(lineGeo, lineMat);
+        line.renderOrder = 2;
         line.userData = { markerId: marker.id, calloutMode: mode, isLeaderLine: true };
 
         // 'always' starts visible, 'hover'/'click' start hidden
@@ -196,12 +206,30 @@ export class CalloutManager {
         div.className = 'globe-callout-badge';
         div.dataset.clusterId = id;
         div.textContent = `${data._badgeCount} markers`;
+        const bc = data.color || LEADER_COLOR_DEFAULT;
+        const bcRgba12 = hexToRgba(bc, 0.15);
+        const bcRgba40 = hexToRgba(bc, 0.5);
+        div.style.cssText = `
+          color: ${bc};
+          font-size: 11px;
+          font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+          font-weight: 700;
+          padding: 3px 10px;
+          background: ${bcRgba12};
+          border: 1px solid ${bcRgba40};
+          border-radius: 12px;
+          pointer-events: auto;
+          cursor: pointer;
+          user-select: none;
+          white-space: nowrap;
+        `;
         const css2dObj = new CSS2DObject(div);
         css2dObj.position.copy(data.labelPosition);
         css2dObj.userData = { clusterId: id };
         css2dObj.visible = true;
         labels.push({ id, object: css2dObj, div });
         this.#css2dObjects.push(css2dObj);
+        this.#css2dByClusterId.set(id, css2dObj);
         continue;
       }
 
@@ -226,7 +254,7 @@ export class CalloutManager {
         border: 1px solid ${rgba40};
         border-radius: 4px;
         pointer-events: auto;
-        cursor: default;
+        cursor: pointer;
         user-select: text;
         white-space: nowrap;
       `;
@@ -257,6 +285,7 @@ export class CalloutManager {
       }
       labels.push({ id, object: css2dObj, div });
       this.#css2dObjects.push(css2dObj);
+      this.#css2dByMarkerId.set(id, css2dObj);
     }
     return labels;
   }
@@ -274,20 +303,58 @@ export class CalloutManager {
       if (this.#clusterBadgeIds.has(id)) {
         data.visible = frontFacing;
         if (data.line) data.line.visible = frontFacing && !this.#expandedClusters.has(id);
-        const css2d = this.#css2dObjects.find(o => o.userData?.clusterId === id);
+        const css2d = this.#css2dByClusterId.get(id);
         if (css2d) css2d.visible = frontFacing && !this.#expandedClusters.has(id);
+        continue;
+      }
+
+      // BUG12b: large-cluster members stay hidden unless their cluster is expanded
+      const isLargeClusterMember = data.marker?._clusterId &&
+        (data.marker._clusterSize ?? 1) >= 4;
+      if (isLargeClusterMember) {
+        const expanded = this.#expandedClusters.has(data.marker._clusterId);
+        const show = frontFacing && expanded;
+        data.visible = show;
+        const css2d = this.#css2dByMarkerId.get(id);
+        if (css2d) css2d.visible = show;
         continue;
       }
 
       if (data.mode === 'always') {
         if (data.line) data.line.visible = frontFacing;
         data.visible = frontFacing;
-        const css2d = this.#css2dObjects.find(o =>
-          (o.userData?.markerId === id) || (o.userData?.clusterId === id),
-        );
+        const css2d = this.#css2dByMarkerId.get(id) || this.#css2dByClusterId.get(id);
         if (css2d) css2d.visible = frontFacing;
       }
       // hover/click modes are handled by showCallout/hideCallout
+    }
+  }
+
+  /**
+   * After CSS2DRenderer renders, hide leader lines whose labels fall outside
+   * the container bounds (clipped by overflow:hidden on the host).
+   */
+  cullOffscreenLines(camera, globeGroup, containerWidth, containerHeight) {
+    const _v = new Vector3();
+    const margin = 40;
+    for (const [id, data] of this.#calloutData) {
+      if (!data.line || !data.line.visible) continue;
+      if (!data.labelPosition) continue;
+
+      _v.copy(data.labelPosition);
+      globeGroup.localToWorld(_v);
+      _v.project(camera);
+
+      const sx = (1 + _v.x) * 0.5 * containerWidth;
+      const sy = (1 - _v.y) * 0.5 * containerHeight;
+
+      const inBounds = sx >= -margin && sx <= containerWidth + margin &&
+                       sy >= -margin && sy <= containerHeight + margin &&
+                       _v.z >= 0 && _v.z <= 1;
+
+      if (!inBounds) {
+        data.line.visible = false;
+      }
     }
   }
 
@@ -296,7 +363,7 @@ export class CalloutManager {
     if (!data) return;
     if (data.line) data.line.visible = true;
     data.visible = true;
-    const css2d = this.#css2dObjects.find(o => o.userData?.markerId === markerId);
+    const css2d = this.#css2dByMarkerId.get(markerId);
     if (css2d) css2d.visible = true;
   }
 
@@ -305,7 +372,7 @@ export class CalloutManager {
     if (!data) return;
     if (data.line) data.line.visible = false;
     data.visible = false;
-    const css2d = this.#css2dObjects.find(o => o.userData?.markerId === markerId);
+    const css2d = this.#css2dByMarkerId.get(markerId);
     if (css2d) css2d.visible = false;
   }
 
@@ -321,7 +388,7 @@ export class CalloutManager {
             data.line.material.opacity = LEADER_OPACITY;
           }
           data.visible = true;
-          const css2d = this.#css2dObjects.find(o => o.userData?.clusterId === id);
+          const css2d = this.#css2dByClusterId.get(id);
           if (css2d) {
             css2d.visible = show;
             if (css2d.element) css2d.element.style.opacity = '1';
@@ -335,7 +402,7 @@ export class CalloutManager {
           data.line.material.opacity = LEADER_OPACITY;
         }
         data.visible = show;
-        const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+        const css2d = this.#css2dByMarkerId.get(id);
         if (css2d) {
           css2d.visible = show;
           if (css2d.element) css2d.element.style.opacity = '1';
@@ -353,7 +420,7 @@ export class CalloutManager {
         const anyMatch = memberIds.some(mid => ids.has(mid));
         if (data.line) data.line.material.opacity = anyMatch ? LEADER_OPACITY : LEADER_OPACITY * 0.2;
         data.visible = true;
-        const css2d = this.#css2dObjects.find(o => o.userData?.clusterId === id);
+        const css2d = this.#css2dByClusterId.get(id);
         if (css2d?.element) css2d.element.style.opacity = anyMatch ? '1' : '0.2';
         continue;
       }
@@ -365,7 +432,7 @@ export class CalloutManager {
         data.line.material.opacity = match ? LEADER_OPACITY : LEADER_OPACITY * 0.2;
       }
       data.visible = true;
-      const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+      const css2d = this.#css2dByMarkerId.get(id);
       if (css2d) {
         css2d.visible = true;
         if (css2d.element) css2d.element.style.opacity = match ? '1' : '0.2';
@@ -406,12 +473,12 @@ export class CalloutManager {
     if (badge) {
       if (badge.line) badge.line.visible = !expanded;
       badge.visible = !expanded;
-      const badgeCss2d = this.#css2dObjects.find(o => o.userData?.clusterId === clusterId);
+      const badgeCss2d = this.#css2dByClusterId.get(clusterId);
       if (badgeCss2d) badgeCss2d.visible = !expanded;
     }
     for (const [id, data] of this.#calloutData) {
       if (data.marker?._clusterId === clusterId && (data.marker._clusterSize ?? 1) >= 4) {
-        const css2d = this.#css2dObjects.find(o => o.userData?.markerId === id);
+        const css2d = this.#css2dByMarkerId.get(id);
         if (css2d) css2d.visible = expanded;
         data.visible = expanded;
       }
@@ -434,6 +501,8 @@ export class CalloutManager {
     }
     this.#calloutData.clear();
     this.#css2dObjects = [];
+    this.#css2dByMarkerId.clear();
+    this.#css2dByClusterId.clear();
     this.#clusterBadgeIds.clear();
     this.#expandedClusters.clear();
   }

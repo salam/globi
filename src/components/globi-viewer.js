@@ -1526,6 +1526,11 @@ export class GlobiViewerElement extends HTMLElement {
         const symbolNode = document.createElement('span');
         symbolNode.className = `legend-symbol ${symbol.shape}`;
         symbolNode.style.setProperty('--legend-symbol-color', symbol.color);
+        if (symbol.assetUri) {
+          symbolNode.style.background = `url("${symbol.assetUri}") center/contain no-repeat`;
+          symbolNode.style.border = 'none';
+          symbolNode.style.boxShadow = 'none';
+        }
         if (symbol.shape === 'text') {
           symbolNode.textContent = 'T';
         }

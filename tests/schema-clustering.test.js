@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeScene } from '../src/scene/schema.js';
+import { normalizeScene, clusterMarkers } from '../src/scene/schema.js';
 
 test('normalizeScene adds default calloutCluster when omitted', () => {
   const scene = normalizeScene({ markers: [] });
@@ -102,6 +102,37 @@ test('centroid handles antimeridian wrap correctly', () => {
   assert.equal(scene.markers[0]._clusterId, scene.markers[1]._clusterId);
   const center = scene.markers[0]._clusterCenter;
   assert.ok(Math.abs(center.lon) > 170, `centroid lon ${center.lon} should be near ±180`);
+});
+
+test('clusterMarkers with halved threshold splits clusters at high zoom', () => {
+  const scene = normalizeScene({
+    markers: [
+      { id: 'a', lat: 10, lon: 20, name: 'A' },
+      { id: 'b', lat: 11.5, lon: 20, name: 'B' },
+    ],
+    calloutCluster: { enabled: true, thresholdDeg: 2 },
+  });
+  // At default threshold=2, these are clustered (distance ~1.5°)
+  assert.ok(scene.markers[0]._clusterId, 'should be clustered at threshold=2');
+  // Now re-cluster with halved threshold (simulating zoom=2)
+  clusterMarkers(scene.markers, { enabled: true, thresholdDeg: 1 });
+  assert.equal(scene.markers[0]._clusterId, null, 'should split at threshold=1');
+  assert.equal(scene.markers[1]._clusterId, null, 'should split at threshold=1');
+});
+
+test('clusterMarkers is re-entrant (resets cluster fields before clustering)', () => {
+  const scene = normalizeScene({
+    markers: [
+      { id: 'a', lat: 10, lon: 20, name: 'A' },
+      { id: 'b', lat: 10.1, lon: 20.1, name: 'B' },
+    ],
+    calloutCluster: { enabled: true, thresholdDeg: 2 },
+  });
+  assert.ok(scene.markers[0]._clusterId);
+  // Re-cluster with clustering disabled
+  clusterMarkers(scene.markers, { enabled: false, thresholdDeg: 2 });
+  assert.equal(scene.markers[0]._clusterId, null);
+  assert.equal(scene.markers[1]._clusterId, null);
 });
 
 test('evicted marker forms its own cluster in later iteration', () => {

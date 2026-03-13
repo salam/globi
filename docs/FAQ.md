@@ -8,7 +8,7 @@ Surface textures for Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptu
 No. Earth is the default, and you can toggle built-in presets for all 8 planets plus 5 popular moons (`moon`, `io`, `europa`, `ganymede`, `titan`). You can still set custom planet values manually.
 
 ## Do I need React or Vue?
-No. The main viewer is a Web Component (`<globe-viewer>`), so plain HTML works.
+No. The main viewer is a Web Component (`<globi-viewer>`), so plain HTML works.
 
 ## Can I add my own marker icons?
 Yes. Use marker `visualType: "image"` and set `assetUri`.

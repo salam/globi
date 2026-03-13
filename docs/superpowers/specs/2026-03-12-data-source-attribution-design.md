@@ -142,7 +142,7 @@ Key responsibilities:
 - Create and position the attribution label DOM element
 - Create and manage the slide-in panel DOM element
 - Compute source visibility from scene data + camera state
-- Expose `update(scene, projectPointFn, canvasRect)` called on camera changes. `globe-viewer.js` calls this from `#updateNavigationHud()`, passing `this.#controller.projectPointToClient.bind(this.#controller)` and the renderer's canvas rect via `this.#controller.getCanvasRect()`
+- Expose `update(scene, projectPointFn, canvasRect)` called on camera changes. `globi-viewer.js` calls this from `#updateNavigationHud()`, passing `this.#controller.projectPointToClient.bind(this.#controller)` and the renderer's canvas rect via `this.#controller.getCanvasRect()`
 - Expose `dispose()` for cleanup
 
 ### Modified Files
@@ -151,7 +151,7 @@ Key responsibilities:
 |------|--------|
 | `src/scene/schema.js` | Add `dataSources[]` normalization and validation; add `sourceId` to entity normalizers |
 | `src/scene/viewerUi.js` | Add `showAttribution` boolean |
-| `src/components/globe-viewer.js` | Instantiate AttributionManager, wire up panel toggle, add CSS styles, hook into camera updates |
+| `src/components/globi-viewer.js` | Instantiate AttributionManager, wire up panel toggle, add CSS styles, hook into camera updates |
 | `src/renderer/threeGlobeRenderer.js` | Expose `getCanvasRect()` method returning the WebGL canvas bounding rect |
 | `src/examples/loaders.js` | Add `dataSources[]` and `sourceId` to all 7 example loaders |
 | `editor/app.js` | Show attribution config in editor (optional, low priority) |

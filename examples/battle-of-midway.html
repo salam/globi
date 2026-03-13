@@ -1243,6 +1243,64 @@
       },
     ];
 
+    // Northwestern Hawaiian Islands — approximate atoll/island outlines
+    // (slightly exaggerated for cartographic visibility at battle-overview zoom levels)
+    const NWHI_REGIONS = [
+      {
+        id: 'midway-atoll',
+        name: { en: 'Midway Atoll' },
+        geojson: { type: 'Polygon', coordinates: [[
+          [-177.32, 28.21], [-177.33, 28.24], [-177.35, 28.26], [-177.38, 28.27],
+          [-177.41, 28.26], [-177.43, 28.24], [-177.44, 28.21], [-177.43, 28.18],
+          [-177.41, 28.16], [-177.38, 28.15], [-177.35, 28.16], [-177.33, 28.18],
+          [-177.32, 28.21],
+        ]] },
+        capColor: 'rgba(180, 168, 140, 0.55)', sideColor: '#8b7355', altitude: 0.0005,
+      },
+      {
+        id: 'kure-atoll',
+        name: { en: 'Kure Atoll' },
+        geojson: { type: 'Polygon', coordinates: [[
+          [-178.28, 28.42], [-178.29, 28.45], [-178.31, 28.47], [-178.33, 28.47],
+          [-178.36, 28.46], [-178.38, 28.43], [-178.38, 28.40], [-178.37, 28.38],
+          [-178.35, 28.37], [-178.33, 28.37], [-178.30, 28.38], [-178.29, 28.40],
+          [-178.28, 28.42],
+        ]] },
+        capColor: 'rgba(180, 168, 140, 0.55)', sideColor: '#8b7355', altitude: 0.0005,
+      },
+      {
+        id: 'pearl-hermes-atoll',
+        name: { en: 'Pearl and Hermes Atoll' },
+        geojson: { type: 'Polygon', coordinates: [[
+          [-175.63, 27.83], [-175.67, 27.88], [-175.73, 27.92], [-175.83, 27.93],
+          [-175.93, 27.92], [-175.99, 27.88], [-176.03, 27.83], [-175.99, 27.78],
+          [-175.93, 27.74], [-175.83, 27.73], [-175.73, 27.74], [-175.67, 27.78],
+          [-175.63, 27.83],
+        ]] },
+        capColor: 'rgba(180, 168, 140, 0.55)', sideColor: '#8b7355', altitude: 0.0005,
+      },
+      {
+        id: 'lisianski-island',
+        name: { en: 'Lisianski Island' },
+        geojson: { type: 'Polygon', coordinates: [[
+          [-173.94, 26.07], [-173.95, 26.09], [-173.97, 26.10], [-173.99, 26.09],
+          [-174.00, 26.07], [-173.99, 26.05], [-173.97, 26.04], [-173.95, 26.05],
+          [-173.94, 26.07],
+        ]] },
+        capColor: 'rgba(180, 168, 140, 0.55)', sideColor: '#8b7355', altitude: 0.0005,
+      },
+      {
+        id: 'laysan-island',
+        name: { en: 'Laysan Island' },
+        geojson: { type: 'Polygon', coordinates: [[
+          [-171.70, 25.77], [-171.71, 25.79], [-171.73, 25.80], [-171.75, 25.79],
+          [-171.76, 25.77], [-171.75, 25.75], [-171.73, 25.74], [-171.71, 25.75],
+          [-171.70, 25.77],
+        ]] },
+        capColor: 'rgba(180, 168, 140, 0.55)', sideColor: '#8b7355', altitude: 0.0005,
+      },
+    ];
+
     // ── Initialize scene ──
     const initialScene = {
       version: 1,
@@ -1267,7 +1325,7 @@
       markers: STEPS[0].markers,
       paths: [],
       arcs: [],
-      regions: [],
+      regions: NWHI_REGIONS,
       animations: [],
       dataSources,
       calloutCluster: { enabled: false },

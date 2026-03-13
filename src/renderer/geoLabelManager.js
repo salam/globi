@@ -11,7 +11,7 @@ import { latLonToCartesian } from '../math/geo.js';
 import { getBodyLabels } from './bodyLabels.js';
 
 const DEG_TO_RAD = Math.PI / 180;
-const LABEL_ALTITUDE = 0.003;
+const LABEL_ALTITUDE = 0.005;
 const QUAD_SEGMENTS = 32;
 
 const STYLES = {
@@ -72,6 +72,11 @@ function renderTextToCanvas(text, style, fillStyleOverride = null) {
   ctx.fillStyle = fillStyleOverride || cfg.fillStyle;
   ctx.textBaseline = 'middle';
 
+  // Rotate canvas 180° so text is right-side-up on the sphere surface
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate(Math.PI);
+  ctx.translate(-cw / 2, -ch / 2);
+
   let x = 8;
   for (const char of text) {
     ctx.fillText(char, x, ch / 2);
@@ -98,6 +103,8 @@ function createMockContext() {
     textBaseline: '',
     measureText: () => ({ width: 10 }),
     fillText: () => {},
+    translate: () => {},
+    rotate: () => {},
   };
 }
 
@@ -133,7 +140,7 @@ function buildCurvedStrip(lat, lon, heading, arcDeg, aspectRatio) {
         LABEL_ALTITUDE,
       );
       positions.push(cart.x, cart.y, cart.z);
-      uvs.push(t, 1 - j);
+      uvs.push(1 - t, 1 - j);
     }
 
     if (i < QUAD_SEGMENTS) {
@@ -192,8 +199,9 @@ export class GeoLabelManager {
       const texture = new CanvasTexture(canvas);
       texture.colorSpace = SRGBColorSpace;
 
+      const arcDeg = label.arcDeg || cfg.arcDeg;
       const geometry = buildCurvedStrip(
-        label.lat, label.lon, label.heading, cfg.arcDeg, aspectRatio,
+        label.lat, label.lon, label.heading, arcDeg, aspectRatio,
       );
 
       const material = new MeshBasicMaterial({

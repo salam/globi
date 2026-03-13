@@ -24,7 +24,7 @@ No backward compatibility with the Canvas 2D renderer — it gets deleted.
 1. **WebGL canvas** (Three.js WebGLRenderer) — earth sphere, marker sprites, arcs, paths, regions, graticule, leader lines
 2. **CSS2D overlay** (Three.js CSS2DRenderer) — callout labels (HTML divs)
 
-Both layers are stacked inside the `<globe-viewer>` shadow DOM `.stage` element.
+Both layers are stacked inside the `<globi-viewer>` shadow DOM `.stage` element.
 
 ### Render Loop
 
@@ -33,7 +33,7 @@ Both layers are stacked inside the `<globe-viewer>` shadow DOM `.stage` element.
 - `init()` starts the loop
 - Each frame: render WebGL scene + CSS2D overlay
 - `renderScene(scene)` is called by the controller when scene data changes — it marks the scene dirty and updates Three.js objects (meshes, sprites, labels) on the next frame
-- Idle rotation moves into the renderer: `ThreeGlobeRenderer` accepts a `rotationSpeed` config and applies it each frame. The idle rotation rAF loop in `globe-viewer.js` is removed.
+- Idle rotation moves into the renderer: `ThreeGlobeRenderer` accepts a `rotationSpeed` config and applies it each frame. The idle rotation rAF loop in `globi-viewer.js` is removed.
 - `destroy()` stops the loop
 
 This replaces the current imperative "render on every change" model with a continuous loop, which Three.js requires for smooth animation and CSS2D positioning updates.
@@ -41,7 +41,7 @@ This replaces the current imperative "render on every change" model with a conti
 ### Component Map
 
 ```
-GlobeViewerElement (Web Component, unchanged public API)
+GlobiViewerElement (Web Component, unchanged public API)
   └── GlobeController (orchestration)
         └── ThreeGlobeRenderer (NEW — replaces CanvasGlobeRenderer)
               ├── WebGLRenderer — earth, markers, arcs, paths, regions, leader lines
@@ -235,7 +235,7 @@ Markers, arcs, paths, regions are children of the globe mesh → they rotate wit
 - `anchor.clientX/clientY` derived from `CSS2DRenderer` projected coordinates
 
 ### WebGL Unavailability
-If `WebGLRenderer` creation fails, `init()` throws an error with message `"WebGL is not available"`. The `GlobeViewerElement` catches this and renders a static fallback message in the `.stage` div.
+If `WebGLRenderer` creation fails, `init()` throws an error with message `"WebGL is not available"`. The `GlobiViewerElement` catches this and renders a static fallback message in the `.stage` div.
 
 ## Disposal
 
@@ -270,7 +270,7 @@ If `WebGLRenderer` creation fails, `init()` throws an error with message `"WebGL
 | File | Changes |
 |---|---|
 | `src/controller/globeController.js` | Import `ThreeGlobeRenderer` instead of `CanvasGlobeRenderer`; remove direct `renderScene()` calls (renderer has own loop) |
-| `src/components/globe-viewer.js` | Add CSS2D overlay container to shadow DOM; catch WebGL init errors; remove idle rotation rAF (renderer loop handles it) |
+| `src/components/globi-viewer.js` | Add CSS2D overlay container to shadow DOM; catch WebGL init errors; remove idle rotation rAF (renderer loop handles it) |
 | `src/scene/schema.js` | Add `calloutMode` and `calloutLabel` to `normalizeMarker()` and `validateScene()` |
 | `src/index.js` | Update exports |
 | `package.json` | Add `three` dependency |

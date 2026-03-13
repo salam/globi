@@ -241,7 +241,7 @@ viewerUi.showProjectionToggle: true  // default, controls button visibility
 
 ### HTML Attribute
 
-`<globe-viewer>` gains a `projection` observed attribute (like `planet`, `theme`, `language`). Setting `<globe-viewer projection="azimuthalEquidistant">` activates the flat map on init.
+`<globi-viewer>` gains a `projection` observed attribute (like `planet`, `theme`, `language`). Setting `<globi-viewer projection="azimuthalEquidistant">` activates the flat map on init.
 
 ### What changes
 
@@ -280,7 +280,7 @@ tests/
 
 ```
 src/controller/globeController.js   # Dual renderer instantiation, projection switching
-src/components/globe-viewer.js      # Toggle button, dual canvas management
+src/components/globi-viewer.js      # Toggle button, dual canvas management
 src/scene/schema.js                 # projection field + validation
 src/scene/viewerUi.js               # showProjectionToggle config
 ```

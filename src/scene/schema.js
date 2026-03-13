@@ -24,6 +24,8 @@ export function createEmptyScene(locale = 'en') {
     timeRange: null,
     dataSources: [],
     projection: 'globe',
+    surfaceTint: null,
+    overlayTint: null,
   };
 }
 
@@ -72,6 +74,11 @@ function normalizeMarker(marker = {}) {
     calloutLabel: normalizeLocalizedText(marker.calloutLabel),
     timestamp: typeof marker.timestamp === 'string' ? marker.timestamp : (marker.timestamp ?? null),
     sourceId: typeof marker.sourceId === 'string' ? marker.sourceId : '',
+    pulse: marker.pulse === true,
+    markerScale: typeof marker.markerScale === 'number' ? marker.markerScale : null,
+    orbitWaypoints: Array.isArray(marker.orbitWaypoints) ? marker.orbitWaypoints : null,
+    fetchedAtMs: typeof marker.fetchedAtMs === 'number' ? marker.fetchedAtMs : null,
+    velocityKmh: typeof marker.velocityKmh === 'number' ? marker.velocityKmh : null,
   };
 }
 
@@ -91,6 +98,7 @@ function normalizePath(path = {}) {
     strokeWidth: Number(path.strokeWidth ?? 1),
     dashPattern: Array.isArray(path.dashPattern) ? path.dashPattern.map(Number) : [],
     animationDuration: Number(path.animationDuration ?? 0),
+    category: path.category ?? '',
     sourceId: typeof path.sourceId === 'string' ? path.sourceId : '',
   };
 }
@@ -106,6 +114,8 @@ function normalizeArc(arc = {}) {
     strokeWidth: Number(arc.strokeWidth ?? 1),
     dashPattern: Array.isArray(arc.dashPattern) ? arc.dashPattern.map(Number) : [],
     animationTime: Number(arc.animationTime ?? 0),
+    animationDelay: Number(arc.animationDelay ?? 0),
+    category: arc.category ?? '',
     sourceId: typeof arc.sourceId === 'string' ? arc.sourceId : '',
   };
 }
@@ -257,6 +267,9 @@ export function normalizeScene(input) {
   if (theme === 'dark' || theme === 'light') theme = 'photo';
   if (!VALID_THEMES.includes(theme)) theme = 'photo';
   const projection = VALID_PROJECTIONS.includes(scene.projection) ? scene.projection : 'globe';
+  const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+  const surfaceTint = (typeof scene.surfaceTint === 'string' && HEX_RE.test(scene.surfaceTint)) ? scene.surfaceTint : null;
+  const overlayTint = (typeof scene.overlayTint === 'string' && HEX_RE.test(scene.overlayTint)) ? scene.overlayTint : null;
   const result = {
     version: Number(scene.version ?? SCENE_SCHEMA_VERSION),
     locale: typeof scene.locale === 'string' ? scene.locale : 'en',
@@ -273,6 +286,8 @@ export function normalizeScene(input) {
     dataSources: Array.isArray(scene.dataSources) ? scene.dataSources.map(normalizeDataSource) : [],
     calloutCluster: normalizeCalloutCluster(scene.calloutCluster),
     projection,
+    surfaceTint,
+    overlayTint,
   };
   clusterMarkers(result.markers, result.calloutCluster);
   return result;
@@ -338,6 +353,14 @@ export function validateScene(sceneInput) {
 
   if (rawScene.projection !== undefined && !VALID_PROJECTIONS.includes(rawScene.projection)) {
     errors.push('scene.projection must be one of: ' + VALID_PROJECTIONS.join(', '));
+  }
+
+  const TINT_HEX_RE = /^#[0-9a-fA-F]{6}$/;
+  if (rawScene.surfaceTint != null && (typeof rawScene.surfaceTint !== 'string' || !TINT_HEX_RE.test(rawScene.surfaceTint))) {
+    errors.push('surfaceTint must be a 7-character hex color string (e.g. #aabbcc) or null');
+  }
+  if (rawScene.overlayTint != null && (typeof rawScene.overlayTint !== 'string' || !TINT_HEX_RE.test(rawScene.overlayTint))) {
+    errors.push('overlayTint must be a 7-character hex color string (e.g. #aabbcc) or null');
   }
 
   if (!Number.isFinite(scene.planet.radius) || scene.planet.radius <= 0) {

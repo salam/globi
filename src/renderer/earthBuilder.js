@@ -9,11 +9,13 @@ import {
 const EARTH_VERT = /* glsl */`
   varying vec2 vUv;
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
     vUv = uv;
     vNormal = normalize(normalMatrix * normal);
+    vObjectNormal = normal;
     vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
@@ -45,16 +47,20 @@ const EARTH_FRAG_DAY_NIGHT = /* glsl */`
   uniform vec3 uRimColor;
   uniform float desaturate;
   uniform float flatLighting;
+  uniform bool sunLocked;
 
   varying vec2 vUv;
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(-vPosition);
 
-    float NdotL = dot(normal, normalize(sunDirection));
+    // sunLocked: use object-space normal so terminator stays geographically fixed
+    vec3 nForSun = sunLocked ? normalize(vObjectNormal) : normal;
+    float NdotL = dot(nForSun, normalize(sunDirection));
     float dayNightBlend = smoothstep(-0.15, 0.25, NdotL);
 
     vec4 dayColor = texture2D(dayTexture, vUv);
@@ -63,7 +69,7 @@ const EARTH_FRAG_DAY_NIGHT = /* glsl */`
     // Night lights boosted slightly
     vec4 nightLit = nightColor * 1.4;
 
-    // Fresnel rim tinted
+    // Fresnel rim tinted (always view-space)
     float fresnel = pow(1.0 - dot(viewDir, normal), 3.0);
     vec3 rimTint = uRimColor * fresnel * 0.6;
 
@@ -71,7 +77,8 @@ const EARTH_FRAG_DAY_NIGHT = /* glsl */`
     vec4 litColor = mix(nightLit, dayColor, lightMix);
     float ambient = 0.03 * (1.0 - lightMix);
     float lum = dot(litColor.rgb, vec3(0.299, 0.587, 0.114));
-    vec3 desatColor = mix(litColor.rgb, vec3(lum), desaturate);
+    float boostedLum = min(lum * 1.4, 1.0);
+    vec3 desatColor = mix(litColor.rgb, vec3(boostedLum), desaturate);
     gl_FragColor = vec4(desatColor + rimTint + ambient, 1.0);
   }
 `;
@@ -83,9 +90,11 @@ const EARTH_FRAG_DAY_ONLY = /* glsl */`
   uniform vec3 uRimColor;
   uniform float desaturate;
   uniform float flatLighting;
+  uniform bool sunLocked;
 
   varying vec2 vUv;
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
@@ -98,7 +107,8 @@ const EARTH_FRAG_DAY_ONLY = /* glsl */`
     vec3 rimTint = uRimColor * fresnel * 0.4;
 
     float lum = dot(dayColor.rgb, vec3(0.299, 0.587, 0.114));
-    vec3 desatColor = mix(dayColor.rgb, vec3(lum), desaturate);
+    float boostedLum = min(lum * 1.4, 1.0);
+    vec3 desatColor = mix(dayColor.rgb, vec3(boostedLum), desaturate);
     gl_FragColor = vec4(desatColor + rimTint, 1.0);
   }
 `;
@@ -109,9 +119,11 @@ const BODY_FRAG_SINGLE = /* glsl */`
   uniform vec3 rimColor;
   uniform float desaturate;
   uniform float flatLighting;
+  uniform bool sunLocked;
 
   varying vec2 vUv;
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
@@ -119,7 +131,8 @@ const BODY_FRAG_SINGLE = /* glsl */`
     vec3 viewDir = normalize(-vPosition);
     vec3 lightDir = normalize(sunDirection);
 
-    float NdotL = max(0.0, dot(normal, lightDir));
+    vec3 nForSun = sunLocked ? normalize(vObjectNormal) : normal;
+    float NdotL = max(0.0, dot(nForSun, lightDir));
     float ambient = 0.05;
     float diffuse = mix(NdotL, 1.0, flatLighting);
 
@@ -129,7 +142,8 @@ const BODY_FRAG_SINGLE = /* glsl */`
     vec3 rim = rimColor * fresnel * 0.4;
 
     float lum = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
-    vec3 desatColor = mix(texColor.rgb * (ambient + diffuse), vec3(lum * (ambient + diffuse)), desaturate);
+    float boostedLum = min(lum * 1.4, 1.0);
+    vec3 desatColor = mix(texColor.rgb * (ambient + diffuse), vec3(boostedLum * (ambient + diffuse)), desaturate);
     gl_FragColor = vec4(desatColor + rim, 1.0);
   }
 `;
@@ -142,9 +156,11 @@ const BODY_FRAG_VENUS = /* glsl */`
   uniform vec3 rimColor;
   uniform float desaturate;
   uniform float flatLighting;
+  uniform bool sunLocked;
 
   varying vec2 vUv;
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
@@ -152,7 +168,8 @@ const BODY_FRAG_VENUS = /* glsl */`
     vec3 viewDir = normalize(-vPosition);
     vec3 lightDir = normalize(sunDirection);
 
-    float NdotL = max(0.0, dot(normal, lightDir));
+    vec3 nForSun = sunLocked ? normalize(vObjectNormal) : normal;
+    float NdotL = max(0.0, dot(nForSun, lightDir));
     float ambient = 0.05;
     float diffuse = mix(NdotL, 1.0, flatLighting);
 
@@ -164,17 +181,20 @@ const BODY_FRAG_VENUS = /* glsl */`
     vec3 rim = rimColor * fresnel * 0.6;
 
     float lum = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
-    vec3 desatColor = mix(texColor.rgb * (ambient + diffuse), vec3(lum * (ambient + diffuse)), desaturate);
+    float boostedLum = min(lum * 1.4, 1.0);
+    vec3 desatColor = mix(texColor.rgb * (ambient + diffuse), vec3(boostedLum * (ambient + diffuse)), desaturate);
     gl_FragColor = vec4(desatColor + rim, 1.0);
   }
 `;
 
 const ATMOS_VERT = /* glsl */`
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
     vNormal = normalize(normalMatrix * normal);
+    vObjectNormal = normal;
     vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
@@ -183,19 +203,22 @@ const ATMOS_VERT = /* glsl */`
 const ATMOS_FRAG = /* glsl */`
   uniform vec3 sunDirection;
   uniform vec3 atmosphereColor;
+  uniform bool sunLocked;
 
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(-vPosition);
 
-    // Fresnel-based atmospheric glow
+    // Fresnel-based atmospheric glow (always view-space)
     float fresnel = pow(1.0 - abs(dot(viewDir, normal)), 2.0);
 
     // Sun-facing side is brighter
-    float sunFacing = max(0.0, dot(normal, normalize(sunDirection)));
+    vec3 nForSun = sunLocked ? normalize(vObjectNormal) : normal;
+    float sunFacing = max(0.0, dot(nForSun, normalize(sunDirection)));
     float brightness = 0.4 + 0.6 * sunFacing;
 
     vec3 color = atmosphereColor * brightness;
@@ -210,8 +233,10 @@ const ATMOS_FRAG_V2 = /* glsl */`
   uniform vec3 atmosphereColor;
   uniform float atmosphereDensity;
   uniform float scaleHeightNorm;
+  uniform bool sunLocked;
 
   varying vec3 vNormal;
+  varying vec3 vObjectNormal;
   varying vec3 vPosition;
 
   void main() {
@@ -222,7 +247,8 @@ const ATMOS_FRAG_V2 = /* glsl */`
     float fresnel = exp(-rawFresnel / max(scaleHeightNorm, 0.01));
     fresnel = 1.0 - fresnel;
 
-    float sunFacing = max(0.0, dot(normal, normalize(sunDirection)));
+    vec3 nForSun = sunLocked ? normalize(vObjectNormal) : normal;
+    float sunFacing = max(0.0, dot(nForSun, normalize(sunDirection)));
     float brightness = 0.4 + 0.6 * sunFacing;
 
     vec3 color = atmosphereColor * brightness;
@@ -313,6 +339,7 @@ export function createBodyMesh(options = {}) {
     atmosphereTexture = null,
     atmosphereTextureBlend = 0.85,
     sunDirection = DEFAULT_SUN_DIRECTION,
+    sunLocked = false,
     rimColor = DEFAULT_ATMOSPHERE_COLOR,
     wireframeMode = null,
     desaturate = 0.0,
@@ -341,6 +368,8 @@ export function createBodyMesh(options = {}) {
     sunDirection: { value: sunDirection },
     desaturate: { value: desaturate },
     flatLighting: { value: flatLighting },
+    sunLocked: { value: sunLocked },
+    rimColor: { value: rimColor },
   };
 
   let fragmentShader;
@@ -384,6 +413,7 @@ export function createBodyMesh(options = {}) {
 export function createAtmosphereMesh(options = {}) {
   const {
     sunDirection = DEFAULT_SUN_DIRECTION,
+    sunLocked = false,
     atmosphereColor = DEFAULT_ATMOSPHERE_COLOR,
     thickness = 0.06,
     density = 0.7,
@@ -396,6 +426,7 @@ export function createAtmosphereMesh(options = {}) {
   const material = new ShaderMaterial({
     uniforms: {
       sunDirection: { value: sunDirection },
+      sunLocked: { value: sunLocked },
       atmosphereColor: { value: atmosphereColor },
       atmosphereDensity: { value: density },
       scaleHeightNorm: { value: scaleHeightNorm },

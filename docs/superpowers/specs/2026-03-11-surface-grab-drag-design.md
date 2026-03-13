@@ -40,7 +40,7 @@ The `hitTest` method already demonstrates this raycasting pattern. A new lightwe
 
 | File | Change |
 | ---- | ------ |
-| `src/components/globe-viewer.js` | Modify `#onPointerDown`, `#onPointerMove`, `#onPointerUp`; remove `#startInertia` |
+| `src/components/globi-viewer.js` | Modify `#onPointerDown`, `#onPointerMove`, `#onPointerUp`; remove `#startInertia` |
 | `src/controller/globeController.js` | Add `screenToLatLon(clientX, clientY)` passthrough |
 | `src/renderer/threeGlobeRenderer.js` | Add `screenToLatLon(clientX, clientY)` using raycaster |
 

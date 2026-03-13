@@ -7,13 +7,14 @@
 
 const BODY_LABELS = {
   earth: [
-    { text: 'AFRICA',        lat: 0,   lon: 22,   heading: 0,   style: 'region' },
-    { text: 'ASIA',          lat: 45,  lon: 90,   heading: 0,   style: 'region' },
-    { text: 'EUROPE',        lat: 52,  lon: 15,   heading: 0,   style: 'region' },
+    { text: 'AFRICA',        lat: 5,   lon: 20,   heading: 0,   style: 'region' },
+    { text: 'ASIA',          lat: 35,  lon: 80,   heading: 0,   style: 'region' },
+    { text: 'EUROPE',        lat: 48,  lon: 20,   heading: 0,   style: 'region' },
     { text: 'NORTH AMERICA', lat: 45,  lon: -100, heading: 0,   style: 'region' },
     { text: 'SOUTH AMERICA', lat: -15, lon: -58,  heading: -20, style: 'region' },
-    { text: 'OCEANIA',       lat: -25, lon: 135,  heading: 0,   style: 'region' },
-    { text: 'ANTARCTICA',    lat: -82, lon: 0,    heading: 0,   style: 'region' },
+    { text: 'OCEANIA',       lat: -10, lon: 160,  heading: 0,   style: 'region' },
+    { text: 'NORTH POLE',   lat: 82,  lon: 0,    heading: 90,  style: 'region', arcDeg: 50 },
+    { text: 'ANTARCTICA',   lat: -78, lon: 0,    heading: 90,  style: 'region', arcDeg: 50 },
     { text: 'Pacific Ocean',  lat: 0,   lon: -160, heading: -10, style: 'ocean' },
     { text: 'Atlantic Ocean', lat: 15,  lon: -35,  heading: -60, style: 'ocean' },
     { text: 'Indian Ocean',   lat: -20, lon: 75,   heading: -30, style: 'ocean' },

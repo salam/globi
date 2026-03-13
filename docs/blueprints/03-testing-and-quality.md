@@ -13,7 +13,7 @@
 - `rendering-core`:
   - Marker/path/arc/region layer diff updates.
   - `flyTo` and animation state transitions.
-- `globe-viewer`:
+- `globi-viewer`:
   - Attribute/property reflection.
   - Custom event contract.
 - `editor`:

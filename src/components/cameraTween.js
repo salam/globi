@@ -23,6 +23,14 @@ export function easeInOutCubic(t) {
   return 1 - (f * f * f) / 2;
 }
 
+export function interpolateZoomArc(startZoom, endZoom, angularDistDeg, progress) {
+  const t = easeInOutCubic(progress);
+  const dipFraction = Math.max(0.05, Math.min(0.35, angularDistDeg / 60));
+  const dip = dipFraction * Math.max(startZoom, endZoom);
+  const zoomOffset = -dip * Math.sin(Math.PI * t);
+  return startZoom + (endZoom - startZoom) * t + zoomOffset;
+}
+
 export function interpolateCameraState(start = {}, end = {}, progress) {
   const t = easeInOutCubic(progress);
   const startLat = clampLatitude(start.lat ?? start.centerLat ?? 0);

@@ -1,0 +1,65 @@
+# Globi
+
+> Interactive 3D globe web component for journalism, education, and storytelling.
+
+## What is Globi?
+
+Globi is a browser-native web component (`<globi-viewer>`) that renders interactive 3D globes and flat-map projections using WebGL. It is designed for data journalists, educators, newsrooms, and content creators who need to visualize geographical information interactively.
+
+## Quick Start
+
+```html
+<script type="module" src="https://globi.world/globi.js"></script>
+<globi-viewer scene="scene.json"></globi-viewer>
+```
+
+## Core Capabilities
+
+- 3D WebGL globe and 3 flat-map projections (Azimuthal, Orthographic, Equirectangular)
+- 13 celestial bodies (Earth, Mars, Moon, Europa, Titan, and more)
+- 5 visual themes (Photo Realistic, Wireframe Shaded/Flat, Grayscale Shaded/Flat)
+- Markers with dot, image, model, and text visual types
+- Great-circle arcs with animation
+- Multi-point paths with dash patterns
+- GeoJSON polygon regions with extrusion
+- Callout clustering for dense marker sets
+- Real-time data binding (ISS tracking, AIS vessel feeds)
+- Scrollytelling support via IntersectionObserver
+- Full keyboard and screen reader accessibility
+- Color-blind-safe 10-color palette
+- JSON scene format — zero configuration required
+- WYSIWYG visual editor for non-technical creators
+- Import/export: JSON, GeoJSON, OBJ
+- Internationalization: EN, DE, FR, IT, ES, ZH, AR
+- Data source attribution with viewport-aware tracking
+
+## Agent API
+
+Globi exposes `window.globi` with 28 commands:
+- Navigation: flyTo, setZoom, resetCamera
+- Entities: setMarkers, addMarker, removeMarker, setArcs, setPaths, setRegions
+- State: getScene, getMarkers, getVisibleMarkers
+- Theme: setTheme, getTheme
+- Projection: setProjection, getProjection
+- Export: exportJSON, exportGeoJSON, exportOBJ
+- Search: search, clearSearch
+- UI: toggleLegend, toggleFullscreen
+
+DOM attributes for discovery: `data-globi-body`, `data-globi-projection`, `data-globi-zoom`, `data-globi-marker-count`
+
+## Scene Schema (JSON)
+
+Top-level fields: version, locale, theme, planet, viewerUi, markers[], paths[], arcs[], regions[], animations[], filters[], dataSources[], projection, surfaceTint, overlayTint, calloutCluster
+
+Marker: { id, name: {locale: text}, lat, lon, visualType, color, calloutMode, pulse, category, sourceId }
+Path: { id, name, points: [{lat, lon}], color, strokeWidth, dashPattern, animationDuration }
+Arc: { id, name, start: {lat, lon}, end: {lat, lon}, color, maxAltitude, animationTime }
+Region: { id, name, geojson: {type: "Polygon", coordinates}, capColor, sideColor, altitude }
+
+## Links
+
+- Homepage: https://globi.world
+- GitHub: https://github.com/salam/globi
+- Editor: https://globi.world/editor/
+- Examples: https://globi.world/examples/
+- License: MIT
