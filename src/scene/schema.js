@@ -79,6 +79,7 @@ function normalizeMarker(marker = {}) {
     orbitWaypoints: Array.isArray(marker.orbitWaypoints) ? marker.orbitWaypoints : null,
     fetchedAtMs: typeof marker.fetchedAtMs === 'number' ? marker.fetchedAtMs : null,
     velocityKmh: typeof marker.velocityKmh === 'number' ? marker.velocityKmh : null,
+    visibility: Array.isArray(marker.visibility) ? marker.visibility : undefined,
   };
 }
 
@@ -100,6 +101,7 @@ function normalizePath(path = {}) {
     animationDuration: Number(path.animationDuration ?? 0),
     category: path.category ?? '',
     sourceId: typeof path.sourceId === 'string' ? path.sourceId : '',
+    visibility: Array.isArray(path.visibility) ? path.visibility : undefined,
   };
 }
 
@@ -117,6 +119,7 @@ function normalizeArc(arc = {}) {
     animationDelay: Number(arc.animationDelay ?? 0),
     category: arc.category ?? '',
     sourceId: typeof arc.sourceId === 'string' ? arc.sourceId : '',
+    visibility: Array.isArray(arc.visibility) ? arc.visibility : undefined,
   };
 }
 
@@ -149,6 +152,7 @@ function normalizeAnimation(animation = {}) {
     keyframes: Array.isArray(animation.keyframes) ? animation.keyframes.map((frame) => ({
       t: Number(frame.t ?? 0),
       value: ensureObject(frame.value, {}),
+      ...(frame.easing ? { easing: frame.easing } : {}),
     })) : [],
     loop: Boolean(animation.loop),
   };
@@ -288,6 +292,7 @@ export function normalizeScene(input) {
     projection,
     surfaceTint,
     overlayTint,
+    cameraAnimation: Array.isArray(scene.cameraAnimation) ? scene.cameraAnimation : [],
   };
   clusterMarkers(result.markers, result.calloutCluster);
   return result;

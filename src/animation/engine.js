@@ -29,11 +29,27 @@ function interpolateValue(start, end, t) {
   return t < 0.5 ? start : end;
 }
 
+const EASING = {
+  'linear': t => t,
+  'ease-in': t => t * t,
+  'ease-out': t => t * (2 - t),
+  'ease-in-out': t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  'bounce': t => {
+    const n1 = 7.5625, d1 = 2.75;
+    if (t < 1 / d1) return n1 * t * t;
+    if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+    if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+    return n1 * (t -= 2.625 / d1) * t + 0.984375;
+  },
+  'elastic': t => t === 0 || t === 1 ? t : -Math.pow(2, 10 * (t - 1)) * Math.sin((t - 1.1) * 5 * Math.PI),
+};
+
 export function normalizeKeyframes(keyframes = []) {
   return keyframes
     .map((frame) => ({
       t: Number(frame.t ?? 0),
       value: frame.value ?? {},
+      ...(frame.easing ? { easing: frame.easing } : {}),
     }))
     .sort((a, b) => a.t - b.t);
 }
@@ -65,7 +81,8 @@ export function interpolateKeyframes(keyframesInput, timeMs) {
     const left = keyframes[i - 1];
     const span = right.t - left.t || 1;
     const alpha = (timeMs - left.t) / span;
-    return interpolateValue(left.value, right.value, alpha);
+    const easeFn = EASING[left.easing] || EASING.linear;
+    return interpolateValue(left.value, right.value, easeFn(alpha));
   }
 
   return structuredClone(last.value);
