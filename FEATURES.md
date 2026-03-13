@@ -210,6 +210,35 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] npm publishing via GitHub Actions on version tags (auto-publishes to npm registry and unpkg CDN)
 - [x] `main`, `module`, `unpkg`, and `files` fields in package.json for proper npm distribution
 
+## Studio (WYSIWYG Editor)
+
+- [x] Studio HTML shell with Figma-style layout (menu bar, tool strip, viewport, properties panel, timeline)
+- [x] EditorStore state management (active tool, selection, panel visibility, playback)
+- [x] Snapshot-based undo/redo (max 50 depth)
+- [x] Session transfer via sessionStorage with gzip compression for large scenes
+- [x] Menu bar with File, Edit, View, Tools, Help dropdowns and Preview button
+- [x] Tool strip with Select, Marker, Arc, Path, Region, Draw tools
+- [x] Properties panel with smart grouping and collapsible sections
+- [x] Timeline with transport controls, entity visibility bars, keyframe diamonds, playhead
+- [x] Easing editor popup with 6 presets (linear, ease-in, ease-out, ease-in-out, bounce, elastic)
+- [x] Preview mode (hides all editor UI, Space to toggle)
+- [x] Tool manager with activate/deactivate lifecycle
+- [x] Select tool with hit testing, drag-move markers, double-click point editing
+- [x] Marker tool (click to place)
+- [x] Arc tool (two-click start/end)
+- [x] Path tool (multi-click waypoints, Enter to finish)
+- [x] Region tool (multi-click polygon with closed ring, Enter to finish)
+- [x] Draw tool with freehand mode (Ramer-Douglas-Peucker simplification) and point-to-point toggle
+- [x] Motion path overlay data model for camera animation visualization
+- [x] Keyboard shortcuts (V/M/A/L/D tools, Ctrl+Z undo, Space preview, Escape exit, P/T/H panels)
+- [x] Context menu "Open Studio" entry in viewer
+- [x] Animation engine easing support (named presets + cubic-bezier via Newton-Raphson)
+- [x] Visibility time ranges in scene schema (markers, arcs, paths)
+- [x] Camera animation array in scene schema
+- [x] Dark theme CSS with #7a7aff accent color
+- [x] Separate esbuild entry point (dist/studio.js)
+- [x] AI companion prompts (CustomGPT and Claude) with full schema documentation
+
 ## Remaining Gaps
 
 - [ ] Replace placeholder USDZ export with production-grade USD/USDZ packaging.

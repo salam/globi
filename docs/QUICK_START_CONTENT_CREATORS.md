@@ -102,6 +102,15 @@ Buttons in the Data section:
 - Use one category style per story type
 - Keep long descriptions in `description` and short labels in `name`
 
-## 6) Current limits
+## 6) Globi Studio (advanced editor)
+
+For more advanced editing, use Globi Studio — a Figma-style WYSIWYG editor with direct-manipulation tools, an animation timeline, and properties panel.
+
+- Right-click the globe and choose **Open Studio** to transfer your scene
+- Or open `studio/index.html` directly
+- Studio includes tools for placing markers, drawing arcs/paths/regions, freehand drawing, and animating with keyframes
+- Press **Space** to toggle preview mode (hides all editor UI)
+
+## 7) Current limits
 - Direct OSM PBF and Shapefile parsing are not wired in yet.
 - USDZ output is currently a placeholder package for pipeline integration.

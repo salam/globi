@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 1.4 (Thu, Mar 13 2026)
+
+* Globi Studio — new WYSIWYG scene editor with Figma-style layout: menu bar at top, tool strip on left, 3D viewport in center, properties panel on right, animation timeline at bottom
+* Six direct-manipulation tools: Select (click/drag), Marker (click to place), Arc (two-click), Path (multi-click), Region (polygon), and Draw (freehand with Ramer-Douglas-Peucker simplification or point-to-point mode)
+* Full undo/redo with snapshot history (up to 50 levels)
+* Properties panel with smart field grouping and collapsible sections for the selected entity
+* Animation timeline with transport controls, per-entity visibility bars, keyframe diamonds, and draggable playhead
+* Easing editor popup: 6 named presets (linear, ease-in, ease-out, ease-in-out, bounce, elastic) plus cubic-bezier support
+* Preview mode hides all editor UI for clean globe-only viewing (press Space to toggle)
+* Keyboard shortcuts for all tools (V/M/A/L/D), undo/redo (Ctrl+Z / Shift+Z), panel toggles (P/T/H), and more
+* Scene transfer from viewer to Studio via sessionStorage — scenes over 4 MB are gzip-compressed automatically
+* Right-click context menu in the viewer now includes "Open Studio" to jump into editing
+* Menu bar with File (new/open/save/export), Edit (undo/redo/delete/duplicate), View (panel toggles/preview), Tools (ChatGPT/Claude companion links), Help
+* AI companion prompts for ChatGPT and Claude with full Globi schema documentation
+* Separate build output: `dist/studio.js` (45 KB) and `dist/studio.min.js` (27 KB)
+
+## Release 1.3 (Sat, Mar 14 2026)
+
+* Gzip compression for large session transfers — scenes over 4 MB are compressed automatically when the browser supports it, keeping session storage lean
+* Cubic-bezier easing — animation keyframes now accept `cubic-bezier(x1,y1,x2,y2)` easing strings (same syntax as CSS), giving precise control over acceleration curves
+* Tool cursor feedback — the viewport cursor changes per active tool: default arrow for Select, crosshair for Marker / Arc / Path / Region / Draw
+* Motion path visualization — new data-model layer for displaying animated motion paths as overlays in the 3D viewport (rendering integration to follow)
+* Region vertex editing — double-clicking a region or path in Select mode enters point-editing mode, allowing individual vertex manipulation
+* Draw tool point-to-point mode — toggle the Draw tool between freehand drawing and click-to-place waypoint mode
+
 ## Version 1.3 (Wed, Mar 12 2026)
 
 * Custom context menu — right-click (or long-press on mobile, Shift+F10 on keyboard) to export in GeoJSON/JSON/OBJ, copy coordinates, drop a marker, fly to a point, inspect entities, and copy view descriptions
