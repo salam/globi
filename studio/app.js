@@ -1,4 +1,5 @@
 // studio/app.js
+import '../src/components/globi-viewer.js';
 import { readScene } from './state/sessionTransfer.js';
 import { EditorStore } from './state/editorStore.js';
 import { UndoRedo } from './state/undoRedo.js';
@@ -394,7 +395,7 @@ function handlePropertyChange(entityType, id, field, value) {
   pushScene({ ...scene });
 }
 
-// Initial render
-if (viewer.setScene) {
-  viewer.setScene(scene);
-}
+// Initial render — wait for custom element to be defined
+customElements.whenDefined('globi-viewer').then(() => {
+  if (viewer.setScene) viewer.setScene(scene);
+});
