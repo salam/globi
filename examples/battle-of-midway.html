@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Globi — Battle of Midway (June 4–7, 1942)</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../node_modules/three/build/three.module.js",
+        "three/addons/": "../node_modules/three/examples/jsm/",
+        "earcut": "../node_modules/earcut/src/earcut.js"
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Libre Baskerville', 'Georgia', serif;
+      background: #e8e4da;
+      color: #2c2416;
+    }
+
+    /* ── Title bar ── */
+    .title-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: linear-gradient(to bottom, rgba(42, 36, 28, 0.95), rgba(42, 36, 28, 0.88));
+      backdrop-filter: blur(8px);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(180, 168, 140, 0.3);
+    }
+
+    .title-bar h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #d4c9a8;
+      letter-spacing: 0.5px;
+    }
+
+    .title-bar .subtitle {
+      font-size: 12px;
+      color: #9a8e72;
+      font-style: italic;
+    }
+
+    .title-bar nav a {
+      color: #9a8e72;
+      text-decoration: none;
+      font-size: 12px;
+      margin-left: 16px;
+    }
+
+    .title-bar nav a:hover { color: #d4c9a8; }
+
+    /* ── Main layout ── */
+    .scrollytelling {
+      display: flex;
+      margin-top: 44px;
+    }
+
+    .globe-column {
+      width: 60%;
+      position: sticky;
+      top: 44px;
+      height: calc(100vh - 44px);
+      flex-shrink: 0;
+    }
+
+    globi-viewer {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .narrative-column {
+      width: 40%;
+      padding: 40px 32px 120px 24px;
+      min-height: calc(100vh - 44px);
+    }
+
+    /* ── Narrative cards ── */
+    .step {
+      background: linear-gradient(135deg, #f5f0e1 0%, #efe9d6 100%);
+      border: 1px solid #cdc3a5;
+      border-left: 4px solid transparent;
+      border-radius: 4px;
+      padding: 24px 28px;
+      margin-bottom: 48px;
+      box-shadow: 1px 2px 8px rgba(60, 50, 30, 0.1);
+      transition: border-left-color 0.4s, box-shadow 0.4s;
+      position: relative;
+    }
+
+    .step::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      border-radius: 3px;
+    }
+
+    .step.active {
+      border-left-color: #8b7355;
+      box-shadow: 2px 3px 12px rgba(60, 50, 30, 0.2);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .step-number {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8b7355;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      flex-shrink: 0;
+    }
+
+    .step-time {
+      font-size: 11px;
+      color: #9a8e72;
+      font-style: italic;
+    }
+
+    .step h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #2c2416;
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+
+    .step p {
+      font-size: 14px;
+      line-height: 1.75;
+      color: #3d3424;
+      margin-bottom: 8px;
+    }
+
+    .step p:last-child { margin-bottom: 0; }
+
+    .step sup {
+      font-size: 10px;
+      color: #8b7355;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .step sup a {
+      color: #8b7355;
+      text-decoration: none;
+    }
+
+    .step sup a:hover { text-decoration: underline; }
+
+    /* ── Inline faction dots + dashed-underline linked words ── */
+    .dot-link {
+      cursor: pointer;
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(60, 50, 30, 0.35);
+      padding-bottom: 1px;
+      transition: border-color 0.2s;
+    }
+    .dot-link:hover { border-bottom-color: rgba(60, 50, 30, 0.7); }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 3px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .dot:hover { transform: scale(1.4); }
+    .dot.jp:hover, .dot.akagi:hover, .dot.kaga:hover, .dot.soryu:hover, .dot.hiryu:hover { transform: rotate(45deg) scale(1.4); }
+    /* Neutral — circle (default shape) */
+    .dot.mid  { background: #16a34a; color: #16a34a; }
+    .dot.air  { background: #f59e0b; color: #f59e0b; }
+    .dot.sub  { background: #6b7280; color: #6b7280; }
+    .dot.sunk { background: #9ca3af; color: #9ca3af; }
+    /* Friendly (US) — rectangle (NATO APP-6) */
+    .dot.us   { background: #2563eb; color: #2563eb; border-radius: 1px; width: 10px; height: 7px; }
+    .dot.enterprise { background: #1d4ed8; color: #1d4ed8; border-radius: 1px; width: 10px; height: 7px; }
+    .dot.hornet    { background: #3b82f6; color: #3b82f6; border-radius: 1px; width: 10px; height: 7px; }
+    .dot.yorktown  { background: #60a5fa; color: #60a5fa; border-radius: 1px; width: 10px; height: 7px; }
+    /* Hostile (JP) — diamond (NATO APP-6, rotated square) */
+    .dot.jp   { background: #dc2626; color: #dc2626; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+    .dot.akagi     { background: #b91c1c; color: #b91c1c; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+    .dot.kaga      { background: #dc2626; color: #dc2626; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+    .dot.soryu     { background: #ef4444; color: #ef4444; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+    .dot.hiryu     { background: #f87171; color: #f87171; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+
+    @keyframes dot-blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.3; transform: scale(1.8); }
+    }
+    @keyframes dot-blink-diamond {
+      0%, 100% { opacity: 1; transform: rotate(45deg) scale(1); }
+      50%      { opacity: 0.3; transform: rotate(45deg) scale(1.8); }
+    }
+    .dot.blinking { animation: dot-blink 0.5s ease-in-out infinite; }
+    .dot.jp.blinking, .dot.akagi.blinking, .dot.kaga.blinking, .dot.soryu.blinking, .dot.hiryu.blinking { animation: dot-blink-diamond 0.5s ease-in-out infinite; }
+
+    @keyframes dot-ping {
+      0%   { transform: scale(1); box-shadow: 0 0 0 0 currentColor; }
+      50%  { transform: scale(2.2); box-shadow: 0 0 10px 4px currentColor; }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; }
+    }
+    @keyframes dot-ping-diamond {
+      0%   { transform: rotate(45deg) scale(1); box-shadow: 0 0 0 0 currentColor; }
+      50%  { transform: rotate(45deg) scale(2.2); box-shadow: 0 0 10px 4px currentColor; }
+      100% { transform: rotate(45deg) scale(1); box-shadow: 0 0 0 0 transparent; }
+    }
+    .dot.pinging { animation: dot-ping 0.6s ease-in-out 2 !important; }
+    .dot.jp.pinging, .dot.akagi.pinging, .dot.kaga.pinging, .dot.soryu.pinging, .dot.hiryu.pinging { animation: dot-ping-diamond 0.6s ease-in-out 2 !important; }
+
+    /* ── Phase dividers ── */
+    .phase-divider {
+      margin: 56px 0 32px;
+      padding: 12px 0;
+      border-top: 2px solid #b4a88c;
+      border-bottom: 1px solid #cdc3a5;
+    }
+
+    .phase-divider h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #6b5d45;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .phase-divider:first-child { margin-top: 0; }
+
+    /* ── Intro card ── */
+    .intro-card {
+      background: linear-gradient(135deg, #2a241c 0%, #3d3424 100%);
+      color: #d4c9a8;
+      border: 1px solid #5a4e38;
+      border-radius: 4px;
+      padding: 32px 28px;
+      margin-bottom: 48px;
+    }
+
+    .intro-card h2 {
+      font-size: 22px;
+      color: #f0e8d0;
+      margin-bottom: 12px;
+    }
+
+    .intro-card p {
+      font-size: 14px;
+      line-height: 1.75;
+      color: #b4a88c;
+    }
+
+    /* ── Bibliography ── */
+    .bibliography {
+      background: #2a241c;
+      color: #b4a88c;
+      padding: 48px 40px;
+    }
+
+    .bibliography h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #d4c9a8;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #5a4e38;
+    }
+
+    .bibliography ol {
+      list-style: none;
+      counter-reset: source;
+      max-width: 800px;
+    }
+
+    .bibliography li {
+      counter-increment: source;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+      padding-left: 32px;
+      position: relative;
+    }
+
+    .bibliography li::before {
+      content: "[" counter(source) "]";
+      position: absolute;
+      left: 0;
+      color: #8b7355;
+      font-weight: 700;
+    }
+
+    .bibliography li em { font-style: italic; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .scrollytelling { flex-direction: column; }
+
+      .globe-column {
+        width: 100%;
+        height: 40vh;
+        top: 44px;
+      }
+
+      .narrative-column {
+        width: 100%;
+        padding: 24px 16px 80px;
+      }
+
+      .step { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Title bar -->
+  <div class="title-bar">
+    <div>
+      <h1>Battle of Midway</h1>
+      <span class="subtitle">June 4–7, 1942 &mdash; The Turning Point in the Pacific</span>
+    </div>
+    <nav>
+      <a href="index.html">All examples</a>
+      <a href="../editor/index.html">Editor</a>
+    </nav>
+  </div>
+
+  <!-- Main layout -->
+  <div class="scrollytelling">
+
+    <!-- Globe (sticky left) -->
+    <div class="globe-column">
+      <globi-viewer id="viewer" theme="wireframe-shaded"></globi-viewer>
+    </div>
+
+    <!-- Narrative (scrolling right) -->
+    <div class="narrative-column" id="narrative">
+
+      <!-- Intro -->
+      <div class="intro-card">
+        <h2>The Battle That Changed the War</h2>
+        <p>Six months after Pearl Harbor, the Imperial Japanese Navy launched an ambitious operation to destroy America's remaining carrier strength and seize Midway Atoll. What followed was the most decisive naval battle of the Pacific War. Unknown to Admiral Yamamoto, American codebreakers had pierced the Japanese naval cipher, and a trap was being set.</p>
+        <p>Scroll down to follow the battle as it unfolded.</p>
+      </div>
+
+      <!-- Phase 1 -->
+      <div class="phase-divider"><h3>Phase 1 &mdash; Strategic Prelude (May 1942)</h3></div>
+
+      <section class="step" data-step="0">
+        <div class="step-header">
+          <span class="step-number">I</span>
+          <span class="step-time">Mid-May 1942, Pearl Harbor</span>
+        </div>
+        <h2>Codebreakers at Station HYPO</h2>
+        <p>In a basement at Pearl Harbor, Commander Joseph Rochefort and his team at Combat Intelligence Unit (<span class="dot-link" data-marker=""><span class="dot us"></span>Station</span> HYPO) worked around the clock to crack JN-25, the Imperial Japanese Navy's operational code.<sup><a href="#src-1">[1]</a></sup> By mid-May they had identified "AF" as <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span> Atoll. To confirm, Rochefort arranged for Midway to broadcast an uncoded message about a water purification failure. Within days, Japanese intercepts mentioned that "AF" was short of fresh water.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>Admiral Nimitz now knew the target, the approximate date, and the composition of the attacking force. He had perhaps two weeks to set a trap.</p>
+      </section>
+
+      <section class="step" data-step="1">
+        <div class="step-header">
+          <span class="step-number">II</span>
+          <span class="step-time">Late May 1942, Hashirajima Anchorage</span>
+        </div>
+        <h2>Yamamoto's Plan</h2>
+        <p>Admiral Isoroku Yamamoto's plan was elaborate: seize <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span> to extend Japan's defensive perimeter and lure the U.S. Pacific Fleet into a decisive engagement. The Combined Fleet would deploy over 200 ships in multiple groups spread across the Pacific.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>The plan's fatal flaw was its complexity. Forces were dispersed so widely they could not support each other. Yamamoto's Main Body, including the super-battleship <span class="dot-link" data-marker="yamato"><span class="dot jp"></span><em>Yamato</em></span>, trailed 300 miles behind the carriers &mdash; too far to intervene if things went wrong.<sup><a href="#src-1">[1]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="2">
+        <div class="step-header">
+          <span class="step-number">III</span>
+          <span class="step-time">May 27, 1942</span>
+        </div>
+        <h2>Nagumo's Kidō Butai Sorties</h2>
+        <p>Vice Admiral Chūichi Nagumo's First Air Fleet &mdash; the <span class="dot-link" data-marker=""><span class="dot jp"></span>Kidō</span> Butai (Mobile Force) &mdash; departed from the Inland Sea with four fleet carriers: <span class="dot-link" data-marker="akagi"><span class="dot akagi"></span><em>Akagi</em></span>, <span class="dot-link" data-marker="kaga"><span class="dot kaga"></span><em>Kaga</em></span>, <span class="dot-link" data-marker="soryu"><span class="dot soryu"></span><em>Sōryū</em></span>, and <span class="dot-link" data-marker="hiryu"><span class="dot hiryu"></span><em>Hiryū</em></span>, screened by 2 battleships, 3 cruisers, and 11 destroyers.<sup><a href="#src-1">[1]</a></sup></p>
+        <p>These four carriers had attacked Pearl Harbor, Darwin, Colombo, and Trincomalee. Their air groups were the most experienced in the world. Nagumo carried 248 aircraft &mdash; but critically, he had lost many veteran pilots in prior operations and their replacements were less seasoned.<sup><a href="#src-5">[5]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="3">
+        <div class="step-header">
+          <span class="step-number">IV</span>
+          <span class="step-time">June 3, 1942</span>
+        </div>
+        <h2>The Aleutian Diversion</h2>
+        <p>A separate Japanese force under Vice Admiral Boshirō Hosogaya struck <span class="dot-link" data-marker=""><span class="dot jp"></span>Dutch</span> Harbor in the Aleutian Islands on June 3. Yamamoto intended this as a diversion to draw American carriers north.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>Thanks to HYPO's intelligence, Nimitz refused to take the bait. He kept his carriers concentrated northeast of <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span>, at a pre-arranged rendezvous he called "Point Luck."<sup><a href="#src-4">[4]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="4">
+        <div class="step-header">
+          <span class="step-number">V</span>
+          <span class="step-time">May 28–June 2, 1942</span>
+        </div>
+        <h2>Nimitz Deploys Task Forces</h2>
+        <p>Rear Admiral Raymond Spruance commanded <span class="dot-link" data-marker=""><span class="dot us"></span>Task</span> Force 16 with carriers <span class="dot-link" data-marker="tf16"><span class="dot enterprise"></span><em>Enterprise</em></span> and <span class="dot-link" data-marker="tf16"><span class="dot hornet"></span><em>Hornet</em></span>, departing Pearl Harbor on May 28. Rear Admiral Frank Jack Fletcher's <span class="dot-link" data-marker=""><span class="dot us"></span>Task</span> Force 17, with the hastily repaired <span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</em></span> (given 72 hours of repair after the Battle of the Coral Sea), followed on May 30.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>The two task forces rendezvoused at Point Luck, 325 nautical miles northeast of Midway, on June 2. Fletcher, as senior officer, assumed overall tactical command. The Americans had 3 carriers with 233 aircraft &mdash; against Nagumo's 4 carriers and 248.<sup><a href="#src-6">[6]</a></sup></p>
+      </section>
+
+      <!-- Phase 2 -->
+      <div class="phase-divider"><h3>Phase 2 &mdash; Opening Moves (June 3)</h3></div>
+
+      <section class="step" data-step="5">
+        <div class="step-header">
+          <span class="step-number">VI</span>
+          <span class="step-time">June 3, 09:00 local</span>
+        </div>
+        <h2>PBY Catalina Spots the Invasion Fleet</h2>
+        <p>Ensign Jewell Reid, piloting a <span class="dot-link" data-marker="pby"><span class="dot air"></span>PBY</span> Catalina from <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span>, sighted the Japanese transport group approximately 600 miles to the west-southwest. He radioed: "Sighted main body."<sup><a href="#src-4">[4]</a></sup> This was actually the slower-moving invasion force, not Nagumo's carriers, which were approaching from the northwest under heavy weather cover.</p>
+        <p>The sighting confirmed that the Japanese timetable matched HYPO's predictions almost exactly.<sup><a href="#src-1">[1]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="6">
+        <div class="step-header">
+          <span class="step-number">VII</span>
+          <span class="step-time">June 3, 12:30 local</span>
+        </div>
+        <h2>B-17 High-Altitude Bombing</h2>
+        <p>Nine <span class="dot-link" data-marker="b17"><span class="dot air"></span>B-17</span> Flying Fortresses from <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span> attacked the transport group from 20,000 feet. Despite optimistic claims by the bomber crews, no hits were scored.<sup><a href="#src-6">[6]</a></sup> High-altitude level bombing against maneuvering ships would prove consistently ineffective throughout the battle &mdash; a lesson that validated the Navy's investment in dive bombers and torpedo planes.</p>
+      </section>
+
+      <section class="step" data-step="7">
+        <div class="step-header">
+          <span class="step-number">VIII</span>
+          <span class="step-time">June 3–4, night</span>
+        </div>
+        <h2>Night Torpedo Attack by PBYs</h2>
+        <p>Four <span class="dot-link" data-marker="pby"><span class="dot air"></span>PBY</span> Catalinas equipped with torpedoes launched a daring night attack against the invasion force. In the darkness, one torpedo struck the oiler <span class="dot-link" data-marker=""><span class="dot jp"></span><em>Akebono</span> Maru</em>, causing damage but not sinking her.<sup><a href="#src-4">[4]</a></sup> It was a minor blow, but it was the first American torpedo hit of the battle and demonstrated the aggressive posture of Midway's defenders.</p>
+      </section>
+
+      <!-- Phase 3 -->
+      <div class="phase-divider"><h3>Phase 3 &mdash; Nagumo Strikes Midway (June 4, 04:30–07:00)</h3></div>
+
+      <section class="step" data-step="8">
+        <div class="step-header">
+          <span class="step-number">IX</span>
+          <span class="step-time">June 4, 04:30 local</span>
+        </div>
+        <h2>First Wave Launches from Kidō Butai</h2>
+        <p>At 04:30, Nagumo launched 108 aircraft against <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway:</span> 36 Kate torpedo bombers (armed with bombs), 36 Val dive bombers, and 36 Zero fighters, led by Lieutenant Jōichi <span class="dot-link" data-marker="hiryu"><span class="dot jp"></span>Tomonaga</span> from <span class="dot-link" data-marker="hiryu"><span class="dot hiryu"></span><em>Hiryū</em></span>.<sup><a href="#src-1">[1]</a></sup></p>
+        <p>Nagumo retained his second wave &mdash; armed with torpedoes and armor-piercing bombs &mdash; in reserve, in case American ships were spotted. This reserve-or-commit dilemma would become the crux of the battle.<sup><a href="#src-5">[5]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="9">
+        <div class="step-header">
+          <span class="step-number">X</span>
+          <span class="step-time">June 4, 06:16 local</span>
+        </div>
+        <h2>Midway Scrambles Its Defense</h2>
+        <p><span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway's</span> radar detected the incoming Japanese strike at 93 miles. Every operational aircraft on the atoll launched: Marine Fighting Squadron 221 (<span class="dot-link" data-marker="vmf221"><span class="dot us"></span>VMF-221)</span> sent 25 fighters &mdash; mostly obsolete F2A Buffaloes &mdash; to intercept.<sup><a href="#src-6">[6]</a></sup></p>
+        <p>The defenders fought bravely but were overwhelmed. Fifteen of 25 Marine fighters were shot down. Japanese bombs cratered runways, destroyed the powerhouse, and set fuel tanks ablaze. But the airstrip remained operational &mdash; a fact that would prove crucial.<sup><a href="#src-3">[3]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="10">
+        <div class="step-header">
+          <span class="step-number">XI</span>
+          <span class="step-time">June 4, 07:00 local</span>
+        </div>
+        <h2>"There Is Need for a Second Attack"</h2>
+        <p>Lieutenant <span class="dot-link" data-marker="hiryu"><span class="dot jp"></span>Tomonaga</span>, assessing the damage from above Midway, radioed back to <span class="dot-link" data-marker="akagi"><span class="dot akagi"></span><em>Akagi</span></em>: "There is need for a second attack wave."<sup><a href="#src-1">[1]</a></sup> The island's defenses were battered but not silenced.</p>
+        <p>At 07:15, Nagumo made a fateful decision: he ordered the reserve aircraft on <em>Akagi</em> and <span class="dot-link" data-marker="kaga"><span class="dot kaga"></span><em>Kaga</em></span> to be rearmed from anti-ship torpedoes to high-explosive bombs for a second strike on Midway. This rearmament process would take approximately one hour &mdash; during which his flight decks and hangars would be cluttered with ordnance.<sup><a href="#src-5">[5]</a></sup></p>
+      </section>
+
+      <!-- Phase 4 -->
+      <div class="phase-divider"><h3>Phase 4 &mdash; American Strikes Miss (June 4, 07:00–09:20)</h3></div>
+
+      <section class="step" data-step="11">
+        <div class="step-header">
+          <span class="step-number">XII</span>
+          <span class="step-time">June 4, 07:10–08:30 local</span>
+        </div>
+        <h2>Midway-Based Strikes Fail</h2>
+        <p><span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span> launched everything it had at the <span class="dot-link" data-marker=""><span class="dot jp"></span>Kidō</span> Butai in uncoordinated waves: six TBF Avengers and four <span class="dot-link" data-marker="b26"><span class="dot air"></span>B-26</span> Marauders carrying torpedoes attacked first, followed by Major Lofton Henderson's <span class="dot-link" data-marker=""><span class="dot us"></span>SBD</span> Dauntlesses and SB2U Vindicators, then another flight of B-17s.<sup><a href="#src-3">[3]</a></sup></p>
+        <p>The results were devastating &mdash; for the Americans. Five of six Avengers were destroyed. Two B-26s were lost. Henderson was killed, and half his squadron shot down. Not a single torpedo or bomb hit a Japanese ship.<sup><a href="#src-6">[6]</a></sup> But the persistent attacks forced Nagumo to maneuver defensively, consuming precious time.</p>
+      </section>
+
+      <section class="step" data-step="12">
+        <div class="step-header">
+          <span class="step-number">XIII</span>
+          <span class="step-time">June 4, 07:10–09:00 local</span>
+        </div>
+        <h2>USS <em>Nautilus</em> Stalks the Fleet</h2>
+        <p>The submarine USS <span class="dot-link" data-marker="nautilus"><span class="dot sub"></span><em>Nautilus</em></span> (SS-168) had been shadowing the Japanese force since early morning. At 07:10 she fired torpedoes at a battleship, missed, and was driven down by depth charges.<sup><a href="#src-4">[4]</a></sup></p>
+        <p>The destroyer <span class="dot-link" data-marker="arashi"><span class="dot jp"></span><em>Arashi</em></span> was detached to keep <em>Nautilus</em> down. This seemingly minor event would have enormous consequences: when <em>Arashi</em> eventually raced to rejoin the fleet at full speed, her wake became a signpost pointing directly at Nagumo's carriers.<sup><a href="#src-1">[1]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="13">
+        <div class="step-header">
+          <span class="step-number">XIV</span>
+          <span class="step-time">June 4, 07:28–09:17 local</span>
+        </div>
+        <h2>Nagumo's Fateful Decision</h2>
+        <p>At 07:28, a delayed scout plane from the cruiser <span class="dot-link" data-marker="tone-scout"><span class="dot jp"></span><em>Tone</em></span> &mdash; launched 30 minutes late due to a catapult malfunction &mdash; reported sighting American ships to the northeast. The initial report was vague: "ten ships, apparently enemy."<sup><a href="#src-1">[1]</a></sup></p>
+        <p>Nagumo was caught in an impossible bind. His hangar decks were in mid-rearmament &mdash; bombs being swapped for torpedoes and back again. At 07:45 he halted the rearming and ordered: switch back to anti-ship torpedoes. But the <em>Tone</em> scout soon reported a carrier among the American ships.<sup><a href="#src-5">[5]</a></sup></p>
+        <p>By 09:17, Nagumo had recovered his Midway strike and was turning north to engage the American fleet. His decks were crowded with aircraft being fueled and armed, loose ordnance stacked alongside. He needed just 30 more minutes to launch a properly coordinated strike.<sup><a href="#src-1">[1]</a></sup></p>
+      </section>
+
+      <!-- Phase 5 -->
+      <div class="phase-divider"><h3>Phase 5 &mdash; "The Five Minutes" (June 4, 09:20–10:25)</h3></div>
+
+      <section class="step" data-step="14">
+        <div class="step-header">
+          <span class="step-number">XV</span>
+          <span class="step-time">June 4, 09:20–10:20 local</span>
+        </div>
+        <h2>The Torpedo Squadrons Attack</h2>
+        <p>Three American torpedo bomber squadrons found the <span class="dot-link" data-marker=""><span class="dot jp"></span>Kidō</span> Butai and attacked in succession. Torpedo Squadron 8 (<span class="dot-link" data-marker="vt8"><span class="dot us"></span>VT-8)</span> from <span class="dot-link" data-marker="tf16"><span class="dot hornet"></span><em>Hornet</em></span>, led by Lieutenant Commander John C. Waldron, arrived first. Flying low and slow in obsolete TBD Devastators without fighter escort, all fifteen aircraft were shot down. Only Ensign George Gay survived, floating amid the wreckage.<sup><a href="#src-3">[3]</a></sup></p>
+        <p><span class="dot-link" data-marker=""><span class="dot us"></span>VT-6</span> from <span class="dot-link" data-marker="tf16"><span class="dot enterprise"></span><em>Enterprise</em></span> attacked next, losing ten of fourteen planes. <span class="dot-link" data-marker=""><span class="dot us"></span>VT-3</span> from <span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</em></span> followed, losing ten of twelve.<sup><a href="#src-6">[6]</a></sup> Not a single torpedo hit. The sacrifice seemed pointless &mdash; but it was not. The torpedo attacks forced the Japanese combat air patrol (CAP) down to sea level and pulled the screening destroyers out of formation, leaving the carriers without high-altitude defense at the critical moment.<sup><a href="#src-1">[1]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="15">
+        <div class="step-header">
+          <span class="step-number">XVI</span>
+          <span class="step-time">June 4, 09:55–10:20 local</span>
+        </div>
+        <h2>McClusky Follows <em>Arashi</em>'s Wake</h2>
+        <p>Lieutenant Commander C. Wade <span class="dot-link" data-marker="mcclusky"><span class="dot us"></span>McClusky</span>, leading 32 <span class="dot-link" data-marker=""><span class="dot us"></span>SBD</span> Dauntless dive bombers from <em>Enterprise</em>, had flown to the expected Japanese position and found only empty ocean. Fuel running low, he made the battle's most consequential navigational decision: instead of turning back, he searched northwest.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>At 09:55 he spotted a lone destroyer racing northeast at full speed &mdash; <span class="dot-link" data-marker="arashi"><span class="dot jp"></span><em>Arashi</em></span>, returning from her hunt for <span class="dot-link" data-marker="nautilus"><span class="dot sub"></span><em>Nautilus</em></span>. McClusky followed her wake like an arrow pointing straight to Nagumo's fleet.<sup><a href="#src-1">[1]</a></sup> Nimitz would later say that McClusky's decision "decided the fate of our carrier task force and our forces at Midway."<sup><a href="#src-2">[2]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="16">
+        <div class="step-header">
+          <span class="step-number">XVII</span>
+          <span class="step-time">June 4, 10:22–10:27 local</span>
+        </div>
+        <h2>10:22 &mdash; Three Carriers Ablaze</h2>
+        <p>At 10:22, McClusky's dive bombers screamed down on <span class="dot-link" data-marker="kaga"><span class="dot kaga"></span><em>Kaga</em></span> and <span class="dot-link" data-marker="akagi"><span class="dot akagi"></span><em>Akagi</em></span> from 14,500 feet. Simultaneously, Lieutenant Commander Maxwell Leslie's <span class="dot-link" data-marker=""><span class="dot us"></span>VB-3</span> from <span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</em></span> dove on <span class="dot-link" data-marker="soryu"><span class="dot soryu"></span><em>Sōryū</em></span>. The Japanese CAP, drawn to sea level by the torpedo attacks, could not climb back in time.<sup><a href="#src-1">[1]</a></sup></p>
+        <p><em>Kaga</em> took four direct hits among fully fueled and armed planes on her flight deck. <em>Akagi</em> was struck by just one or two bombs &mdash; but one detonated among the torpedoes and bombs stacked on the hangar deck during rearming. <em>Sōryū</em> took three hits and was engulfed within minutes.<sup><a href="#src-5">[5]</a></sup></p>
+        <p>In five minutes, three of Japan's six fleet carriers were reduced to blazing wrecks. The ordnance left scattered during Nagumo's rearming had turned each ship into a floating ammunition dump.<sup><a href="#src-1">[1]</a></sup></p>
+      </section>
+
+      <!-- Phase 6 -->
+      <div class="phase-divider"><h3>Phase 6 &mdash; Hiryū Fights Back (June 4, 10:30–17:00)</h3></div>
+
+      <section class="step" data-step="17">
+        <div class="step-header">
+          <span class="step-number">XVIII</span>
+          <span class="step-time">June 4, 10:40–12:05 local</span>
+        </div>
+        <h2><em>Hiryū</em> Strikes <em>Yorktown</em></h2>
+        <p>Rear Admiral Tamon Yamaguchi aboard <span class="dot-link" data-marker="hiryu"><span class="dot hiryu"></span><em>Hiryū</em></span>, the sole surviving Japanese carrier, wasted no time. At 10:40 he launched 18 Val dive bombers and 6 Zero escorts under Lieutenant Michio Kobayashi, guided by a scout plane's contact report.<sup><a href="#src-1">[1]</a></sup></p>
+        <p>At noon they found <span class="dot-link" data-marker=""><span class="dot us"></span>Task</span> Force 17. Despite fierce anti-aircraft fire, three bombs hit <span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</em></span>, knocking out two boilers and starting fires. The carrier went dead in the water, listing.<sup><a href="#src-6">[6]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="18">
+        <div class="step-header">
+          <span class="step-number">XIX</span>
+          <span class="step-time">June 4, 12:05–14:00 local</span>
+        </div>
+        <h2><em>Yorktown</em> Fights to Survive</h2>
+        <p><span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</span></em>'s damage control teams performed extraordinary work. Within two hours they had patched the flight deck, relit four boilers, and brought the carrier back up to 20 knots. Externally, she appeared fully operational &mdash; so much so that the next Japanese strike would mistake her for a different, undamaged carrier.<sup><a href="#src-6">[6]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="19">
+        <div class="step-header">
+          <span class="step-number">XX</span>
+          <span class="step-time">June 4, 14:30 local</span>
+        </div>
+        <h2>Second <em>Hiryū</em> Strike &mdash; Torpedoes</h2>
+        <p>Yamaguchi launched a second strike: 10 Kate torpedo bombers and 6 Zeros under Lieutenant Jōichi <span class="dot-link" data-marker="hiryu"><span class="dot jp"></span>Tomonaga</span>, who knew he had a damaged fuel tank and likely not enough fuel to return. He volunteered to lead anyway.<sup><a href="#src-1">[1]</a></sup></p>
+        <p>The Kates split into two groups for an anvil attack. Two Type 91 torpedoes slammed into <span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</span></em>'s port side, jamming the rudder and knocking out all power. The carrier took on a severe list. Captain Elliott Buckmaster gave the order to abandon ship at 14:55.<sup><a href="#src-6">[6]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="20">
+        <div class="step-header">
+          <span class="step-number">XXI</span>
+          <span class="step-time">June 4, 17:00 local</span>
+        </div>
+        <h2><em>Enterprise</em> Dive Bombers Find <em>Hiryū</em></h2>
+        <p>At 15:30, a scout from <em>Yorktown</em> located <span class="dot-link" data-marker="hiryu"><span class="dot hiryu"></span><em>Hiryū</em></span>. Spruance launched 24 <span class="dot-link" data-marker=""><span class="dot us"></span>SBD</span> Dauntlesses from <span class="dot-link" data-marker="tf16"><span class="dot enterprise"></span><em>Enterprise</em></span> (including refugees from <em>Yorktown</em>), plus 16 from <span class="dot-link" data-marker="tf16"><span class="dot hornet"></span><em>Hornet</em></span>.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>At 17:00, the <em>Enterprise</em> dive bombers caught <em>Hiryū</em> as she was preparing to launch yet another strike. Four bomb hits turned her flight deck into an inferno. Admiral Yamaguchi chose to go down with his ship.<sup><a href="#src-1">[1]</a></sup> All four of Nagumo's carriers were now burning or sunk.</p>
+      </section>
+
+      <!-- Phase 7 -->
+      <div class="phase-divider"><h3>Phase 7 &mdash; Aftermath (June 4–7)</h3></div>
+
+      <section class="step" data-step="21">
+        <div class="step-header">
+          <span class="step-number">XXII</span>
+          <span class="step-time">June 4–5, 1942</span>
+        </div>
+        <h2>Sinking of the Four Carriers</h2>
+        <p><span class="dot-link" data-marker="kaga"><span class="dot sunk"></span><em>Kaga</em></span> sank at 19:25 on June 4, taking 811 men with her. <span class="dot-link" data-marker="soryu"><span class="dot sunk"></span><em>Sōryū</em></span> followed at 19:13, with 718 dead. <span class="dot-link" data-marker="akagi"><span class="dot sunk"></span><em>Akagi</em></span>, Nagumo's flagship, burned through the night; her crew was evacuated and she was scuttled by Japanese destroyers at dawn on June 5.<sup><a href="#src-1">[1]</a></sup></p>
+        <p><span class="dot-link" data-marker="hiryu"><span class="dot sunk"></span><em>Hiryū</em></span> was found still afloat at dawn on June 5, her crew having abandoned ship during the night. Japanese destroyers fired torpedoes to scuttle her, but she drifted and finally sank later that morning.<sup><a href="#src-5">[5]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="22">
+        <div class="step-header">
+          <span class="step-number">XXIII</span>
+          <span class="step-time">June 5–6, 1942</span>
+        </div>
+        <h2>Yamamoto's Retreat</h2>
+        <p>Yamamoto briefly considered a night surface engagement but abandoned the idea when it became clear that Spruance was prudently withdrawing eastward after dark. On June 5, Yamamoto ordered the general retreat of the Combined Fleet.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>During the pursuit on June 6, aircraft from <span class="dot-link" data-marker="tf16"><span class="dot enterprise"></span><em>Enterprise</em></span> and <span class="dot-link" data-marker="tf16"><span class="dot hornet"></span><em>Hornet</em></span> caught the heavy cruisers <span class="dot-link" data-marker="mikuma"><span class="dot jp"></span><em>Mikuma</em></span> and <span class="dot-link" data-marker="mogami"><span class="dot jp"></span><em>Mogami</em></span>, which had collided while evading a submarine. <span class="dot-link" data-marker="mikuma"><span class="dot sunk"></span><em>Mikuma</em></span> was sunk and <em>Mogami</em> heavily damaged.<sup><a href="#src-4">[4]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="23">
+        <div class="step-header">
+          <span class="step-number">XXIV</span>
+          <span class="step-time">June 6–7, 1942</span>
+        </div>
+        <h2><em>Yorktown</em>'s End</h2>
+        <p>On June 6, <span class="dot-link" data-marker="yorktown"><span class="dot yorktown"></span><em>Yorktown</em></span> was still afloat and a salvage party had reboarded her. The minesweeper <em>Vireo</em> took her under tow. But at 13:36 on June 6, the Japanese submarine <span class="dot-link" data-marker="i168"><span class="dot sub"></span><em>I-168</em></span>, which had been tracking the drifting carrier, fired a spread of torpedoes. Two struck <em>Yorktown</em> and one hit the destroyer <span class="dot-link" data-marker="hammann"><span class="dot us"></span><em>Hammann</em></span>, which was alongside providing power.<sup><a href="#src-6">[6]</a></sup></p>
+        <p><span class="dot-link" data-marker="hammann"><span class="dot sunk"></span><em>Hammann</em></span> broke in half and sank in four minutes with 80 dead. <span class="dot-link" data-marker="yorktown"><span class="dot sunk"></span><em>Yorktown</em></span> lingered through the night, finally capsizing and sinking at 05:01 on June 7.<sup><a href="#src-4">[4]</a></sup></p>
+      </section>
+
+      <section class="step" data-step="24">
+        <div class="step-header">
+          <span class="step-number">XXV</span>
+          <span class="step-time">June 7, 1942</span>
+        </div>
+        <h2>The Turning Point</h2>
+        <p>The Battle of <span class="dot-link" data-marker="midway"><span class="dot mid"></span>Midway</span> cost Japan four fleet carriers, the heavy cruiser <span class="dot-link" data-marker="mikuma"><span class="dot sunk"></span><em>Mikuma</em></span>, 248 aircraft, and approximately 3,057 men &mdash; including many of its most experienced pilots and maintenance crews. The United States lost the carrier <span class="dot-link" data-marker="yorktown"><span class="dot sunk"></span><em>Yorktown</em></span>, the destroyer <span class="dot-link" data-marker="hammann"><span class="dot sunk"></span><em>Hammann</em></span>, 150 aircraft, and 307 men.<sup><a href="#src-2">[2]</a></sup></p>
+        <p>The strategic balance in the Pacific shifted irreversibly. Japan, unable to replace its losses in carriers and trained aircrews, was forced onto the defensive. The Americans, with their industrial capacity now fully mobilized, would never look back.<sup><a href="#src-1">[1]</a></sup></p>
+        <p>Admiral Nimitz summarized the victory: "Midway was essentially a victory of intelligence. In attempting to compensate for a grave inferiority in numbers, we undertook to exploit our advantage in information."<sup><a href="#src-4">[4]</a></sup></p>
+      </section>
+
+    </div><!-- /narrative-column -->
+  </div><!-- /scrollytelling -->
+
+  <!-- Bibliography -->
+  <div class="bibliography" id="bibliography">
+    <h2>Sources</h2>
+    <ol>
+      <li id="src-1">Parshall, Jonathan B. and Tully, Anthony P. <em>Shattered Sword: The Untold Story of the Battle of Midway</em>. Dulles, VA: Potomac Books, 2005.</li>
+      <li id="src-2">Symonds, Craig L. <em>The Battle of Midway</em>. Oxford University Press, 2011.</li>
+      <li id="src-3">Lundstrom, John B. <em>The First Team: Pacific Naval Air Combat from Pearl Harbor to Midway</em>. Annapolis: Naval Institute Press, 1984.</li>
+      <li id="src-4">Office of Naval Intelligence. <em>Combat Narrative: The Battle of Midway, June 3–6, 1942</em>. Washington: United States Navy, 1943.</li>
+      <li id="src-5">Bōeichō Bōei Kenshūjo Senshishitsu (War History Office). <em>Senshi Sōsho</em>, Vol. 43: <em>Midway Naval Battle</em>. Tokyo: Asagumo Shimbunsha, 1971. Translation excerpts via Zimm, Alan D. <em>Attack on Pearl Harbor</em>. Philadelphia: Casemate, 2011.</li>
+      <li id="src-6">Cressman, Robert J. et al. <em>"A Glorious Page in Our History": The Battle of Midway, 4–6 June 1942</em>. Missoula, MT: Pictorial Histories Publishing, 1990.</li>
+    </ol>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { registerGlobiViewer } from '../src/components/globi-viewer.js';
+    registerGlobiViewer();
+    await customElements.whenDefined('globi-viewer');
+
+    const viewer = document.getElementById('viewer');
+
+    // ── Data sources for viewer attribution panel ──
+    const dataSources = [
+      { id: 'parshall-tully', name: 'Shattered Sword (Parshall & Tully, 2005)', shortName: 'P&T', url: 'https://www.amazon.com/dp/1574889249', license: 'Published', description: 'Definitive account of Midway from the Japanese perspective.' },
+      { id: 'symonds', name: 'The Battle of Midway (Symonds, 2011)', shortName: 'Sym', url: 'https://www.amazon.com/dp/0195397932', license: 'Published', description: 'Comprehensive US Navy history of the battle.' },
+      { id: 'lundstrom', name: 'The First Team (Lundstrom, 1984)', shortName: 'Lun', url: 'https://www.amazon.com/dp/1591144728', license: 'Published', description: 'Detailed air combat analysis, Pearl Harbor to Midway.' },
+      { id: 'oni', name: 'ONI Combat Narrative (1943)', shortName: 'ONI', url: 'https://www.history.navy.mil/content/history/nhhc/research/library/online-reading-room/title-list-alphabetically/b/battle-of-midway.html', license: 'Public Domain', description: 'Official US Navy wartime intelligence report.' },
+      { id: 'senshi-soso', name: 'Senshi Sōsho Vol. 43', shortName: 'SS', url: 'https://www.amazon.co.jp/dp/4270100435', license: 'Published', description: 'Japanese official war history, translated excerpts.' },
+      { id: 'cressman', name: 'A Glorious Page in Our History (Cressman, 1990)', shortName: 'Cre', url: 'https://www.amazon.com/dp/0965482901', license: 'Published', description: 'Battle of Midway oral histories and action reports.' }
+    ];
+
+    // ── Coordinates ──
+    const PEARL_HARBOR  = { lat: 21.35, lon: -157.95 };
+    const MIDWAY        = { lat: 28.21, lon: -177.38 };
+    const HASHIRAJIMA   = { lat: 34.22, lon: 132.42 };
+    const DUTCH_HARBOR  = { lat: 53.88, lon: -166.53 };
+    const POINT_LUCK    = { lat: 32.00, lon: -173.00 };
+    const KIDO_BUTAI_START = { lat: 33.00, lon: 145.00 };
+    const KIDO_BUTAI_JUN3 = { lat: 30.50, lon: -174.50 };
+    const KIDO_BUTAI_JUN4 = { lat: 30.20, lon: -178.50 };
+    const INVASION_FLEET = { lat: 25.50, lon: 179.00 };
+    const TF16_POSITION = { lat: 31.80, lon: -173.20 };
+    const TF17_POSITION = { lat: 32.20, lon: -172.80 };
+    const HIRYU_POS     = { lat: 30.50, lon: -178.20 };
+    const YORKTOWN_DRIFT = { lat: 30.80, lon: -176.50 };
+    const MIKUMA_SINK   = { lat: 29.30, lon: -173.50 };
+    const ALEUTIAN_FORCE = { lat: 45.00, lon: 165.00 };
+
+    // ── Colors — unique shades per ship for visual distinction ──
+    // US carriers (shades of blue)
+    const C_ENTERPRISE = '#1d4ed8'; // deep blue
+    const C_HORNET     = '#3b82f6'; // medium blue
+    const C_YORKTOWN   = '#60a5fa'; // light blue
+    // Japanese carriers (shades of red/crimson)
+    const C_AKAGI  = '#b91c1c'; // dark crimson
+    const C_KAGA   = '#dc2626'; // red
+    const C_SORYU  = '#ef4444'; // bright red
+    const C_HIRYU  = '#f87171'; // salmon red
+    // Faction fallbacks
+    const US_BLUE  = '#2563eb';
+    const JP_RED   = '#dc2626';
+    const MIDWAY_GREEN = '#16a34a';
+    const STRIKE_AMBER = '#f59e0b';
+    const SUB_GRAY = '#6b7280';
+    const SUNK_GRAY = '#9ca3af';
+
+    // ── NATO APP-6 symbol SVGs (small inline shapes) ──
+    function natoSvg(shape, color) {
+      const fill = color;
+      const stroke = '#000';
+      if (shape === 'friendly') {
+        // Rectangle — friendly unit
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"><rect x="1" y="1" width="28" height="18" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/></svg>`;
+      }
+      if (shape === 'hostile') {
+        // Diamond — hostile unit
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><polygon points="14,1 27,14 14,27 1,14" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/></svg>`;
+      }
+      // Circle — neutral / location
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/></svg>`;
+    }
+
+    // Auto-detect NATO faction from color
+    const FRIENDLY_COLORS = new Set([US_BLUE, C_ENTERPRISE, C_HORNET, C_YORKTOWN]);
+    const HOSTILE_COLORS = new Set([JP_RED, C_AKAGI, C_KAGA, C_SORYU, C_HIRYU]);
+
+    function detectNato(color, opts) {
+      if (opts.nato) return opts.nato;
+      if (FRIENDLY_COLORS.has(color)) return 'friendly';
+      if (HOSTILE_COLORS.has(color)) return 'hostile';
+      return 'neutral';
+    }
+
+    // ── Helpers ──
+    function mkMarker(id, name, lat, lon, color, opts = {}) {
+      const nato = detectNato(color, opts);
+      const svg = natoSvg(nato, color);
+      return {
+        id, name: { en: name }, lat, lon, color,
+        visualType: 'image', markerScale: 0.014,
+        assetUri: 'data:image/svg+xml,' + encodeURIComponent(svg),
+        calloutMode: 'always', pulse: false,
+        sourceId: opts.sourceId || '',
+      };
+    }
+
+    function mkArc(id, name, start, end, color, opts = {}) {
+      return { id, name: { en: name }, start: { lat: start.lat, lon: start.lon }, end: { lat: end.lat, lon: end.lon }, color, strokeWidth: opts.strokeWidth || 1.5, dashPattern: opts.dash || [], animationTime: opts.animTime || 2000, maxAltitude: opts.alt || 0.06, sourceId: opts.sourceId || '' };
+    }
+
+    /**
+     * Compute a flyTo camera that fits all pulsing markers (or all markers
+     * if none are pulsing) with some padding.  Returns {lat, lon, zoom, durationMs}.
+     */
+    function cameraFromMarkers(markers, durationMs = 2000) {
+      const pts = markers;
+      if (!pts.length) return { lat: 28, lon: -178, zoom: 1.2, durationMs };
+
+      // Latitude: simple min/max (no wrapping)
+      let minLat = Infinity, maxLat = -Infinity;
+      for (const m of pts) {
+        if (m.lat < minLat) minLat = m.lat;
+        if (m.lat > maxLat) maxLat = m.lat;
+      }
+      const centerLat = (minLat + maxLat) / 2;
+      const spanLat = maxLat - minLat;
+
+      // Longitude: handle date-line wrapping via delta from reference
+      const refLon = pts[0].lon;
+      let minDelta = 0, maxDelta = 0, sumDelta = 0;
+      for (const m of pts) {
+        let d = m.lon - refLon;
+        while (d > 180) d -= 360;
+        while (d < -180) d += 360;
+        if (d < minDelta) minDelta = d;
+        if (d > maxDelta) maxDelta = d;
+        sumDelta += d;
+      }
+      let centerLon = refLon + sumDelta / pts.length;
+      // Normalize to [-180, 180]
+      while (centerLon > 180) centerLon -= 360;
+      while (centerLon < -180) centerLon += 360;
+      const spanLon = maxDelta - minDelta;
+
+      const span = Math.max(spanLat, spanLon, 0.3) * 1.3;  // 15% padding each side for callout labels
+
+      // Map angular span to zoom (capped at 4.0 = renderer ZOOM_MAX)
+      const zoom = Math.max(1.2, Math.min(4.0, 6.5 - Math.log2(span / 0.3) * 0.7));
+
+      return { lat: centerLat, lon: centerLon, zoom, durationMs };
+    }
+
+    function mkPath(id, name, points, color, opts = {}) {
+      return { id, name: { en: name }, points: points.map(p => ({ lat: p.lat, lon: p.lon })), color, strokeWidth: opts.strokeWidth || 1.5, dashPattern: opts.dash || [], animationDuration: opts.animDuration || 0, sourceId: opts.sourceId || '' };
+    }
+
+    // ── Persistent markers (accumulate; sunk ships change color) ──
+    const midwayMarker = mkMarker('midway', 'Midway Atoll', MIDWAY.lat, MIDWAY.lon, MIDWAY_GREEN, { sourceId: 'oni' });
+
+    // Carrier state tracking
+    const carrierState = {
+      akagi:      { sunk: false },
+      kaga:       { sunk: false },
+      soryu:      { sunk: false },
+      hiryu:      { sunk: false },
+      enterprise: { sunk: false },
+      hornet:     { sunk: false },
+      yorktown:   { sunk: false },
+    };
+
+    // ── Step definitions ──
+    const STEPS = [
+      // Step 0 — Codebreakers at HYPO
+      {
+        camera: { lat: PEARL_HARBOR.lat, lon: PEARL_HARBOR.lon, zoom: 4.5, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('hypo', 'Station HYPO, Pearl Harbor', PEARL_HARBOR.lat, PEARL_HARBOR.lon, US_BLUE, { sourceId: 'parshall-tully' }),
+        ],
+        paths: [],
+        arcs: [],
+      },
+
+      // Step 1 — Yamamoto's Plan
+      {
+        camera: { lat: HASHIRAJIMA.lat, lon: HASHIRAJIMA.lon, zoom: 3, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('hypo', 'Station HYPO', PEARL_HARBOR.lat, PEARL_HARBOR.lon, US_BLUE, {}),
+          mkMarker('hashirajima', 'Hashirajima Anchorage', HASHIRAJIMA.lat, HASHIRAJIMA.lon, JP_RED, { sourceId: 'parshall-tully' }),
+          mkMarker('yamato', 'Yamato (Main Body)', 33.50, 140.00, JP_RED, { sourceId: 'symonds' }),
+        ],
+        paths: [],
+        arcs: [],
+      },
+
+      // Step 2 — Kidō Butai sorties
+      {
+        camera: { lat: 32.00, lon: 160.00, zoom: 1.8, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('hypo', 'Station HYPO', PEARL_HARBOR.lat, PEARL_HARBOR.lon, US_BLUE, {}),
+          mkMarker('kb', 'Kidō Butai (4 carriers)', KIDO_BUTAI_START.lat, KIDO_BUTAI_START.lon, JP_RED, { sourceId: 'parshall-tully' }),
+          mkMarker('akagi', 'Akagi (flagship)', 33.20, 145.50, C_AKAGI, {}),
+          mkMarker('kaga', 'Kaga', 33.00, 144.80, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', 32.80, 145.20, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', 33.10, 144.50, C_HIRYU, {}),
+        ],
+        paths: [
+          mkPath('kb-route', 'Kidō Butai route', [KIDO_BUTAI_START, { lat: 35.00, lon: 168.00 }, { lat: 33.00, lon: -180.00 }, KIDO_BUTAI_JUN3], JP_RED, { animDuration: 3000 }),
+        ],
+        arcs: [],
+      },
+
+      // Step 3 — Aleutian Diversion
+      {
+        camera: { lat: 40.00, lon: -180.00, zoom: 1.2, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('hypo', 'Station HYPO', PEARL_HARBOR.lat, PEARL_HARBOR.lon, US_BLUE, {}),
+          mkMarker('kb', 'Kidō Butai', KIDO_BUTAI_JUN3.lat, KIDO_BUTAI_JUN3.lon, JP_RED, {}),
+          mkMarker('dutch-harbor', 'Dutch Harbor', DUTCH_HARBOR.lat, DUTCH_HARBOR.lon, JP_RED, { sourceId: 'symonds' }),
+          mkMarker('aleutian-force', 'Aleutian Force', ALEUTIAN_FORCE.lat, ALEUTIAN_FORCE.lon, JP_RED, {}),
+        ],
+        paths: [
+          mkPath('kb-route', 'Kidō Butai route', [KIDO_BUTAI_START, { lat: 35.00, lon: 168.00 }, { lat: 33.00, lon: -180.00 }, KIDO_BUTAI_JUN3], JP_RED),
+        ],
+        arcs: [
+          mkArc('aleutian-arc', 'Aleutian diversion', ALEUTIAN_FORCE, DUTCH_HARBOR, JP_RED, { dash: [3, 1] }),
+        ],
+      },
+
+      // Step 4 — Nimitz deploys TF-16 & TF-17
+      {
+        camera: { lat: 28.00, lon: -170.00, zoom: 1.8, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('kb', 'Kidō Butai', KIDO_BUTAI_JUN3.lat, KIDO_BUTAI_JUN3.lon, JP_RED, {}),
+          mkMarker('tf16', 'TF-16 (Enterprise, Hornet)', TF16_POSITION.lat, TF16_POSITION.lon, US_BLUE, { sourceId: 'symonds' }),
+          mkMarker('tf17', 'TF-17 (Yorktown)', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, { sourceId: 'cressman' }),
+          mkMarker('point-luck', 'Point Luck', POINT_LUCK.lat, POINT_LUCK.lon, US_BLUE, {}),
+        ],
+        paths: [
+          mkPath('tf16-route', 'TF-16 route', [PEARL_HARBOR, { lat: 28.00, lon: -165.00 }, POINT_LUCK, TF16_POSITION], US_BLUE, { animDuration: 2500 }),
+          mkPath('tf17-route', 'TF-17 route', [PEARL_HARBOR, { lat: 29.00, lon: -166.00 }, POINT_LUCK, TF17_POSITION], US_BLUE, { animDuration: 2500, dash: [3, 1] }),
+        ],
+        arcs: [],
+      },
+
+      // Step 5 — PBY spots invasion fleet
+      {
+        camera: { lat: MIDWAY.lat, lon: MIDWAY.lon, zoom: 2.5, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('kb', 'Kidō Butai', KIDO_BUTAI_JUN3.lat, KIDO_BUTAI_JUN3.lon, JP_RED, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+          mkMarker('invasion', 'Invasion Fleet', INVASION_FLEET.lat, INVASION_FLEET.lon, JP_RED, { sourceId: 'oni' }),
+          mkMarker('pby-reid', 'Ens. Reid (PBY)', 27.00, -179.00, STRIKE_AMBER, { pulse: false }),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('pby-spot', 'PBY patrol', MIDWAY, { lat: 27.00, lon: -179.00 }, STRIKE_AMBER, { dash: [3, 1] }),
+        ],
+      },
+
+      // Step 6 — B-17 bombing run
+      {
+        camera: { lat: 27.00, lon: -178.50, zoom: 2.5, durationMs: 1500 },
+        markers: [
+          midwayMarker,
+          mkMarker('kb', 'Kidō Butai', KIDO_BUTAI_JUN3.lat, KIDO_BUTAI_JUN3.lon, JP_RED, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+          mkMarker('invasion', 'Invasion Fleet', INVASION_FLEET.lat, INVASION_FLEET.lon, JP_RED, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('b17-strike', 'B-17 bombing run', MIDWAY, INVASION_FLEET, STRIKE_AMBER, { dash: [3, 1] }),
+        ],
+      },
+
+      // Step 7 — Night PBY torpedo attack
+      {
+        camera: { lat: 27.00, lon: -178.50, zoom: 2.5, durationMs: 1500 },
+        markers: [
+          midwayMarker,
+          mkMarker('kb', 'Kidō Butai', KIDO_BUTAI_JUN3.lat, KIDO_BUTAI_JUN3.lon, JP_RED, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+          mkMarker('invasion', 'Invasion Fleet', INVASION_FLEET.lat, INVASION_FLEET.lon, JP_RED, {}),
+          mkMarker('akebono', 'Akebono Maru (hit)', 26.00, 179.50, STRIKE_AMBER, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('pby-torp', 'PBY night torpedo run', MIDWAY, { lat: 26.00, lon: 179.50 }, STRIKE_AMBER, { dash: [3, 1] }),
+        ],
+      },
+
+      // Step 8 — First wave launches
+      {
+        camera: { lat: KIDO_BUTAI_JUN4.lat, lon: KIDO_BUTAI_JUN4.lon, zoom: 3.0, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, {}),
+          mkMarker('kaga', 'Kaga', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('wave1', '1st wave (108 aircraft)', KIDO_BUTAI_JUN4, MIDWAY, STRIKE_AMBER, { dash: [3, 1], alt: 0.08 }),
+        ],
+      },
+
+      // Step 9 — Midway scrambles
+      {
+        camera: { lat: MIDWAY.lat, lon: MIDWAY.lon, zoom: 4.5, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('vmf221', 'VMF-221 (25 fighters)', MIDWAY.lat + 0.3, MIDWAY.lon + 0.3, US_BLUE, { sourceId: 'cressman' }),
+          mkMarker('aa-midway', 'AA batteries', MIDWAY.lat - 0.1, MIDWAY.lon - 0.2, US_BLUE, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('wave1', '1st wave (108 aircraft)', KIDO_BUTAI_JUN4, MIDWAY, STRIKE_AMBER, { dash: [3, 1], alt: 0.08 }),
+        ],
+      },
+
+      // Step 10 — Tomonaga: "second strike needed"
+      {
+        camera: { lat: KIDO_BUTAI_JUN4.lat, lon: KIDO_BUTAI_JUN4.lon, zoom: 3.5, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi (rearming)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, { sourceId: 'parshall-tully' }),
+          mkMarker('kaga', 'Kaga (rearming)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+        ],
+        paths: [],
+        arcs: [],
+      },
+
+      // Step 11 — Midway-based strikes fail
+      {
+        camera: { lat: 29.00, lon: -178.00, zoom: 2.5, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, {}),
+          mkMarker('kaga', 'Kaga', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('tbf-strike', 'TBF Avengers', MIDWAY, KIDO_BUTAI_JUN4, STRIKE_AMBER, { dash: [3, 1], alt: 0.05 }),
+          mkArc('b26-strike', 'B-26 Marauders', MIDWAY, { lat: KIDO_BUTAI_JUN4.lat + 0.3, lon: KIDO_BUTAI_JUN4.lon - 0.2 }, STRIKE_AMBER, { dash: [3, 1], alt: 0.05 }),
+          mkArc('sbd-midway', 'SBD/SB2U strike', MIDWAY, { lat: KIDO_BUTAI_JUN4.lat - 0.2, lon: KIDO_BUTAI_JUN4.lon + 0.3 }, STRIKE_AMBER, { dash: [3, 1], alt: 0.05 }),
+        ],
+      },
+
+      // Step 12 — USS Nautilus
+      {
+        camera: { lat: KIDO_BUTAI_JUN4.lat, lon: KIDO_BUTAI_JUN4.lon, zoom: 3.5, durationMs: 1500 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, {}),
+          mkMarker('kaga', 'Kaga', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('nautilus', 'USS Nautilus (SS-168)', KIDO_BUTAI_JUN4.lat - 0.5, KIDO_BUTAI_JUN4.lon + 0.8, SUB_GRAY, { sourceId: 'oni' }),
+          mkMarker('arashi', 'DD Arashi (detached)', KIDO_BUTAI_JUN4.lat - 0.4, KIDO_BUTAI_JUN4.lon + 0.6, JP_RED, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+        ],
+        paths: [],
+        arcs: [],
+      },
+
+      // Step 13 — Nagumo's fateful decision
+      {
+        camera: { lat: KIDO_BUTAI_JUN4.lat, lon: KIDO_BUTAI_JUN4.lon, zoom: 4.0, durationMs: 1500 },
+        markers: [
+          mkMarker('akagi', 'Akagi (rearming chaos)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, { sourceId: 'parshall-tully' }),
+          mkMarker('kaga', 'Kaga (rearming chaos)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('tone-scout', 'Tone No. 4 scout plane', 31.50, -175.00, STRIKE_AMBER, { sourceId: 'senshi-soso' }),
+          mkMarker('tf16', 'TF-16 (spotted!)', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+          midwayMarker,
+        ],
+        paths: [],
+        arcs: [
+          mkArc('tone-scout-arc', 'Tone scout plane', KIDO_BUTAI_JUN4, { lat: 31.50, lon: -175.00 }, STRIKE_AMBER, { dash: [3, 1], alt: 0.04 }),
+        ],
+      },
+
+      // Step 14 — Torpedo squadrons attack
+      {
+        camera: { lat: 30.50, lon: -176.00, zoom: 2.8, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, {}),
+          mkMarker('kaga', 'Kaga', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+          mkMarker('vt8', 'VT-8 (Waldron) — all lost', 30.60, -177.00, STRIKE_AMBER, { sourceId: 'lundstrom' }),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('vt8-attack', 'VT-8 from Hornet', { lat: TF16_POSITION.lat, lon: TF16_POSITION.lon }, KIDO_BUTAI_JUN4, STRIKE_AMBER, { dash: [3, 1], alt: 0.04 }),
+          mkArc('vt6-attack', 'VT-6 from Enterprise', { lat: TF16_POSITION.lat + 0.2, lon: TF16_POSITION.lon + 0.3 }, { lat: KIDO_BUTAI_JUN4.lat + 0.1, lon: KIDO_BUTAI_JUN4.lon + 0.2 }, STRIKE_AMBER, { dash: [3, 1], alt: 0.04 }),
+          mkArc('vt3-attack', 'VT-3 from Yorktown', TF17_POSITION, { lat: KIDO_BUTAI_JUN4.lat - 0.1, lon: KIDO_BUTAI_JUN4.lon - 0.1 }, STRIKE_AMBER, { dash: [3, 1], alt: 0.04 }),
+        ],
+      },
+
+      // Step 15 — McClusky follows Arashi
+      {
+        camera: { lat: 30.50, lon: -177.00, zoom: 3.0, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, C_AKAGI, {}),
+          mkMarker('kaga', 'Kaga', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, C_KAGA, {}),
+          mkMarker('soryu', 'Sōryū', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, C_SORYU, {}),
+          mkMarker('hiryu', 'Hiryū', KIDO_BUTAI_JUN4.lat - 0.15, KIDO_BUTAI_JUN4.lon - 0.3, C_HIRYU, {}),
+          mkMarker('arashi', 'DD Arashi (racing back)', KIDO_BUTAI_JUN4.lat - 0.3, KIDO_BUTAI_JUN4.lon + 1.5, JP_RED, { sourceId: 'parshall-tully' }),
+          mkMarker('mcclusky', 'McClusky (32 SBDs)', 31.00, -175.50, US_BLUE, { sourceId: 'symonds' }),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+        ],
+        paths: [
+          mkPath('arashi-wake', "Arashi's wake", [{ lat: KIDO_BUTAI_JUN4.lat - 0.5, lon: KIDO_BUTAI_JUN4.lon + 2.0 }, { lat: KIDO_BUTAI_JUN4.lat - 0.3, lon: KIDO_BUTAI_JUN4.lon + 1.5 }, KIDO_BUTAI_JUN4], JP_RED, { dash: [2, 2], animDuration: 2000 }),
+          mkPath('mcclusky-path', 'McClusky follows wake', [{ lat: 31.00, lon: -175.50 }, { lat: KIDO_BUTAI_JUN4.lat - 0.3, lon: KIDO_BUTAI_JUN4.lon + 1.5 }, KIDO_BUTAI_JUN4], US_BLUE, { dash: [3, 1], animDuration: 2500 }),
+        ],
+        arcs: [],
+      },
+
+      // Step 16 — Three carriers ablaze
+      {
+        camera: { lat: KIDO_BUTAI_JUN4.lat, lon: KIDO_BUTAI_JUN4.lon, zoom: 4.0, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'AKAGI — ablaze!', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, '#ff4500', { sourceId: 'parshall-tully' }),
+          mkMarker('kaga', 'KAGA — ablaze!', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, '#ff4500', { sourceId: 'parshall-tully' }),
+          mkMarker('soryu', 'SŌRYŪ — ablaze!', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, '#ff4500', { sourceId: 'parshall-tully' }),
+          mkMarker('hiryu', 'Hiryū (sole survivor)', HIRYU_POS.lat, HIRYU_POS.lon, C_HIRYU, {}),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('tf17', 'TF-17', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('mcclusky-dive', 'McClusky dives on Kaga/Akagi', { lat: 31.00, lon: -177.00 }, KIDO_BUTAI_JUN4, US_BLUE, { alt: 0.1 }),
+          mkArc('leslie-dive', 'Leslie (VB-3) dives on Sōryū', TF17_POSITION, { lat: KIDO_BUTAI_JUN4.lat + 0.2, lon: KIDO_BUTAI_JUN4.lon - 0.2 }, US_BLUE, { alt: 0.1 }),
+        ],
+      },
+
+      // Step 17 — Hiryū strikes Yorktown (dive bombers)
+      {
+        camera: { lat: 31.00, lon: -175.50, zoom: 2.8, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi (burning)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, '#ff4500', {}),
+          mkMarker('kaga', 'Kaga (burning)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, '#ff4500', {}),
+          mkMarker('soryu', 'Sōryū (burning)', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, '#ff4500', {}),
+          mkMarker('hiryu', 'Hiryū', HIRYU_POS.lat, HIRYU_POS.lon, C_HIRYU, { sourceId: 'parshall-tully' }),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('yorktown', 'Yorktown (hit!)', TF17_POSITION.lat, TF17_POSITION.lon, '#ff4500', { sourceId: 'cressman' }),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('hiryu-strike1', 'Kobayashi (18 Vals)', HIRYU_POS, TF17_POSITION, JP_RED, { dash: [3, 1], alt: 0.06 }),
+        ],
+      },
+
+      // Step 18 — Yorktown damage control
+      {
+        camera: { lat: TF17_POSITION.lat, lon: TF17_POSITION.lon, zoom: 4.5, durationMs: 1500 },
+        markers: [
+          mkMarker('yorktown', 'Yorktown (repairs underway)', TF17_POSITION.lat, TF17_POSITION.lon, C_YORKTOWN, { sourceId: 'cressman' }),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('hiryu', 'Hiryū', HIRYU_POS.lat, HIRYU_POS.lon, C_HIRYU, {}),
+          midwayMarker,
+        ],
+        paths: [],
+        arcs: [],
+      },
+
+      // Step 19 — Second Hiryū strike (torpedoes)
+      {
+        camera: { lat: 31.00, lon: -175.50, zoom: 2.8, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi (burning)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, '#ff4500', {}),
+          mkMarker('kaga', 'Kaga (burning)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, '#ff4500', {}),
+          mkMarker('soryu', 'Sōryū (burning)', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, '#ff4500', {}),
+          mkMarker('hiryu', 'Hiryū', HIRYU_POS.lat, HIRYU_POS.lon, C_HIRYU, { sourceId: 'parshall-tully' }),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('yorktown', 'Yorktown (torpedoed!)', TF17_POSITION.lat, TF17_POSITION.lon, '#ff4500', { sourceId: 'cressman' }),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('hiryu-strike2', 'Tomonaga (10 Kates)', HIRYU_POS, TF17_POSITION, JP_RED, { dash: [3, 1], alt: 0.06 }),
+        ],
+      },
+
+      // Step 20 — Enterprise SBDs find Hiryū
+      {
+        camera: { lat: 30.50, lon: -177.00, zoom: 2.8, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi (burning)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, '#ff4500', {}),
+          mkMarker('kaga', 'Kaga (burning)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, '#ff4500', {}),
+          mkMarker('soryu', 'Sōryū (burning)', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, '#ff4500', {}),
+          mkMarker('hiryu', 'HIRYŪ — ablaze!', HIRYU_POS.lat, HIRYU_POS.lon, '#ff4500', { sourceId: 'parshall-tully' }),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('yorktown', 'Yorktown (abandoned)', TF17_POSITION.lat, TF17_POSITION.lon, SUNK_GRAY, {}),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('ent-hiryu', 'Enterprise SBDs strike Hiryū', TF16_POSITION, HIRYU_POS, US_BLUE, { alt: 0.08 }),
+        ],
+      },
+
+      // Step 21 — Sinking of the four carriers
+      {
+        camera: { lat: KIDO_BUTAI_JUN4.lat, lon: KIDO_BUTAI_JUN4.lon, zoom: 3.0, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi — sunk (scuttled Jun 5)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, SUNK_GRAY, { pulse: false, sourceId: 'parshall-tully' }),
+          mkMarker('kaga', 'Kaga — sunk (Jun 4, 19:25)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, SUNK_GRAY, { pulse: false }),
+          mkMarker('soryu', 'Sōryū — sunk (Jun 4, 19:13)', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, SUNK_GRAY, { pulse: false }),
+          mkMarker('hiryu', 'Hiryū — sunk (Jun 5 morning)', HIRYU_POS.lat, HIRYU_POS.lon, SUNK_GRAY, { pulse: false }),
+          mkMarker('tf16', 'TF-16', TF16_POSITION.lat, TF16_POSITION.lon, C_ENTERPRISE, {}),
+          mkMarker('yorktown', 'Yorktown (drifting)', YORKTOWN_DRIFT.lat, YORKTOWN_DRIFT.lon, SUNK_GRAY, { pulse: false }),
+        ],
+        paths: [],
+        arcs: [],
+      },
+
+      // Step 22 — Yamamoto's retreat
+      {
+        camera: { lat: 30.00, lon: -175.00, zoom: 1.5, durationMs: 2500 },
+        markers: [
+          midwayMarker,
+          mkMarker('akagi', 'Akagi (sunk)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, SUNK_GRAY, { pulse: false }),
+          mkMarker('kaga', 'Kaga (sunk)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, SUNK_GRAY, { pulse: false }),
+          mkMarker('soryu', 'Sōryū (sunk)', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, SUNK_GRAY, { pulse: false }),
+          mkMarker('hiryu', 'Hiryū (sunk)', HIRYU_POS.lat, HIRYU_POS.lon, SUNK_GRAY, { pulse: false }),
+          mkMarker('tf16', 'TF-16 (pursuing)', 30.00, -175.50, C_ENTERPRISE, {}),
+          mkMarker('yorktown', 'Yorktown (drifting)', YORKTOWN_DRIFT.lat, YORKTOWN_DRIFT.lon, SUNK_GRAY, { pulse: false }),
+          mkMarker('mikuma', 'Mikuma — sunk (Jun 6)', MIKUMA_SINK.lat, MIKUMA_SINK.lon, SUNK_GRAY, { pulse: false, sourceId: 'oni' }),
+          mkMarker('mogami', 'Mogami (damaged)', MIKUMA_SINK.lat - 0.2, MIKUMA_SINK.lon + 0.3, JP_RED, {}),
+        ],
+        paths: [
+          mkPath('retreat', 'Combined Fleet retreat', [KIDO_BUTAI_JUN4, { lat: 32.00, lon: 175.00 }, { lat: 34.00, lon: 160.00 }], JP_RED, { dash: [3, 2], animDuration: 3000 }),
+        ],
+        arcs: [
+          mkArc('mikuma-strike', 'Air strikes on Mikuma', { lat: 30.00, lon: -175.50 }, MIKUMA_SINK, STRIKE_AMBER, { dash: [3, 1] }),
+        ],
+      },
+
+      // Step 23 — Yorktown's end
+      {
+        camera: { lat: YORKTOWN_DRIFT.lat, lon: YORKTOWN_DRIFT.lon, zoom: 4.0, durationMs: 2000 },
+        markers: [
+          midwayMarker,
+          mkMarker('yorktown', 'Yorktown — sunk (Jun 7, 05:01)', YORKTOWN_DRIFT.lat, YORKTOWN_DRIFT.lon, SUNK_GRAY, { pulse: false, sourceId: 'cressman' }),
+          mkMarker('hammann', 'DD Hammann — sunk', YORKTOWN_DRIFT.lat - 0.05, YORKTOWN_DRIFT.lon + 0.05, SUNK_GRAY, { pulse: false }),
+          mkMarker('i168', 'I-168 (submarine)', YORKTOWN_DRIFT.lat - 0.3, YORKTOWN_DRIFT.lon + 0.5, SUB_GRAY, { sourceId: 'oni' }),
+        ],
+        paths: [],
+        arcs: [
+          mkArc('i168-torp', 'I-168 torpedo attack', { lat: YORKTOWN_DRIFT.lat - 0.3, lon: YORKTOWN_DRIFT.lon + 0.5 }, YORKTOWN_DRIFT, SUB_GRAY, { dash: [2, 1], alt: 0.02 }),
+        ],
+      },
+
+      // Step 24 — The turning point (final overview)
+      {
+        camera: { lat: 28.00, lon: -178.00, zoom: 1.2, durationMs: 3000 },
+        markers: [
+          midwayMarker,
+          mkMarker('hypo', 'Station HYPO', PEARL_HARBOR.lat, PEARL_HARBOR.lon, US_BLUE, {}),
+          mkMarker('akagi', 'Akagi (sunk)', KIDO_BUTAI_JUN4.lat + 0.15, KIDO_BUTAI_JUN4.lon + 0.2, SUNK_GRAY, { pulse: false }),
+          mkMarker('kaga', 'Kaga (sunk)', KIDO_BUTAI_JUN4.lat - 0.1, KIDO_BUTAI_JUN4.lon + 0.3, SUNK_GRAY, { pulse: false }),
+          mkMarker('soryu', 'Sōryū (sunk)', KIDO_BUTAI_JUN4.lat + 0.2, KIDO_BUTAI_JUN4.lon - 0.2, SUNK_GRAY, { pulse: false }),
+          mkMarker('hiryu', 'Hiryū (sunk)', HIRYU_POS.lat, HIRYU_POS.lon, SUNK_GRAY, { pulse: false }),
+          mkMarker('yorktown', 'Yorktown (sunk)', YORKTOWN_DRIFT.lat, YORKTOWN_DRIFT.lon, SUNK_GRAY, { pulse: false }),
+          mkMarker('hammann', 'Hammann (sunk)', YORKTOWN_DRIFT.lat - 0.05, YORKTOWN_DRIFT.lon + 0.05, SUNK_GRAY, { pulse: false }),
+          mkMarker('mikuma', 'Mikuma (sunk)', MIKUMA_SINK.lat, MIKUMA_SINK.lon, SUNK_GRAY, { pulse: false }),
+        ],
+        paths: [],
+        arcs: [],
+      },
+    ];
+
+    // ── Initialize scene ──
+    const initialScene = {
+      version: 1,
+      locale: 'en',
+      theme: 'wireframe-shaded',
+      surfaceTint: '#d4c5a0',
+      overlayTint: '#5c4a2e',
+      projection: 'globe',
+      planet: { id: 'earth', rotationSpeed: 0 },
+      viewerUi: {
+        showBodySelector: false,
+        showLegendButton: true,
+        showFullscreenButton: true,
+        showInspectButton: false,
+        showCompass: true,
+        showScale: false,
+        showMarkerFilter: false,
+        showAttribution: true,
+        showProjectionToggle: false,
+        showThemeToggle: true,
+      },
+      markers: STEPS[0].markers,
+      paths: [],
+      arcs: [],
+      regions: [],
+      animations: [],
+      dataSources,
+      calloutCluster: { enabled: false },
+    };
+
+    viewer.setScene(initialScene);
+
+    // Apply step 0 immediately so the globe starts on Pearl Harbor
+    const step0Cam = cameraFromMarkers(STEPS[0].markers);
+    viewer.flyTo({ lat: step0Cam.lat, lon: step0Cam.lon }, { zoom: step0Cam.zoom });
+
+    // ── Scroll observer ──
+    let activeStep = 0;
+    let observerReady = false;
+    // Mark step 0 as active in the UI
+    document.querySelector('.step[data-step="0"]')?.classList.add('active');
+    const sections = document.querySelectorAll('.step[data-step]');
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!observerReady) return; // skip initial fire
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const idx = parseInt(entry.target.dataset.step, 10);
+        if (idx === activeStep) continue;
+        activeStep = idx;
+        applyStep(idx);
+      }
+    }, {
+      root: null,
+      threshold: 0.5,
+    });
+
+    sections.forEach(s => observer.observe(s));
+    // Allow the observer to start reacting after the initial camera settles
+    setTimeout(() => { observerReady = true; }, 400);
+
+    function applyStep(idx) {
+      const step = STEPS[idx];
+      if (!step) return;
+
+      // Update markers, paths, arcs
+      viewer.setMarkers(step.markers);
+      viewer.setPaths(step.paths);
+      viewer.setArcs(step.arcs);
+
+      // Fly camera — zoom to extent of markers with elastic arc
+      const cam = cameraFromMarkers(step.markers);
+      viewer.flyTo(cam, { durationMs: 2000, zoomArc: true });
+
+      // Highlight active card
+      sections.forEach(s => s.classList.remove('active'));
+      const active = document.querySelector(`.step[data-step="${idx}"]`);
+      if (active) active.classList.add('active');
+    }
+
+    // ── Text → Map: click a dot-link to fly to & highlight that marker ──
+    document.querySelector('.narrative-column').addEventListener('click', (e) => {
+      const link = e.target.closest('.dot-link');
+      if (!link) return;
+      const markerId = link.dataset.marker;
+      if (!markerId) return;
+
+      // Always ping the inline dot (even if marker isn't in current step)
+      const dot = link.querySelector('.dot');
+      if (dot) {
+        dot.classList.remove('pinging');
+        void dot.offsetWidth;
+        dot.classList.add('pinging');
+        dot.addEventListener('animationend', () => dot.classList.remove('pinging'), { once: true });
+      }
+
+      const step = STEPS[activeStep];
+      if (!step) return;
+      const marker = step.markers.find(m => m.id === markerId);
+      if (!marker) return;
+
+      // Fly directly to the clicked marker (zoom in closer than step extent)
+      viewer.flyTo({ lat: marker.lat, lon: marker.lon, zoom: 3.2 }, { durationMs: 1000, zoomArc: true });
+
+      // Create highlight ring matching the marker's NATO shape
+      const nato = detectNato(marker.color, {});
+      function highlightSvg(shape, color) {
+        if (shape === 'friendly') {
+          return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 28"><rect x="2" y="2" width="36" height="24" rx="2" fill="none" stroke="${color}" stroke-width="3" opacity="0.7"/><rect x="2" y="2" width="36" height="24" rx="2" fill="${color}" opacity="0.2"/></svg>`;
+        }
+        if (shape === 'hostile') {
+          return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><polygon points="18,2 34,18 18,34 2,18" fill="none" stroke="${color}" stroke-width="3" opacity="0.7"/><polygon points="18,2 34,18 18,34 2,18" fill="${color}" opacity="0.2"/></svg>`;
+        }
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="${color}" stroke-width="3" opacity="0.7"/><circle cx="18" cy="18" r="15" fill="${color}" opacity="0.2"/></svg>`;
+      }
+      const highlightMarker = {
+        id: '__highlight__',
+        name: { en: '' },
+        lat: marker.lat,
+        lon: marker.lon,
+        color: marker.color,
+        visualType: 'image',
+        markerScale: 0.028,
+        calloutMode: 'none',
+        pulse: false,
+        assetUri: 'data:image/svg+xml,' + encodeURIComponent(highlightSvg(nato, marker.color)),
+      };
+      viewer.setMarkers([...step.markers, highlightMarker]);
+      setTimeout(() => {
+        viewer.setMarkers(step.markers); // remove highlight
+      }, 2500);
+    });
+
+    // ── Map → Text: hovering a marker on the map blinks its inline dots ──
+    let hoveredMarkerId = null;
+    const viewerEl = document.getElementById('viewer');
+
+    // Use markerClick to also trigger the text highlight
+    viewer.addEventListener('markerClick', (e) => {
+      const id = e.detail?.id;
+      if (!id) return;
+      blinkDotsForMarker(id);
+    });
+
+    // Poll pointer position for hover detection (no hover event available)
+    let hoverRaf = null;
+    viewerEl.addEventListener('pointermove', (e) => {
+      if (hoverRaf) return;
+      hoverRaf = requestAnimationFrame(() => {
+        hoverRaf = null;
+        const hit = viewer.inspectAt?.(e.clientX, e.clientY);
+        const id = hit?.entity?.id || null;
+        if (id === hoveredMarkerId) return;
+        // Clear previous blinks
+        if (hoveredMarkerId) clearDotsForMarker(hoveredMarkerId);
+        hoveredMarkerId = id;
+        if (id) blinkDotsForMarker(id);
+      });
+    });
+
+    viewerEl.addEventListener('pointerleave', () => {
+      if (hoveredMarkerId) {
+        clearDotsForMarker(hoveredMarkerId);
+        hoveredMarkerId = null;
+      }
+    });
+
+    function blinkDotsForMarker(markerId) {
+      document.querySelectorAll(`.dot-link[data-marker="${markerId}"] .dot`).forEach(dot => {
+        dot.classList.add('blinking');
+      });
+    }
+
+    function clearDotsForMarker(markerId) {
+      document.querySelectorAll(`.dot-link[data-marker="${markerId}"] .dot`).forEach(dot => {
+        dot.classList.remove('blinking');
+      });
+    }
+  </script>
+</body>
+</html>
