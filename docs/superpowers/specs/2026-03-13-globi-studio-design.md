@@ -9,9 +9,10 @@ Studio coexists with the old editor (`editor/`) until it reaches feature parity,
 ## Entry Points
 
 ### Context Menu → "Open Studio"
-The existing `<globi-viewer>` context menu gains an "Open Studio" item. Clicking it:
-1. Serializes the current scene to `sessionStorage` under a known key (`globi-studio-scene`).
-2. Opens `studio/index.html` in a new tab.
+The existing `<globi-viewer>` context menu gains an "Open Studio" item. This is added directly to `buildMenuItems()` in `src/accessibility/contextMenu.js` as a new top-level menu entry. Clicking it:
+
+1. Serializes the current scene to `sessionStorage` under a known key (`globi-studio-scene`). For large scenes (e.g. detailed GeoJSON regions), if serialization exceeds 4 MB, the scene is compressed via `CompressionStream('gzip')` and stored as a base64 string with a `gzip:` prefix. Studio detects this prefix and decompresses on load.
+2. Opens `studio/index.html` in a new tab (relative URL, same origin).
 3. Studio reads the scene from `sessionStorage` on load and renders it.
 
 ### Direct URL
@@ -52,9 +53,9 @@ The existing inspect panel (select & inspect floating panel) remains in the view
 ### Menu Bar
 Top horizontal bar containing:
 - **GLOBI STUDIO** logo/brand (left)
-- **File** — New Scene, New from Clipboard (Ctrl+Shift+V), New from File (Ctrl+O), Save as File/Download (Ctrl+S), Export JSON, Export GeoJSON, Export OBJ
+- **File** — New Scene (Ctrl+N), New from Clipboard (Ctrl+Shift+V), New from File (Ctrl+O), Save as File/Download (Ctrl+S), Export JSON, Export GeoJSON, Export OBJ
 - **Edit** — Undo (Ctrl+Z), Redo (Ctrl+Shift+Z), Delete Selected (Del), Duplicate (Ctrl+D), Select All (Ctrl+A)
-- **View** — Toggle Properties Panel (P), Toggle Timeline (T), Toggle HUD (H), Zoom to Fit (F), Reset Camera (R)
+- **View** — Toggle Properties Panel (P), Toggle Timeline (T), Toggle HUD (H), Zoom to Fit (F), Reset Camera (Ctrl+R)
 - **Tools** — Custom ChatGPT (external link to public CustomGPT), Claude Cowork (external link)
 - **Help** — Documentation (external link), Keyboard Shortcuts (?), About Globi Studio
 - **Preview button** (right-aligned) — prominent ▶ Preview button with Space shortcut. Activates preview mode: hides all editor UI (tool strip, properties, timeline, menu bar) and plays the scene as the end user would see it. Press Space or Escape to exit.
@@ -69,6 +70,10 @@ Vertical strip, 44px wide, containing icon buttons with hover tooltips:
 6. **Add Region** (R) — click vertices to define polygon, double-click to close.
 7. ── divider ──
 8. **Freehand Draw** (D) — click and drag to draw a continuous line on the surface. Toggle between freehand and point-to-point via a small subtool indicator (click the tool again or use Shift+D to toggle).
+
+**Freehand draw detail:** During drag, `mousemove` events are raycast against the globe sphere to produce lat/lon samples. Raw samples are collected at 60 Hz and then simplified using the Ramer-Douglas-Peucker algorithm (epsilon ~0.1 degrees) to reduce point count while preserving shape. The resulting points array is stored as a standard Path entity in the scene schema. In point-to-point mode, each click adds a single waypoint — no simplification needed.
+
+**Region tool detail:** Each click raycast produces a `[lon, lat]` coordinate (note: GeoJSON uses lon/lat order, opposite of the UI display which shows lat/lon). On double-click to close, the coordinate array is wrapped into a GeoJSON Polygon (`{type: 'Polygon', coordinates: [ring]}`) where `ring` is the array of `[lon, lat]` pairs with the first point duplicated at the end to close the ring. After creation, individual vertices can be edited by entering point-editing mode (double-click the region in Select mode) which shows draggable handles at each vertex.
 
 ### Viewport (Center)
 Full `<globi-viewer>` instance with all rendering, HUD elements, and interactions. In Studio, the viewer additionally:
@@ -92,6 +97,8 @@ Full `<globi-viewer>` instance with all rendering, HUD elements, and interaction
 - ▸ Data Sources (collapsible) — list of data sources with add/edit/remove
 - ▸ Filters (collapsible) — filter definitions
 
+**Localized text fields:** Schema fields like `name`, `description`, and `calloutLabel` are localized text objects (`{en: "...", de: "..."}`) in the schema. The properties panel edits only the currently active locale (as set in Scene Settings > Locale). A small locale badge appears next to text inputs to indicate which locale is being edited. Switching the scene locale updates all text inputs to show that locale's value.
+
 **When a Marker is selected:**
 - Primary fields (ungrouped, always visible): Name, Position (Lat/Lon), Color (swatch + hex input), Callout Label
 - ▸ Appearance (collapsible): Visual Type (dot/image/model/text), Scale, Pulse toggle, Callout Mode (always/hover/click/none), Asset URI (for image/model types)
@@ -114,7 +121,18 @@ Full `<globi-viewer>` instance with all rendering, HUD elements, and interaction
 - ▸ GeoJSON: Read-only preview of polygon data
 
 ### Timeline (Bottom)
+
 160px tall, resizable by dragging the top border. Full animation editor with:
+
+**Animation Model Extensions:**
+The existing `AnimationEngine` and schema support `{t, value}` keyframes with linear interpolation. Studio extends this:
+
+- **Visibility intervals**: Added to the schema as `visibility: [{from: ms, to: ms}]` per entity. Entities without a visibility array are always visible (backward-compatible). The timeline renders these as colored bars.
+- **Easing per keyframe**: Each keyframe gains an optional `easing: string` field (default `'linear'`). Supported values: `'linear'`, `'ease-in'`, `'ease-out'`, `'ease-in-out'`, `'bounce'`, `'elastic'`, `'cubic-bezier(x1,y1,x2,y2)'`. The `AnimationEngine.sample()` method is extended to apply easing between keyframe pairs.
+- **Camera keyframes**: Added to the schema as `cameraAnimation: [{t: ms, value: {lat, lon, alt, tilt, rotation}, easing?}]` at the scene level. During playback, the camera tween system (`cameraTween.js`) is bypassed — Studio's playback loop drives camera position directly from interpolated camera keyframes. Outside playback, `cameraTween.js` remains active for user-initiated flyTo operations.
+- **Schema version**: Remains version 1. New fields are optional and ignored by older viewers (graceful degradation).
+
+The timeline editor with:
 
 **Transport Bar:**
 - Timeline label
@@ -152,10 +170,26 @@ Triggered by the ▶ Preview button (or Space key):
 ## Data Flow
 
 ### Scene Store Integration
-Studio wraps the existing `SceneStore` (event emitter pattern). All edits go through the store, which:
-- Emits change events that the viewer reacts to (live preview).
-- Maintains an undo/redo stack (command pattern).
-- Serializes to the same JSON schema (version 1) used by the viewer.
+Studio wraps the existing `SceneStore` (event emitter pattern). All edits go through the store, which emits change events that the viewer reacts to (live preview).
+
+### Undo/Redo (`studio/state/undoRedo.js`)
+
+A snapshot-based undo/redo system that sits between the editor UI and SceneStore:
+
+- **Interface**: `push(scene)`, `undo() → scene`, `redo() → scene`, `canUndo`, `canRedo`.
+- **Mechanism**: Full scene snapshots (JSON-serializable). Each edit pushes the previous scene state onto the undo stack. Undo pops the stack and calls `SceneStore.setScene(snapshot)`. Redo uses a separate forward stack, cleared on any new edit.
+- **Stack depth**: Maximum 50 entries. Oldest entries are discarded when the limit is reached.
+- **Why snapshots over commands**: The scene JSON is small (typically < 100 KB). Snapshot-based undo avoids the complexity of defining reversible commands for every possible edit, and guarantees correctness.
+
+### Editor Store (`studio/state/editorStore.js`)
+
+Manages UI-only state that does not belong in the scene:
+
+- **Interface**: `getState() → {activeTool, selection, panelsVisible, playbackState}`, `dispatch(action)`, `on(event, handler)`.
+- **State shape**: `{activeTool: string, selectedIds: string[], propertiesVisible: bool, timelineVisible: bool, hudVisible: bool, playbackState: 'stopped'|'playing'|'paused', playheadMs: number}`.
+- Emits `'change'` events consumed by UI components.
+
+The scene schema remains at version 1. Serialization uses the same `exportSceneToJSON()` / `importSceneFromJSON()` pipeline.
 
 ### Session Transfer
 - **Viewer → Studio**: Scene JSON written to `sessionStorage['globi-studio-scene']`, Studio reads on load.
@@ -238,6 +272,7 @@ docs/ai-companions/
 | T | Toggle Timeline |
 | H | Toggle HUD |
 | F | Zoom to Fit |
+| Ctrl+R | Reset Camera |
 | ? | Show Keyboard Shortcuts |
 
 ## Non-Functional Requirements
