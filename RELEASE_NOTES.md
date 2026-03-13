@@ -9,8 +9,18 @@
 * `data-globi-*` DOM attributes on `<globi-viewer>` for AI agent discoverability (body, projection, zoom, marker count, available actions)
 * Multi-instance support — `window.globiAll` array tracks all viewer instances; ownership transfers automatically on disconnect
 
+## Version 1.2.1 (Thu, Mar 13 2026)
+
+* Theme cycle toggle: click the thumbnail button in the controls bar to switch between all 5 visual themes (photo, wireframe-shaded, wireframe-flat, grayscale-shaded, grayscale-flat). Thumbnail adapts to the current planet's color. Button hidden by default, enabled in all examples.
+* npm publishing — tagged releases now automatically publish to the npm registry, making Globi available via `npm install globi` and the unpkg CDN (`https://unpkg.com/globi/dist/globi.min.js`)
+* Release workflow now includes all 6 dist files (globi, globi-io, globi-examples — both minified and unminified) as GitHub Release assets
+
 ## Version 1.2 (Fri, Mar 13 2026)
 
+* Scene-level tint colors — new `surfaceTint` and `overlayTint` properties let you re-hue all theme colors with a single hex value. Apply a warm sepia to the globe surface and a dark brown to labels/borders independently, without creating a custom theme.
+* Elastic flyTo transitions — new `zoomArc: true` option on `flyTo()` creates a natural "pull back, rotate, push in" camera movement. The zoom dip scales with travel distance: short hops barely dip, long pans pull back dramatically.
+* Navigation HUD now responds to overlay tint — compass arrow, scale bar, and scale label colors adapt to the scene's `overlayTint` automatically via CSS custom properties.
+* Battle of Midway example updated with warm beige globe tint, brown UI tint, and elastic zoom arcs between scrollytelling steps.
 * New example: "Battle of Midway (1942)" — scrollytelling narrative of the decisive Pacific naval battle with 25 chronological steps, sticky globe on the left, aged-paper text panels on the right, animated carrier positions, air strike arcs, and superscript source citations from 6 published references. Demonstrates controlling the globe from an external text widget via IntersectionObserver.
 * New example: "Hannibal's Route (218 BC)" — traces the full campaign march from Carthage across Iberia, the Pyrenees, Gaul, and the Alps into Italy with 13 historical waypoints and a route path on the grayscale-shaded theme
 * New example: "Indiana Jones Itinerary" — thick red animated flight arcs across all 5 Indiana Jones movies on an equirectangular flat map, with per-movie filter toggles

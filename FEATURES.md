@@ -42,6 +42,7 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Theme palette wired into 3D globe renderer and 2D flat map renderer
 - [x] Editor theme selector updated to 5 options
 - [x] Backward-compatible: legacy dark/light themes map to photo
+- [x] Theme cycle toggle button — cycles through all 5 themes with planet-specific SVG thumbnails, hidden by default, enabled in all examples
 
 ## Core Globe
 
@@ -116,6 +117,8 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 ## Interaction and UI
 - [x] Add marker picking, tooltip/callout rendering, and focus management.
 - [x] Implement `flyTo`/"center marker" API and camera transition presets.
+- [x] Add `zoomArc` option to `flyTo()` for elastic zoom-out/in transitions proportional to travel distance.
+- [x] Add `surfaceTint` and `overlayTint` scene properties to re-hue theme palette colors via HSL blending.
 - [x] Build legend panel with filtering and click-to-focus behavior.
 - [x] Add keyboard-first interaction paths for accessibility.
 - [x] Add inspect-mode selection events for click-to-edit workflows.
@@ -204,6 +207,8 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] esbuild production bundler (`npm run build` → `dist/globi.min.js`)
 - [x] GitHub Actions CI (lint + test on push/PR) and release (build + publish on tag)
 - [x] Removed `"private": true` from package.json
+- [x] npm publishing via GitHub Actions on version tags (auto-publishes to npm registry and unpkg CDN)
+- [x] `main`, `module`, `unpkg`, and `files` fields in package.json for proper npm distribution
 
 ## Remaining Gaps
 
