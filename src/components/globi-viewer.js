@@ -1,11 +1,12 @@
 import { GlobeController } from '../controller/globeController.js';
-import { getCelestialPreset, listCelestialPresets } from '../scene/celestial.js';
+import { getCelestialPreset, listCelestialPresets, resolvePlanetConfig } from '../scene/celestial.js';
 import { mergeViewerUiConfig, resolveViewerUiConfig, VIEWER_CONTROL_STYLE_ICON } from '../scene/viewerUi.js';
-import { interpolateCameraState } from './cameraTween.js';
+import { interpolateCameraState, interpolateZoomArc } from './cameraTween.js';
 
 import { getLegendSymbol } from './legendSymbol.js';
 import { groupMarkersByFilter } from './legendGrouping.js';
 import { computeNorthArrowState, computeScaleBar, chooseScaleKilometers } from './navigationHud.js';
+import { getThemePalette, VALID_THEMES } from '../renderer/themePalette.js';
 import { AttributionManager } from '../renderer/attributionManager.js';
 import { resolveNavigationHudVisibility } from './viewerUiInteractions.js';
 import { ViewStateQuery } from '../accessibility/viewStateQuery.js';
@@ -68,9 +69,9 @@ const TEMPLATE = `
       min-height: 360px;
       border-radius: 12px;
       overflow: hidden;
-      border: 1px solid #1d2a44;
-      background: #07152f;
-      color: #f3f6ff;
+      border: 1px solid var(--ctrl-border, #1d2a44);
+      background: var(--ctrl-host-bg, #07152f);
+      color: var(--ctrl-fg, #f3f6ff);
       font-family: "Avenir Next", "Segoe UI", sans-serif;
     }
 
@@ -89,8 +90,8 @@ const TEMPLATE = `
     }
 
     button {
-      border: 1px solid #355183;
-      background: rgba(10, 23, 50, 0.8);
+      border: 1px solid var(--ctrl-border, #355183);
+      background: var(--ctrl-bg, rgba(10, 23, 50, 0.8));
       color: inherit;
       border-radius: 8px;
       padding: 8px 10px;
@@ -107,9 +108,26 @@ const TEMPLATE = `
       justify-content: center;
     }
 
+    .theme-toggle {
+      width: 34px;
+      height: 34px;
+      padding: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+      border-radius: 4px;
+    }
+
     /* BUG15: hidden attribute must win over icon-only display */
     .controls button[hidden],
-    .controls select[hidden] {
+    .controls select[hidden],
+    .controls input[hidden] {
       display: none !important;
     }
 
@@ -129,8 +147,8 @@ const TEMPLATE = `
     }
 
     select {
-      border: 1px solid #355183;
-      background: rgba(10, 23, 50, 0.8);
+      border: 1px solid var(--ctrl-border, #355183);
+      background: var(--ctrl-bg, rgba(10, 23, 50, 0.8));
       color: inherit;
       border-radius: 8px;
       padding: 7px 10px;
@@ -145,8 +163,8 @@ const TEMPLATE = `
     }
 
     .search-input {
-      border: 1px solid #355183;
-      background: rgba(10, 23, 50, 0.8);
+      border: 1px solid var(--ctrl-border, #355183);
+      background: var(--ctrl-bg, rgba(10, 23, 50, 0.8));
       color: inherit;
       border-radius: 8px;
       padding: 7px 10px;
@@ -169,8 +187,8 @@ const TEMPLATE = `
       max-height: 45%;
       overflow: auto;
       width: min(280px, calc(100% - 24px));
-      background: rgba(6, 16, 38, 0.85);
-      border: 1px solid #2c4169;
+      background: var(--ctrl-bg, rgba(6, 16, 38, 0.85));
+      border: 1px solid var(--ctrl-border, #2c4169);
       border-radius: 8px;
       padding: 8px;
       z-index: 10;
@@ -198,7 +216,7 @@ const TEMPLATE = `
 
     .legend-item:hover,
     .legend-item:focus-visible {
-      background: rgba(69, 110, 173, 0.3);
+      background: var(--ctrl-border, rgba(69, 110, 173, 0.3));
       outline: none;
     }
 
@@ -258,9 +276,9 @@ const TEMPLATE = `
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #7b9fd4;
+      color: var(--ctrl-fg, #7b9fd4);
       padding: 8px 6px 4px;
-      border-bottom: 1px solid rgba(124, 160, 214, 0.15);
+      border-bottom: 1px solid var(--ctrl-border, rgba(124, 160, 214, 0.15));
       margin-bottom: 2px;
     }
 
@@ -278,6 +296,14 @@ const TEMPLATE = `
       gap: 8px;
       z-index: 10;
       pointer-events: none;
+      --hud-accent: #ff5f6d;
+      --hud-accent-glow: rgba(255, 95, 109, 0.6);
+      --hud-accent-faint: rgba(255, 95, 109, 0.2);
+      --hud-accent-shadow: rgba(255, 95, 109, 0.35);
+      --hud-scale-border: rgba(75, 107, 163, 0.72);
+      --hud-scale-bg: rgba(7, 18, 42, 0.84);
+      --hud-scale-fg: #d9e7ff;
+      --hud-scale-text: #cbdcf8;
     }
 
     .compass {
@@ -299,8 +325,8 @@ const TEMPLATE = `
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #ff5f6d;
-      box-shadow: 0 0 8px rgba(255, 95, 109, 0.6);
+      background: var(--hud-accent);
+      box-shadow: 0 0 8px var(--hud-accent-glow);
       opacity: var(--compass-dot-opacity, 0);
       transition: opacity 0.15s;
       pointer-events: none;
@@ -317,8 +343,8 @@ const TEMPLATE = `
                  rotateX(var(--compass-arrow-tilt, 0deg));
       transform-origin: 50% 50%;
       transform-style: preserve-3d;
-      background: linear-gradient(to bottom, #ff5f6d 0%, #ff5f6d 60%, rgba(255, 95, 109, 0.2) 100%);
-      box-shadow: 0 0 10px rgba(255, 95, 109, 0.35);
+      background: linear-gradient(to bottom, var(--hud-accent) 0%, var(--hud-accent) 60%, var(--hud-accent-faint) 100%);
+      box-shadow: 0 0 10px var(--hud-accent-shadow);
       border-radius: 2px;
     }
 
@@ -330,15 +356,15 @@ const TEMPLATE = `
       transform: translateX(-50%);
       border-left: 5px solid transparent;
       border-right: 5px solid transparent;
-      border-bottom: 8px solid #ff5f6d;
+      border-bottom: 8px solid var(--hud-accent);
     }
 
     .scale {
       min-width: 126px;
       padding: 7px 8px 6px;
       border-radius: 8px;
-      border: 1px solid rgba(75, 107, 163, 0.72);
-      background: rgba(7, 18, 42, 0.84);
+      border: 1px solid var(--hud-scale-border);
+      background: var(--hud-scale-bg);
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
       display: flex;
       flex-direction: column;
@@ -349,7 +375,7 @@ const TEMPLATE = `
     .scale-bar {
       height: 2px;
       min-width: 18px;
-      background: #d9e7ff;
+      background: var(--hud-scale-fg);
       position: relative;
     }
 
@@ -360,7 +386,7 @@ const TEMPLATE = `
       top: -4px;
       width: 2px;
       height: 10px;
-      background: #d9e7ff;
+      background: var(--hud-scale-fg);
     }
 
     .scale-bar::before {
@@ -373,7 +399,7 @@ const TEMPLATE = `
 
     .scale-label {
       font-size: 11px;
-      color: #cbdcf8;
+      color: var(--hud-scale-text);
       letter-spacing: 0.02em;
     }
 
@@ -390,8 +416,8 @@ const TEMPLATE = `
     }
 
     .time-filter input[type="date"] {
-      border: 1px solid #355183;
-      background: rgba(10, 23, 50, 0.8);
+      border: 1px solid var(--ctrl-border, #355183);
+      background: var(--ctrl-bg, rgba(10, 23, 50, 0.8));
       color: inherit;
       border-radius: 6px;
       padding: 4px 8px;
@@ -411,9 +437,9 @@ const TEMPLATE = `
       bottom: 6px;
       z-index: 10;
       font-size: 10px;
-      color: rgba(200, 215, 240, 0.7);
-      background: rgba(6, 16, 38, 0.6);
-      border: 1px solid rgba(75, 107, 163, 0.4);
+      color: var(--ctrl-fg, rgba(200, 215, 240, 0.7));
+      background: var(--ctrl-bg, rgba(6, 16, 38, 0.6));
+      border: 1px solid var(--ctrl-border, rgba(75, 107, 163, 0.4));
       border-radius: 12px;
       padding: 3px 8px;
       cursor: pointer;
@@ -446,14 +472,14 @@ const TEMPLATE = `
       right: -280px;
       width: 280px;
       height: 100%;
-      background: rgba(6, 16, 38, 0.92);
-      border-left: 1px solid #2c4169;
+      background: var(--ctrl-bg, rgba(6, 16, 38, 0.92));
+      border-left: 1px solid var(--ctrl-border, #2c4169);
       z-index: 20;
       overflow-y: auto;
       padding: 12px;
       transition: right 0.25s ease;
       font-size: 12px;
-      color: #cbdcf8;
+      color: var(--ctrl-fg, #cbdcf8);
       box-sizing: border-box;
     }
 
@@ -570,6 +596,7 @@ const TEMPLATE = `
     <button class="fullscreen control-button" type="button" data-globi-action="toggleFullscreen"></button>
     <button class="legend-toggle control-button" type="button" data-globi-action="toggleLegend"></button>
     <button class="inspect-toggle control-button" type="button" data-globi-action="toggleInspect"></button>
+    <button class="theme-toggle control-button icon-only" type="button" hidden data-globi-action="cycleTheme"></button>
     <button class="projection-toggle control-button icon-only" type="button" data-globi-action="setProjection"></button>
   </div>
   <div class="time-filter filter-hidden">
@@ -623,6 +650,7 @@ export class GlobiViewerElement extends HTMLElement {
   #legendButton;
   #inspectButton;
   #projectionButton;
+  #themeToggleButton;
   #viewerUi = resolveViewerUiConfig();
   #celestialPresets = listCelestialPresets();
   #currentScene = null;
@@ -671,6 +699,7 @@ export class GlobiViewerElement extends HTMLElement {
     this.#legendButton = this.#root.querySelector('.legend-toggle');
     this.#inspectButton = this.#root.querySelector('.inspect-toggle');
     this.#projectionButton = this.#root.querySelector('.projection-toggle');
+    this.#themeToggleButton = this.#root.querySelector('.theme-toggle');
     this.#searchInput = this.#root.querySelector('.search-input');
     this.#timeFilterWrap = this.#root.querySelector('.time-filter');
     this.#timeFromInput = this.#root.querySelector('.time-from');
@@ -701,6 +730,13 @@ export class GlobiViewerElement extends HTMLElement {
       const next = current === 'globe' ? 'azimuthalEquidistant' : 'globe';
       this.#controller.setProjection(next);
       this.#updateProjectionButton();
+    });
+
+    this.#themeToggleButton.addEventListener('click', () => {
+      const currentTheme = this.getTheme() ?? 'photo';
+      const idx = VALID_THEMES.indexOf(currentTheme);
+      const nextTheme = VALID_THEMES[(idx + 1) % VALID_THEMES.length];
+      this.setTheme(nextTheme);
     });
 
     this.#celestialSelect.addEventListener('change', () => {
@@ -971,17 +1007,86 @@ export class GlobiViewerElement extends HTMLElement {
     this.#projectionButton.setAttribute('aria-label', label);
   }
 
+  #buildThemeThumbnailSvg(theme, baseColor = '#1e90ff') {
+    switch (theme) {
+      case 'photo':
+        return `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" rx="3" fill="#0a0e1a"/>
+          <circle cx="13" cy="13" r="8" fill="${baseColor}"/>
+          <circle cx="16" cy="15" r="6" fill="#06091a" opacity="0.45"/>
+        </svg>`;
+      case 'wireframe-shaded':
+        return `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" rx="3" fill="#ffffff"/>
+          <circle cx="13" cy="13" r="8" fill="none" stroke="#222" stroke-width="1.5"/>
+          <ellipse cx="13" cy="13" rx="4" ry="8" fill="none" stroke="#222" stroke-width="1"/>
+          <line x1="5" y1="13" x2="21" y2="13" stroke="#222" stroke-width="0.8"/>
+        </svg>`;
+      case 'wireframe-flat':
+        return `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" rx="3" fill="#ffffff"/>
+          <circle cx="13" cy="13" r="8" fill="none" stroke="#333" stroke-width="1"/>
+        </svg>`;
+      case 'grayscale-shaded':
+        return `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" rx="3" fill="#ffffff"/>
+          <defs><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#aaa"/><stop offset="100%" stop-color="#555"/>
+          </linearGradient></defs>
+          <circle cx="13" cy="13" r="8" fill="url(#gs)"/>
+        </svg>`;
+      case 'grayscale-flat':
+        return `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" rx="3" fill="#ffffff"/>
+          <circle cx="13" cy="13" r="8" fill="#999"/>
+        </svg>`;
+      default:
+        return `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect width="26" height="26" rx="3" fill="#0a0e1a"/>
+          <circle cx="13" cy="13" r="8" fill="${baseColor}"/>
+        </svg>`;
+    }
+  }
+
+  #updateThemeToggle() {
+    if (!this.#themeToggleButton) return;
+    const scene = this.#currentScene;
+    const theme = scene?.theme ?? 'photo';
+    const planet = resolvePlanetConfig(scene?.planet ?? {});
+
+    if (this.#viewerUi.controlStyle === VIEWER_CONTROL_STYLE_ICON ||
+        this.#themeToggleButton.classList.contains('icon-only')) {
+      const svg = this.#buildThemeThumbnailSvg(theme, planet.baseColor);
+      const range = document.createRange();
+      range.selectNodeContents(this.#themeToggleButton);
+      range.deleteContents();
+      this.#themeToggleButton.appendChild(range.createContextualFragment(svg));
+    } else {
+      const label = theme.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      this.#themeToggleButton.textContent = label;
+    }
+
+    const nextIdx = (VALID_THEMES.indexOf(theme) + 1) % VALID_THEMES.length;
+    const nextName = VALID_THEMES[nextIdx];
+    this.#themeToggleButton.title = `Theme: ${theme} (click for ${nextName})`;
+    this.#themeToggleButton.setAttribute('aria-label',
+      `Current theme: ${theme}. Click to switch to ${nextName}`);
+  }
+
   #applyViewerUi(scene) {
     this.#viewerUi = resolveViewerUiConfig(scene?.viewerUi);
     const hudVisibility = resolveNavigationHudVisibility(this.#viewerUi);
 
     this.#markerFilterSelect.classList.add('filter-hidden');
     this.#timeFilterWrap.classList.add('filter-hidden');
+    this.#searchInput.hidden = !this.#viewerUi.showMarkerFilter;
     this.#celestialSelect.hidden = !this.#viewerUi.showBodySelector;
     this.#fullscreenButton.hidden = !this.#viewerUi.showFullscreenButton;
     this.#legendButton.hidden = !this.#viewerUi.showLegendButton;
     this.#inspectButton.hidden = !this.#viewerUi.showInspectButton;
     this.#projectionButton.hidden = !this.#viewerUi.showProjectionToggle;
+    this.#themeToggleButton.hidden = !this.#viewerUi.showThemeToggle;
+    this.#updateThemeToggle();
 
     if (!this.#viewerUi.showLegendButton) {
       this.#legendVisible = false;
@@ -1205,6 +1310,32 @@ export class GlobiViewerElement extends HTMLElement {
     }, 200);
   }
 
+  #updateHudTint(scene) {
+    const overlayTint = scene?.overlayTint;
+    const surfaceTint = scene?.surfaceTint;
+    if (!overlayTint) return;
+
+    // Tint navigation HUD (compass, scale bar)
+    if (this.#navHud) {
+      const hud = this.#navHud;
+      hud.style.setProperty('--hud-accent', overlayTint);
+      hud.style.setProperty('--hud-accent-glow', overlayTint + '99');
+      hud.style.setProperty('--hud-accent-faint', overlayTint + '33');
+      hud.style.setProperty('--hud-accent-shadow', overlayTint + '59');
+      hud.style.setProperty('--hud-scale-border', overlayTint + 'b8');
+      hud.style.setProperty('--hud-scale-bg', overlayTint + 'd6');
+      hud.style.setProperty('--hud-scale-fg', '#ffffff');
+      hud.style.setProperty('--hud-scale-text', '#ffffff');
+    }
+
+    // Tint control buttons — white text on tinted semi-transparent background
+    const host = this.#root.host ?? this;
+    host.style.setProperty('--ctrl-border', overlayTint);
+    host.style.setProperty('--ctrl-bg', overlayTint + '40');
+    host.style.setProperty('--ctrl-fg', '#ffffff');
+    host.style.setProperty('--ctrl-host-bg', surfaceTint || (overlayTint + '18'));
+  }
+
   #updateAttribution(scene) {
     if (!this.#viewerUi.showAttribution) {
       this.#attributionManager.setVisible(false);
@@ -1320,27 +1451,39 @@ export class GlobiViewerElement extends HTMLElement {
       centerLat: 0,
       zoom: 1,
     };
-    const endCamera = {
+    const startPos = { lat: startCamera.centerLat, lon: startCamera.centerLon };
+    const endPos = {
       lat: Number(target?.lat ?? 0),
       lon: Number(target?.lon ?? 0),
     };
+    const startZoom = startCamera.zoom;
+    const targetZoom = options.zoom != null ? Number(options.zoom) : startZoom;
+    const useZoomArc = options.zoomArc === true;
     const durationMs = Math.max(120, Number(options.durationMs ?? 700));
     const startedAt = performance.now();
+
+    // Compute angular distance for zoom arc dip scaling
+    const dLat = endPos.lat - startPos.lat;
+    const dLon = endPos.lon - startPos.lon;
+    const angularDist = Math.sqrt(dLat * dLat + dLon * dLon);
 
     this.#stopFocusAnimation();
 
     const tick = (now) => {
       const elapsed = Math.max(0, now - startedAt);
       const t = Math.min(1, elapsed / durationMs);
-      const next = interpolateCameraState(
-        { lat: startCamera.centerLat, lon: startCamera.centerLon },
-        endCamera,
-        t
-      );
+      const next = interpolateCameraState(startPos, endPos, t);
+
+      let zoom;
+      if (useZoomArc) {
+        zoom = interpolateZoomArc(startZoom, targetZoom, angularDist, t);
+      } else {
+        zoom = startZoom + (targetZoom - startZoom) * t;
+      }
 
       this.#controller.flyTo(
         { lat: next.lat, lon: next.lon },
-        { zoom: startCamera.zoom }
+        { zoom }
       );
       this.#updateNavigationHud();
 
@@ -1739,6 +1882,7 @@ export class GlobiViewerElement extends HTMLElement {
   setScene(scene) {
     const result = this.#controller.setScene(scene);
     this.#syncCelestialSelection(result.planet?.id);
+    this.#updateHudTint(scene);
     return result;
   }
 
@@ -1822,7 +1966,11 @@ export class GlobiViewerElement extends HTMLElement {
     this.#stopFocusAnimation();
     const durationMs = Number(options?.durationMs ?? 0);
     if (durationMs > 0) {
-      this.#animateFocusTo(target, { durationMs });
+      this.#animateFocusTo(target, {
+        durationMs,
+        zoom: target?.zoom ?? options?.zoom,
+        zoomArc: options?.zoomArc ?? false,
+      });
       return undefined;
     }
     const result = this.#controller.flyTo(target, options);
