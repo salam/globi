@@ -45,6 +45,10 @@ const entries = [
     name: 'globi-examples',
     entryPoints: [resolve(ROOT, 'src/examples/index.js')],
   },
+  {
+    name: 'studio',
+    entryPoints: [resolve(ROOT, 'studio/app.js')],
+  },
 ];
 
 function formatSize(bytes) {
