@@ -1,17 +1,20 @@
 export const STORAGE_KEY = 'globi-studio-scene';
 
-export function writeScene(scene) {
+export async function writeScene(scene) {
   const json = JSON.stringify(scene);
-  if (json.length > 4 * 1024 * 1024 && typeof CompressionStream !== 'undefined') {
-    const encoder = new TextEncoder();
-    new Response(
-      new Blob([encoder.encode(json)]).stream().pipeThrough(new CompressionStream('gzip'))
-    ).arrayBuffer().then(buf => {
+  try {
+    if (json.length > 4 * 1024 * 1024 && typeof CompressionStream !== 'undefined') {
+      const encoder = new TextEncoder();
+      const buf = await new Response(
+        new Blob([encoder.encode(json)]).stream().pipeThrough(new CompressionStream('gzip'))
+      ).arrayBuffer();
       const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
       sessionStorage.setItem(STORAGE_KEY, 'gzip:' + b64);
-    });
-  } else {
-    sessionStorage.setItem(STORAGE_KEY, json);
+    } else {
+      sessionStorage.setItem(STORAGE_KEY, json);
+    }
+  } catch (err) {
+    console.error('Failed to write scene to sessionStorage:', err.message);
   }
 }
 

@@ -21,14 +21,16 @@ const viewer = document.getElementById('viewer');
 const studioEl = document.getElementById('studio');
 const viewportEl = document.getElementById('viewport');
 
+const EMPTY_SCENE = { version: 1, markers: [], arcs: [], paths: [], regions: [], animations: [], cameraAnimation: [], filters: [], dataSources: [] };
+
 // Load scene from sessionStorage or create empty
-const transferred = readScene();
-let scene = transferred || { version: 1, markers: [], arcs: [], paths: [], regions: [], animations: [], cameraAnimation: [], filters: [], dataSources: [] };
+const transferred = await readScene();
+let scene = transferred || EMPTY_SCENE;
 
 // State
 const editorStore = new EditorStore();
 const undoRedo = new UndoRedo(50);
-undoRedo.push(JSON.parse(JSON.stringify(scene)));
+undoRedo.push(scene);
 
 // Wait for viewer to be ready (custom element)
 function getController() {
@@ -91,7 +93,7 @@ const controllerProxy = new Proxy(controller, {
 
 function pushScene(newScene) {
   scene = newScene;
-  undoRedo.push(JSON.parse(JSON.stringify(scene)));
+  undoRedo.push(scene);
   if (viewer.setScene) viewer.setScene(scene);
   updateUI();
 }
@@ -200,26 +202,16 @@ editorStore.on('change', (state) => {
 editorStore.dispatch({ type: 'setTool', tool: 'select' });
 
 // --- Viewport event routing ---
-viewportEl.addEventListener('click', (e) => {
-  const active = toolManager.activeName;
-  const tool = { select: selectTool, marker: markerTool, arc: arcTool, path: pathTool, region: regionTool, draw: drawTool }[active];
-  if (tool?.handleClick) tool.handleClick(e);
-});
+function routeEvent(method, e) {
+  const tool = toolManager.getActive();
+  if (tool && typeof tool[method] === 'function') tool[method](e);
+}
 
-viewportEl.addEventListener('mousedown', (e) => {
-  const tool = { select: selectTool, draw: drawTool }[toolManager.activeName];
-  if (tool?.handleMouseDown) tool.handleMouseDown(e);
-});
-
-viewportEl.addEventListener('mousemove', (e) => {
-  const tool = { select: selectTool, draw: drawTool }[toolManager.activeName];
-  if (tool?.handleMouseMove) tool.handleMouseMove(e);
-});
-
-viewportEl.addEventListener('mouseup', (e) => {
-  const tool = { select: selectTool, draw: drawTool }[toolManager.activeName];
-  if (tool?.handleMouseUp) tool.handleMouseUp(e);
-});
+viewportEl.addEventListener('click', (e) => routeEvent('handleClick', e));
+viewportEl.addEventListener('dblclick', (e) => routeEvent('handleDoubleClick', e));
+viewportEl.addEventListener('mousedown', (e) => routeEvent('handleMouseDown', e));
+viewportEl.addEventListener('mousemove', (e) => routeEvent('handleMouseMove', e));
+viewportEl.addEventListener('mouseup', (e) => routeEvent('handleMouseUp', e));
 
 // --- Keyboard shortcuts ---
 document.addEventListener('keydown', (e) => {
@@ -279,8 +271,7 @@ document.addEventListener('keydown', (e) => {
 function handleMenuAction(action) {
   switch (action) {
     case 'newScene':
-      scene = { version: 1, markers: [], arcs: [], paths: [], regions: [], animations: [], cameraAnimation: [], filters: [], dataSources: [] };
-      pushScene(scene);
+      pushScene({ ...EMPTY_SCENE, markers: [], arcs: [], paths: [], regions: [], animations: [], cameraAnimation: [], filters: [], dataSources: [] });
       break;
     case 'newFromClipboard':
       navigator.clipboard?.readText().then(text => {
@@ -288,7 +279,7 @@ function handleMenuAction(action) {
           const parsed = JSON.parse(text);
           pushScene(parsed);
         } catch (err) { console.warn('Invalid JSON in clipboard'); }
-      });
+      }).catch(() => { console.warn('Clipboard access denied'); });
       break;
     case 'newFromFile': {
       const input = document.createElement('input');

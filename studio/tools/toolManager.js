@@ -6,6 +6,7 @@ export class ToolManager {
   }
 
   get activeName() { return this._activeName; }
+  getActive() { return this._active; }
 
   setActive(name) {
     if (this._active) this._active.deactivate();
