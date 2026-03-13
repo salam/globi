@@ -140,19 +140,20 @@ export class ContextMenu {
     const firstBtn = this.#menuEl.querySelector('button:not([disabled])');
     if (firstBtn) firstBtn.focus();
 
-    // Close handlers
+    // Close handlers — use composedPath() to see through Shadow DOM boundaries
     const closeOnClick = (e) => {
-      if (!this.#menuEl?.contains(e.target)) this.close();
+      const path = e.composedPath();
+      if (this.#menuEl && !path.includes(this.#menuEl)) this.close();
     };
     const closeOnKey = (e) => {
       if (e.key === 'Escape') this.close();
     };
     const closeOnScroll = () => this.close();
-    document.addEventListener('pointerdown', closeOnClick, { once: true, capture: true });
+    document.addEventListener('pointerdown', closeOnClick);
     document.addEventListener('keydown', closeOnKey);
     window.addEventListener('scroll', closeOnScroll, { once: true });
     this._cleanup = () => {
-      document.removeEventListener('pointerdown', closeOnClick, { capture: true });
+      document.removeEventListener('pointerdown', closeOnClick);
       document.removeEventListener('keydown', closeOnKey);
       window.removeEventListener('scroll', closeOnScroll);
     };
