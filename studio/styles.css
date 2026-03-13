@@ -1,0 +1,335 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body { background: #0d0d1a; color: #ccc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+.studio { display: flex; flex-direction: column; height: 100vh; }
+
+/* Menu Bar */
+.menu-bar {
+  background: #13132a;
+  border-bottom: 1px solid #2a2a4a;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.menu-bar .logo {
+  font-weight: 700;
+  color: #7a7aff;
+  margin-right: 20px;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+.menu-item {
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+  position: relative;
+}
+.menu-item:hover { background: #1e1e3a; color: #ddd; }
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #1a1a35;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 220px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.menu-item:hover .menu-dropdown { display: block; }
+.dropdown-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+.dropdown-item:hover { background: #252550; }
+.dropdown-item .shortcut { color: #555; font-size: 11px; }
+.dropdown-divider { border-top: 1px solid #2a2a4a; margin: 4px 0; }
+
+/* Main Content */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Tool Strip */
+.tool-strip {
+  width: 44px;
+  background: #13132a;
+  border-right: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #777;
+  font-size: 16px;
+  border: none;
+  background: none;
+  transition: all 0.15s;
+  position: relative;
+}
+.tool-btn:hover { background: #1e1e3a; color: #aaa; }
+.tool-btn.active { background: #2a2a5a; color: #7a7aff; }
+.tool-btn .tool-label {
+  display: none;
+  position: absolute;
+  left: 46px;
+  background: #1a1a35;
+  border: 1px solid #2a2a4a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: #ccc;
+  z-index: 50;
+}
+.tool-btn:hover .tool-label { display: block; }
+.tool-divider { width: 24px; border-top: 1px solid #2a2a4a; margin: 6px 0; }
+.tool-spacer { flex: 1; }
+
+/* Viewport */
+.viewport {
+  flex: 1;
+  background: #080814;
+  position: relative;
+  overflow: hidden;
+}
+.viewport globi-viewer { display: block; width: 100%; height: 100%; }
+
+/* Properties Panel */
+.properties {
+  width: 280px;
+  background: #111128;
+  border-left: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.properties.hidden { display: none; }
+.props-header {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #7a7aff;
+  border-bottom: 1px solid #2a2a4a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.props-section { border-bottom: 1px solid #1a1a35; }
+.props-section-header {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0e0e22;
+}
+.props-section-header:hover { background: #151535; }
+.props-section-header .chevron { font-size: 10px; color: #555; }
+.field {
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.field-label {
+  font-size: 11px;
+  color: #777;
+  min-width: 70px;
+  flex-shrink: 0;
+}
+.field-input {
+  flex: 1;
+  background: #1a1a35;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: #ccc;
+  font-size: 12px;
+  font-family: inherit;
+}
+.field-input:focus { border-color: #7a7aff; outline: none; }
+.field-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid #2a2a4a;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.field-select {
+  flex: 1;
+  background: #1a1a35;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: #ccc;
+  font-size: 12px;
+  font-family: inherit;
+  appearance: none;
+}
+.field-row { display: flex; gap: 4px; flex: 1; }
+.field-row .field-input { min-width: 0; }
+.coord-label { font-size: 10px; color: #555; margin-bottom: -2px; }
+.field-col { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+/* Timeline */
+.timeline {
+  height: 160px;
+  background: #0e0e22;
+  border-top: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.timeline.hidden { display: none; }
+.timeline-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  gap: 10px;
+  border-bottom: 1px solid #1a1a35;
+  font-size: 12px;
+}
+.timeline-header .tl-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #7a7aff;
+}
+.tl-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: #1a1a35;
+  border: 1px solid #2a2a4a;
+  color: #999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+.tl-btn:hover { border-color: #7a7aff; color: #7a7aff; }
+.tl-btn.playing { background: #2a2a5a; color: #7a7aff; }
+.tl-time { color: #999; font-size: 12px; font-family: monospace; }
+.tl-spacer { flex: 1; }
+.timeline-body { flex: 1; display: flex; overflow: hidden; }
+.tl-labels {
+  width: 140px;
+  border-right: 1px solid #1a1a35;
+  font-size: 11px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.tl-row {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 6px;
+  border-bottom: 1px solid #0a0a18;
+  cursor: pointer;
+}
+.tl-row:hover { background: #151530; }
+.tl-row.selected { background: #1a1a40; }
+.tl-row-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tl-row-eye { font-size: 10px; color: #555; margin-left: auto; cursor: pointer; }
+.tl-row-eye.visible { color: #7a7aff; }
+.tl-row-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #aaa; }
+.tl-tracks { flex: 1; position: relative; overflow-x: auto; }
+.tl-ruler {
+  height: 20px;
+  border-bottom: 1px solid #1a1a35;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 0 2px 0;
+  font-size: 9px;
+  color: #444;
+}
+.tl-ruler-tick { width: 60px; text-align: center; border-left: 1px solid #1a1a30; padding-left: 4px; }
+.tl-track-area { position: relative; }
+.tl-track-row { height: 24px; border-bottom: 1px solid #0a0a18; position: relative; }
+.tl-bar { position: absolute; height: 16px; top: 4px; border-radius: 3px; opacity: 0.7; cursor: pointer; }
+.tl-bar:hover { opacity: 1; }
+.tl-keyframe {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: 8px;
+  transform: rotate(45deg);
+  border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+}
+.tl-keyframe:hover { border-color: #fff; }
+.tl-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #7a7aff;
+  z-index: 10;
+  pointer-events: none;
+}
+.tl-playhead::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background: #7a7aff;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+/* Preview mode */
+.studio.preview .menu-bar,
+.studio.preview .tool-strip,
+.studio.preview .properties,
+.studio.preview .timeline { display: none; }
+.studio.preview .viewport { flex: 1; }
+
+/* Preview button */
+.preview-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 4px;
+  background: #2a2a5a;
+  color: #7a7aff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #3a3a6a;
+}
+.preview-btn:hover { background: #3a3a6a; }
+.preview-btn .shortcut-hint { color: #555; font-size: 10px; margin-left: 4px; }
