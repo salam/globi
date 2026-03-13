@@ -54,4 +54,54 @@ describe('Timeline', () => {
     playBtn.click();
     assert.equal(action, 'play');
   });
+
+  it('renders visibility bars for elements with visibility intervals', () => {
+    const el = document.getElementById('tl');
+    const tl = new Timeline(el, {
+      scene: {
+        markers: [{ id: 'm1', name: { en: 'A' }, color: '#f00', visibility: [{ from: 0, to: 5000 }] }],
+        arcs: [], paths: [], regions: [],
+        animations: [], cameraAnimation: [],
+      },
+      locale: 'en', playheadMs: 0,
+      onPlayheadChange: () => {}, onVisibilityChange: () => {}, onTransport: () => {},
+    });
+    tl.render();
+    const bars = el.querySelectorAll('.tl-bar');
+    assert.ok(bars.length >= 1);
+  });
+
+  it('renders keyframe diamonds for animated entities', () => {
+    const el = document.getElementById('tl');
+    const tl = new Timeline(el, {
+      scene: {
+        markers: [{ id: 'm1', name: { en: 'A' }, color: '#f00' }],
+        arcs: [], paths: [], regions: [],
+        animations: [{ entityId: 'm1', keyframes: [
+          { t: 0, value: { lat: 0, lon: 0 } },
+          { t: 5000, value: { lat: 10, lon: 10 } },
+        ]}],
+        cameraAnimation: [],
+      },
+      locale: 'en', playheadMs: 0,
+      onPlayheadChange: () => {}, onVisibilityChange: () => {}, onTransport: () => {},
+    });
+    tl.render();
+    const diamonds = el.querySelectorAll('.tl-keyframe');
+    assert.ok(diamonds.length >= 2);
+  });
+
+  it('fires onPlayheadChange when playhead is set', () => {
+    const el = document.getElementById('tl');
+    let newMs = null;
+    const tl = new Timeline(el, {
+      scene: { markers: [], arcs: [], paths: [], regions: [], animations: [], cameraAnimation: [] },
+      locale: 'en', playheadMs: 0,
+      onPlayheadChange: (ms) => { newMs = ms; },
+      onVisibilityChange: () => {}, onTransport: () => {},
+    });
+    tl.render();
+    tl.setPlayhead(3500);
+    assert.equal(newMs, 3500);
+  });
 });

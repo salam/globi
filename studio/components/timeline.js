@@ -169,9 +169,33 @@ export class Timeline {
     row.className = 'tl-row tl-track-row';
     row.dataset.id = item.id;
 
-    const bar = document.createElement('div');
-    bar.className = 'tl-visibility-bar';
-    row.appendChild(bar);
+    // Render visibility bars for elements with visibility intervals
+    const visibility = item.visibility || [];
+    if (visibility.length > 0) {
+      for (const interval of visibility) {
+        const bar = document.createElement('div');
+        bar.className = 'tl-bar tl-visibility-bar';
+        bar.dataset.from = interval.from;
+        bar.dataset.to = interval.to;
+        row.appendChild(bar);
+      }
+    } else {
+      const bar = document.createElement('div');
+      bar.className = 'tl-visibility-bar';
+      row.appendChild(bar);
+    }
+
+    // Render keyframe diamonds for animated entities
+    const animations = this._opts.scene.animations || [];
+    const anim = animations.find((a) => a.entityId === item.id);
+    if (anim) {
+      for (const kf of anim.keyframes || []) {
+        const diamond = document.createElement('div');
+        diamond.className = 'tl-keyframe';
+        diamond.dataset.t = kf.t;
+        row.appendChild(diamond);
+      }
+    }
 
     return row;
   }
@@ -198,9 +222,20 @@ export class Timeline {
     const row = document.createElement('div');
     row.className = 'tl-row tl-track-row tl-camera-track';
 
-    const bar = document.createElement('div');
-    bar.className = 'tl-visibility-bar';
-    row.appendChild(bar);
+    // Render keyframe diamonds for camera animation
+    const cameraAnimation = this._opts.scene.cameraAnimation || [];
+    if (cameraAnimation.length > 0) {
+      for (const kf of cameraAnimation) {
+        const diamond = document.createElement('div');
+        diamond.className = 'tl-keyframe';
+        diamond.dataset.t = kf.t;
+        row.appendChild(diamond);
+      }
+    } else {
+      const bar = document.createElement('div');
+      bar.className = 'tl-visibility-bar';
+      row.appendChild(bar);
+    }
 
     return row;
   }
