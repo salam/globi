@@ -13,6 +13,14 @@ function resolveName(name, locale = 'en') {
   return '';
 }
 
+function resolveDescription(marker, locale = 'en') {
+  const desc = resolveName(marker.description, locale);
+  if (desc) return desc;
+  const label = resolveName(marker.calloutLabel, locale);
+  if (label) return label;
+  return resolveName(marker.name, locale);
+}
+
 function zoomLabel(zoom) {
   if (zoom >= 2.5) return 'close';
   if (zoom >= 1.2) return 'moderate';
@@ -56,8 +64,12 @@ export function describeView(scene, viewStateQuery, level = 'brief') {
 }
 
 function describeBrief(scene, visible, angle, bodyName, proj, locale) {
-  const markerNames = visible.markers.map((m) => resolveName(m.name, locale)).filter(Boolean);
-  const markerList = markerNames.length > 0 ? markerNames.join(', ') : 'none';
+  const markerLabels = visible.markers.map((m) => {
+    const name = resolveName(m.name, locale);
+    const desc = resolveDescription(m, locale);
+    return desc && desc !== name ? `${name} (${desc})` : name;
+  }).filter(Boolean);
+  const markerList = markerLabels.length > 0 ? markerLabels.join(', ') : 'none';
   const direction = compassDirection(angle.lat, angle.lon);
   const zoom = zoomLabel(angle.zoom);
 
@@ -97,6 +109,10 @@ function describeDetailed(scene, visible, angle, bodyName, proj, locale) {
       const coord = formatCoord(m.lat, m.lon);
       const cat = m.category && m.category !== 'default' ? `, ${m.category}` : '';
       lines.push(`  ${name} (${coord}${cat})`);
+      const desc = resolveDescription(m, locale);
+      if (desc && desc !== name) {
+        lines.push(`    ${desc}`);
+      }
     }
   } else {
     lines.push('No markers visible.');

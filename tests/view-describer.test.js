@@ -12,6 +12,7 @@ function sampleScene() {
     markers: [
       { id: 'm1', name: { en: 'Berlin' }, lat: 52.5, lon: 13.4, alt: 0, visualType: 'dot', category: 'capital', calloutMode: 'always' },
       { id: 'm2', name: { en: 'Tokyo' }, lat: 35.7, lon: 139.7, alt: 0, visualType: 'dot', category: 'capital', calloutMode: 'hover' },
+      { id: 'm3', name: { en: 'Olympus Mons' }, description: { en: 'Largest volcano in the solar system' }, lat: 21.9, lon: -134.0, alt: 0, visualType: 'dot', category: 'landmarks', calloutMode: 'always' },
     ],
     arcs: [
       { id: 'a1', name: { en: 'Route' }, start: { lat: 52.5, lon: 13.4 }, end: { lat: 35.7, lon: 139.7 } },
@@ -69,5 +70,52 @@ describe('describeView', () => {
   it('includes zoom description', () => {
     const text = describeView(sampleScene(), mockViewState({ angle: { lat: 0, lon: 0, zoom: 3 } }), 'detailed');
     assert.ok(text.includes('close') || text.includes('zoom'));
+  });
+});
+
+describe('describeView description content', () => {
+  it('brief includes description in parentheses when different from name', () => {
+    const scene = sampleScene();
+    const vsq = mockViewState({ markers: scene.markers });
+    const text = describeView(scene, vsq, 'brief');
+    assert.ok(text.includes('Olympus Mons (Largest volcano in the solar system)'),
+      `Expected description in parentheses, got: ${text}`);
+  });
+
+  it('brief omits parentheses when description equals name', () => {
+    const scene = sampleScene();
+    const vsq = mockViewState({ markers: scene.markers });
+    const text = describeView(scene, vsq, 'brief');
+    // Berlin has no description, so fallback = name — no parentheses
+    assert.ok(!text.includes('Berlin (Berlin)'), 'should not repeat name as description');
+  });
+
+  it('detailed includes description as indented line', () => {
+    const scene = sampleScene();
+    const vsq = mockViewState({ markers: scene.markers });
+    const text = describeView(scene, vsq, 'detailed');
+    assert.ok(text.includes('Largest volcano in the solar system'),
+      `Expected description line, got: ${text}`);
+  });
+
+  it('falls back to calloutLabel when description is empty', () => {
+    const scene = {
+      ...sampleScene(),
+      markers: [
+        { id: 'm4', name: { en: 'ISS' }, calloutLabel: { en: 'International Space Station' }, lat: 10, lon: 20, alt: 0, visualType: 'model', category: 'default', calloutMode: 'always' },
+      ],
+    };
+    const vsq = mockViewState({ markers: scene.markers });
+    const text = describeView(scene, vsq, 'brief');
+    assert.ok(text.includes('ISS (International Space Station)'),
+      `Expected calloutLabel fallback, got: ${text}`);
+  });
+
+  it('falls back to name when both description and calloutLabel are empty', () => {
+    const scene = sampleScene();
+    const vsq = mockViewState({ markers: [scene.markers[0]] }); // Berlin, no description/calloutLabel
+    const text = describeView(scene, vsq, 'brief');
+    assert.ok(text.includes('Berlin'), 'should include name');
+    assert.ok(!text.includes('Berlin ('), 'should not have parenthetical when falling back to name');
   });
 });
