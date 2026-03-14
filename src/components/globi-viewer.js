@@ -239,12 +239,13 @@ const TEMPLATE = `
     }
 
     .legend-symbol.model {
-      width: 12px;
-      height: 11px;
-      clip-path: polygon(50% 0, 0 100%, 100% 100%);
-      border-radius: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
       border: none;
       box-shadow: none;
+      position: relative;
+      background: var(--legend-symbol-color);
     }
 
     .legend-symbol.text {
@@ -261,6 +262,27 @@ const TEMPLATE = `
       font-weight: 700;
       font-size: 11px;
       line-height: 1;
+    }
+
+    .legend-symbol.pulse {
+      animation: legend-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes legend-pulse {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(10, 15, 28, 0.35); }
+      50% { box-shadow: 0 0 6px 2px var(--legend-symbol-color); }
+    }
+
+    .legend-symbol.model::after {
+      content: '\u25B2';
+      position: absolute;
+      top: -1px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 7px;
+      color: rgba(255,255,255,0.7);
+      line-height: 12px;
     }
 
     .legend-label {
@@ -1524,7 +1546,7 @@ export class GlobiViewerElement extends HTMLElement {
 
         const symbol = getLegendSymbol(marker);
         const symbolNode = document.createElement('span');
-        symbolNode.className = `legend-symbol ${symbol.shape}`;
+        symbolNode.className = `legend-symbol ${symbol.shape}${symbol.pulse ? ' pulse' : ''}`;
         symbolNode.style.setProperty('--legend-symbol-color', symbol.color);
         if (symbol.assetUri) {
           symbolNode.style.background = `url("${symbol.assetUri}") center/contain no-repeat`;

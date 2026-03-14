@@ -238,7 +238,7 @@ export class PropertiesPanel {
       : '';
     this._container.appendChild(this._makeField('Callout Label', 'calloutLabel', calloutVal, entityType, item.id, onChange));
     if (item.markerScale !== undefined || entityType === 'marker') {
-      this._container.appendChild(this._makeField('Scale', 'markerScale', item.markerScale ?? 1, entityType, item.id, onChange, 'number'));
+      this._container.appendChild(this._makeField('Scale', 'markerScale', item.markerScale ?? 0.025, entityType, item.id, onChange, 'number'));
     }
 
     // Animation section

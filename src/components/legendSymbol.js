@@ -16,6 +16,7 @@ export function getLegendSymbol(marker = {}) {
   return {
     shape,
     color,
+    pulse: !!marker.pulse,
     assetUri: shape === 'image' && marker.assetUri ? marker.assetUri : null,
   };
 }
