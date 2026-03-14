@@ -789,6 +789,16 @@ export class ThreeGlobeRenderer {
     return this.#worldToClient(worldPos);
   }
 
+  isPointOccluded(lat, lon) {
+    if (!this.#camera || !this.#globeGroup) return false;
+    const cart = latLonToCartesian(lat, lon, 1, 0);
+    const worldPos = new Vector3(cart.x, cart.y, cart.z);
+    worldPos.applyQuaternion(this.#globeGroup.quaternion);
+    const camPos = this.#camera.position;
+    // Dot product: positive = front-facing, zero/negative = back-facing (occluded)
+    return worldPos.dot(camPos) <= 0;
+  }
+
   getCanvasRect() {
     if (!this.#webglRenderer) return null;
     return this.#webglRenderer.domElement.getBoundingClientRect();

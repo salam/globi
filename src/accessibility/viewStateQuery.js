@@ -6,6 +6,12 @@ export class ViewStateQuery {
 
   project(lat, lon, alt = 0) {
     if (!this.#renderer || typeof this.#renderer.projectPointToClient !== 'function') return null;
+
+    // Check back-face occlusion if the renderer supports it
+    if (typeof this.#renderer.isPointOccluded === 'function' && this.#renderer.isPointOccluded(lat, lon)) {
+      return null;
+    }
+
     let result;
     if (this.#renderer.projectPointToClient.length <= 1) {
       result = this.#renderer.projectPointToClient({ lat, lon, alt });

@@ -124,3 +124,50 @@ describe('ViewStateQuery.project() property normalization', () => {
     assert.ok(visible.markers.length > 0, 'should find at least one visible marker');
   });
 });
+
+function mockGlobeRendererWithOcclusion(cameraState = { centerLat: 45, centerLon: 23, zoom: 1.5 }) {
+  return {
+    ...mockGlobeRenderer(cameraState),
+    isPointOccluded(lat, lon) {
+      // Simulate: points with lon > 180 are "behind" the globe
+      return lon > 180 || lon < -180;
+    },
+  };
+}
+
+describe('ViewStateQuery back-face occlusion', () => {
+  it('returns null for occluded points when renderer has isPointOccluded', () => {
+    const vsq = new ViewStateQuery();
+    const renderer = mockGlobeRendererWithOcclusion();
+    renderer.isPointOccluded = () => true; // all points occluded
+    vsq.setRenderer(renderer);
+    const pt = vsq.project(52.5, 13.4, 0);
+    assert.equal(pt, null, 'occluded point should return null');
+  });
+
+  it('returns point for non-occluded points', () => {
+    const vsq = new ViewStateQuery();
+    vsq.setRenderer(mockGlobeRendererWithOcclusion());
+    const pt = vsq.project(52.5, 13.4, 0);
+    assert.ok(pt !== null, 'non-occluded point should return { x, y }');
+  });
+
+  it('getVisibleEntities excludes occluded markers', () => {
+    const vsq = new ViewStateQuery();
+    const renderer = mockGlobeRendererWithOcclusion();
+    renderer.isPointOccluded = (lat, lon) => lon > 100; // Tokyo (139.7) occluded, Berlin (13.4) not
+    vsq.setRenderer(renderer);
+    const scene = sampleScene();
+    const visible = vsq.getVisibleEntities(scene);
+    const names = visible.markers.map(m => m.name.en);
+    assert.ok(names.includes('Berlin'), 'front-face Berlin should be visible');
+    assert.ok(!names.includes('Tokyo'), 'back-face Tokyo should be excluded');
+  });
+
+  it('skips occlusion check when renderer lacks isPointOccluded', () => {
+    const vsq = new ViewStateQuery();
+    vsq.setRenderer(mockFlatRenderer());
+    const pt = vsq.project(52.5, 13.4, 0);
+    assert.ok(pt !== null, 'flat renderer has no occlusion — all points visible');
+  });
+});
