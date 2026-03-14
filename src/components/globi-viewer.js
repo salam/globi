@@ -1757,7 +1757,7 @@ export class GlobiViewerElement extends HTMLElement {
     }
   }
 
-  #handleContextMenuAction(action, data) {
+  async #handleContextMenuAction(action, data) {
     const scene = this.#controller.getScene();
     switch (action) {
       case 'copyCoordinates':
@@ -1810,11 +1810,19 @@ export class GlobiViewerElement extends HTMLElement {
         break;
       }
       case 'openStudio': {
-        const json = JSON.stringify(scene);
+        const studioBase = this.getAttribute('studio-base') || '/studio/';
         try {
-          sessionStorage.setItem('globi-studio-scene', json);
-        } catch (_) { /* quota exceeded — Studio will start empty */ }
-        window.open('/studio/index.html', '_blank');
+          const { StudioOverlay } = await import(studioBase + 'studioOverlay.js');
+          const overlay = new StudioOverlay(this);
+          overlay.open();
+        } catch (err) {
+          console.warn('Failed to load Studio overlay, falling back to new tab:', err.message);
+          const json = JSON.stringify(scene);
+          try {
+            sessionStorage.setItem('globi-studio-scene', json);
+          } catch (_) { /* quota exceeded */ }
+          window.open(studioBase + 'index.html', '_blank');
+        }
         break;
       }
     }
