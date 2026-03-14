@@ -11,6 +11,7 @@ import { PropertiesPanel } from './components/propertiesPanel.js';
 import { Timeline } from './components/timeline.js';
 import { EasingEditor } from './components/easingEditor.js';
 import { PreviewMode } from './components/previewMode.js';
+import { FilterEditor } from './components/filterEditor.js';
 import { ToolManager } from './tools/toolManager.js';
 import { SelectTool } from './tools/selectTool.js';
 import { MarkerTool } from './tools/markerTool.js';
@@ -426,6 +427,17 @@ function handleMenuAction(action) {
       break;
     }
     case 'togglePreview': previewMode.toggle(); break;
+    case 'editFilters': {
+      const filterEditor = new FilterEditor({
+        getScene: () => scene,
+        onChange: (filters) => {
+          scene = { ...scene, filters };
+          pushScene(scene);
+        },
+      });
+      filterEditor.open();
+      break;
+    }
     case 'openChatGPT': window.open('https://chat.openai.com/', '_blank'); break;
     case 'openClaude': window.open('https://claude.ai/', '_blank'); break;
     case 'openDocs': window.open('https://globi.world/docs', '_blank'); break;

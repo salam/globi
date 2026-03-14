@@ -39,6 +39,8 @@ const MENU_STRUCTURE = [
   {
     label: 'Tools',
     items: [
+      { label: 'Edit Filters\u2026', action: 'editFilters' },
+      { divider: true },
       { label: 'Custom ChatGPT \u2197', action: 'openChatGPT' },
       { label: 'Claude Cowork \u2197', action: 'openClaude' },
     ],
