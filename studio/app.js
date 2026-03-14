@@ -16,6 +16,7 @@ import { ArcTool } from './tools/arcTool.js';
 import { PathTool } from './tools/pathTool.js';
 import { RegionTool } from './tools/regionTool.js';
 import { DrawTool } from './tools/drawTool.js';
+import { getCelestialPreset } from '../src/scene/celestial.js';
 
 // --- Init ---
 const viewer = document.getElementById('viewer');
@@ -379,6 +380,32 @@ function handleTransport(action) {
 }
 
 function handlePropertyChange(entityType, id, field, value) {
+  if (entityType === 'scene') {
+    if (field.startsWith('planet.')) {
+      const planetField = field.slice('planet.'.length);
+      if (planetField === 'id') {
+        const preset = getCelestialPreset(value);
+        scene = {
+          ...scene,
+          planet: {
+            ...preset,
+            lightingMode: scene.planet?.lightingMode ?? 'fixed',
+            lightingTimestamp: scene.planet?.lightingTimestamp ?? '',
+          },
+        };
+      } else {
+        scene = { ...scene, planet: { ...scene.planet, [planetField]: value } };
+      }
+    } else if (field.startsWith('viewerUi.')) {
+      const uiField = field.slice('viewerUi.'.length);
+      scene = { ...scene, viewerUi: { ...(scene.viewerUi || {}), [uiField]: value } };
+    } else {
+      scene = { ...scene, [field]: value };
+    }
+    pushScene(scene);
+    return;
+  }
+
   const collections = { marker: 'markers', arc: 'arcs', path: 'paths', region: 'regions' };
   const col = collections[entityType];
   if (!col) return;
