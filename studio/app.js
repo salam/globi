@@ -238,6 +238,16 @@ viewportEl.addEventListener('mousedown', (e) => routeEvent('handleMouseDown', e)
 viewportEl.addEventListener('mousemove', (e) => routeEvent('handleMouseMove', e));
 viewportEl.addEventListener('mouseup', (e) => routeEvent('handleMouseUp', e));
 
+// --- Legend marker selection ---
+viewer.addEventListener('markerClick', (e) => {
+  const marker = e.detail;
+  if (marker?.id) {
+    editorStore.dispatch({ type: 'select', ids: [marker.id] });
+    editorStore.dispatch({ type: 'setTool', tool: 'select' });
+    updateUI();
+  }
+});
+
 // --- Keyboard shortcuts ---
 document.addEventListener('keydown', (e) => {
   // Ignore when typing in input fields
