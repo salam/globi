@@ -68,7 +68,7 @@ export class MenuBar {
 
     // Logo
     const logo = document.createElement('div');
-    logo.className = 'menu-logo';
+    logo.className = 'logo';
     logo.textContent = 'GLOBI STUDIO';
     this._container.appendChild(logo);
 
@@ -88,7 +88,7 @@ export class MenuBar {
       for (const item of menu.items) {
         if (item.divider) {
           const divider = document.createElement('div');
-          divider.className = 'menu-divider';
+          divider.className = 'dropdown-divider';
           dropdown.appendChild(divider);
         } else {
           const dropdownItem = document.createElement('div');
@@ -101,7 +101,7 @@ export class MenuBar {
 
           if (item.shortcut) {
             const shortcut = document.createElement('span');
-            shortcut.className = 'dropdown-shortcut';
+            shortcut.className = 'shortcut';
             shortcut.textContent = item.shortcut;
             dropdownItem.appendChild(shortcut);
           }

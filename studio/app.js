@@ -470,7 +470,10 @@ function handleMenuAction(action) {
       if (window.__studioOverlay) {
         window.__studioOverlay.close();
       } else if (isDirty) {
-        if (confirm('You have unsaved changes. Close anyway?')) window.close();
+        if (confirm('You have unsaved changes. Close anyway?')) {
+          isDirty = false;
+          window.close();
+        }
       } else {
         window.close();
       }

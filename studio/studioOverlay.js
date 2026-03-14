@@ -30,8 +30,9 @@ export class StudioOverlay {
     const studio = document.createElement('div');
     studio.className = 'studio';
 
+    // IDs match studio/index.html so app.js can bootstrap against them
     const menuBar = document.createElement('div');
-    menuBar.id = 'studio-menu-bar';
+    menuBar.id = 'menu-bar';
     menuBar.className = 'menu-bar';
     studio.appendChild(menuBar);
 
@@ -39,24 +40,24 @@ export class StudioOverlay {
     main.className = 'main';
 
     const toolStrip = document.createElement('div');
-    toolStrip.id = 'studio-tool-strip';
+    toolStrip.id = 'tool-strip';
     toolStrip.className = 'tool-strip';
     main.appendChild(toolStrip);
 
     const viewport = document.createElement('div');
-    viewport.id = 'studio-viewport';
+    viewport.id = 'viewport';
     viewport.className = 'viewport';
     main.appendChild(viewport);
 
     const properties = document.createElement('div');
-    properties.id = 'studio-properties';
+    properties.id = 'properties';
     properties.className = 'properties';
     main.appendChild(properties);
 
     studio.appendChild(main);
 
     const timeline = document.createElement('div');
-    timeline.id = 'studio-timeline';
+    timeline.id = 'timeline';
     timeline.className = 'timeline';
     studio.appendChild(timeline);
 
