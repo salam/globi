@@ -1,6 +1,8 @@
 // studio/app.js
 import '../src/components/globi-viewer.js';
 import { readScene } from './state/sessionTransfer.js';
+import { exportSceneToGeoJSON } from '../src/io/geojson.js';
+import { showModal } from './components/modal.js';
 import { EditorStore } from './state/editorStore.js';
 import { UndoRedo } from './state/undoRedo.js';
 import { MenuBar } from './components/menuBar.js';
@@ -18,6 +20,16 @@ import { RegionTool } from './tools/regionTool.js';
 import { DrawTool } from './tools/drawTool.js';
 import { getCelestialPreset } from '../src/scene/celestial.js';
 
+function downloadText(text, filename, mimeType = 'text/plain') {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // --- Init ---
 const viewer = document.getElementById('viewer');
 const studioEl = document.getElementById('studio');
@@ -28,6 +40,16 @@ const EMPTY_SCENE = { version: 1, markers: [], arcs: [], paths: [], regions: [],
 // Load scene from sessionStorage or create empty
 const transferred = await readScene();
 let scene = transferred || EMPTY_SCENE;
+let isDirty = false;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', (e) => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+}
 
 // State
 const editorStore = new EditorStore();
@@ -95,6 +117,7 @@ const controllerProxy = new Proxy(controller, {
 
 function pushScene(newScene) {
   scene = newScene;
+  isDirty = true;
   undoRedo.push(scene);
   if (viewer.setScene) viewer.setScene(scene);
   updateUI();
@@ -305,11 +328,24 @@ function handleMenuAction(action) {
       a.download = 'globi-scene.json';
       a.click();
       URL.revokeObjectURL(url);
+      isDirty = false;
       break;
     }
-    case 'exportJSON': case 'exportGeoJSON': case 'exportOBJ':
-      console.log(`Export ${action} — not yet wired`);
+    case 'exportJSON': {
+      const json = JSON.stringify(scene, null, 2);
+      downloadText(json, 'globi-scene.json', 'application/json');
+      isDirty = false;
       break;
+    }
+    case 'exportGeoJSON': {
+      const geojson = exportSceneToGeoJSON(scene);
+      downloadText(JSON.stringify(geojson, null, 2), 'globi-scene.geojson', 'application/json');
+      break;
+    }
+    case 'exportOBJ': {
+      alert('OBJ export coming soon.');
+      break;
+    }
     case 'undo': {
       const prev = undoRedo.undo();
       if (prev) { scene = prev; if (viewer.setScene) viewer.setScene(scene); updateUI(); }
@@ -357,14 +393,89 @@ function handleMenuAction(action) {
     case 'toggleProperties': editorStore.dispatch({ type: 'togglePanel', panel: 'properties' }); break;
     case 'toggleTimeline': editorStore.dispatch({ type: 'togglePanel', panel: 'timeline' }); break;
     case 'toggleHud': editorStore.dispatch({ type: 'togglePanel', panel: 'hud' }); break;
-    case 'zoomToFit': break; // TODO: wire to viewer
-    case 'resetCamera': break; // TODO: wire to viewer
+    case 'zoomToFit': {
+      const ctrl = getController();
+      if (ctrl?.zoomToFit) ctrl.zoomToFit();
+      break;
+    }
+    case 'resetCamera': {
+      const ctrl = getController();
+      if (ctrl?.resetCamera) ctrl.resetCamera();
+      break;
+    }
     case 'togglePreview': previewMode.toggle(); break;
     case 'openChatGPT': window.open('https://chat.openai.com/', '_blank'); break;
     case 'openClaude': window.open('https://claude.ai/', '_blank'); break;
     case 'openDocs': window.open('https://globi.world/docs', '_blank'); break;
-    case 'showShortcuts': break; // TODO
-    case 'showAbout': break; // TODO
+    case 'showShortcuts': {
+      const content = document.createElement('div');
+      const shortcuts = [
+        ['V', 'Select tool'], ['M', 'Marker tool'], ['A', 'Arc tool'],
+        ['L', 'Path (line) tool'], ['D', 'Draw tool'], ['Shift+R', 'Region tool'],
+        ['P', 'Toggle properties'], ['T', 'Toggle timeline'], ['H', 'Toggle HUD'],
+        ['F', 'Zoom to fit'], ['R', 'Reset camera'],
+        ['Space', 'Preview mode'], ['Escape', 'Cancel / deselect'],
+        ['Enter', 'Finish path/region'], ['Delete', 'Delete selected'],
+        ['Ctrl+Z', 'Undo'], ['Ctrl+Shift+Z', 'Redo'],
+        ['Ctrl+D', 'Duplicate'], ['Ctrl+A', 'Select all'],
+        ['Ctrl+S', 'Save as file'], ['Ctrl+N', 'New scene'],
+        ['Ctrl+O', 'Open file'], ['?', 'Show shortcuts'],
+      ];
+      const table = document.createElement('table');
+      for (const [key, desc] of shortcuts) {
+        const tr = document.createElement('tr');
+        const tdKey = document.createElement('td');
+        tdKey.textContent = key;
+        tdKey.style.fontFamily = 'monospace';
+        tdKey.style.color = '#7a7aff';
+        const tdDesc = document.createElement('td');
+        tdDesc.textContent = desc;
+        tr.appendChild(tdKey);
+        tr.appendChild(tdDesc);
+        table.appendChild(tr);
+      }
+      content.appendChild(table);
+      showModal('Keyboard Shortcuts', content);
+      break;
+    }
+    case 'showAbout': {
+      const content = document.createElement('div');
+      const title = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = 'Globi Studio';
+      title.appendChild(strong);
+      content.appendChild(title);
+      const desc = document.createElement('p');
+      desc.textContent = 'A visual editor for Globi scenes.';
+      content.appendChild(desc);
+      const tagline = document.createElement('p');
+      tagline.style.marginTop = '12px';
+      tagline.style.color = '#777';
+      tagline.textContent = 'Built with vanilla JS, Three.js, and love.';
+      content.appendChild(tagline);
+      const linkP = document.createElement('p');
+      linkP.style.marginTop = '8px';
+      const link = document.createElement('a');
+      link.href = 'https://globi.world/docs';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.style.color = '#7a7aff';
+      link.textContent = 'Documentation';
+      linkP.appendChild(link);
+      content.appendChild(linkP);
+      showModal('About Globi Studio', content);
+      break;
+    }
+    case 'closeStudio': {
+      if (window.__studioOverlay) {
+        window.__studioOverlay.close();
+      } else if (isDirty) {
+        if (confirm('You have unsaved changes. Close anyway?')) window.close();
+      } else {
+        window.close();
+      }
+      break;
+    }
   }
 }
 
