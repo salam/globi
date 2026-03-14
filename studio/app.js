@@ -394,13 +394,25 @@ function handleMenuAction(action) {
     case 'toggleTimeline': editorStore.dispatch({ type: 'togglePanel', panel: 'timeline' }); break;
     case 'toggleHud': editorStore.dispatch({ type: 'togglePanel', panel: 'hud' }); break;
     case 'zoomToFit': {
-      const ctrl = getController();
-      if (ctrl?.zoomToFit) ctrl.zoomToFit();
+      // Compute bounding center of all scene entities
+      const points = [
+        ...(scene.markers || []).map(m => ({ lat: m.lat, lon: m.lon })),
+        ...(scene.arcs || []).flatMap(a => [
+          { lat: a.startLat, lon: a.startLon },
+          { lat: a.endLat, lon: a.endLon },
+        ]),
+        ...(scene.paths || []).flatMap(p => (p.waypoints || []).map(w => ({ lat: w.lat, lon: w.lon }))),
+        ...(scene.regions || []).flatMap(r => (r.points || []).map(p => ({ lat: p.lat, lon: p.lon }))),
+      ];
+      if (points.length > 0) {
+        const avgLat = points.reduce((s, p) => s + p.lat, 0) / points.length;
+        const avgLon = points.reduce((s, p) => s + p.lon, 0) / points.length;
+        viewer.flyTo({ lat: avgLat, lon: avgLon }, { zoom: 1 });
+      }
       break;
     }
     case 'resetCamera': {
-      const ctrl = getController();
-      if (ctrl?.resetCamera) ctrl.resetCamera();
+      viewer.flyTo({ lat: 0, lon: 0 }, { zoom: 1 });
       break;
     }
     case 'togglePreview': previewMode.toggle(); break;
@@ -527,8 +539,9 @@ function handlePropertyChange(entityType, id, field, value) {
   if (!entity) return;
 
   let updated;
-  if (field === 'name') {
-    updated = { ...entity, name: { ...(entity.name || {}), [scene.locale || 'en']: value } };
+  const localizedFields = ['name', 'description', 'calloutLabel'];
+  if (localizedFields.includes(field)) {
+    updated = { ...entity, [field]: { ...(entity[field] || {}), [scene.locale || 'en']: value } };
   } else if (field === 'lat' || field === 'lon') {
     updated = { ...entity, [field]: parseFloat(value) || 0 };
   } else {

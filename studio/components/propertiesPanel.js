@@ -228,6 +228,18 @@ export class PropertiesPanel {
 
     // Metadata section
     this._container.appendChild(this._makeSection('Metadata'));
+    this._container.appendChild(this._makeField('Category', 'category', item.category ?? '', entityType, item.id, onChange));
+    const descVal = item.description
+      ? (typeof item.description === 'object' ? (item.description[locale] ?? item.description.en ?? '') : item.description)
+      : '';
+    this._container.appendChild(this._makeField('Description', 'description', descVal, entityType, item.id, onChange));
+    const calloutVal = item.calloutLabel
+      ? (typeof item.calloutLabel === 'object' ? (item.calloutLabel[locale] ?? item.calloutLabel.en ?? '') : item.calloutLabel)
+      : '';
+    this._container.appendChild(this._makeField('Callout Label', 'calloutLabel', calloutVal, entityType, item.id, onChange));
+    if (item.markerScale !== undefined || entityType === 'marker') {
+      this._container.appendChild(this._makeField('Scale', 'markerScale', item.markerScale ?? 1, entityType, item.id, onChange, 'number'));
+    }
 
     // Animation section
     this._container.appendChild(this._makeSection('Animation'));
