@@ -1811,16 +1811,17 @@ export class GlobiViewerElement extends HTMLElement {
       }
       case 'openStudio': {
         const studioBase = this.getAttribute('studio-base') || '/studio/';
+        // Write current scene to sessionStorage so Studio app.js picks it up
+        const json = JSON.stringify(scene);
+        try {
+          sessionStorage.setItem('globi-studio-scene', json);
+        } catch (_) { /* quota exceeded — Studio will start empty */ }
         try {
           const { StudioOverlay } = await import(studioBase + 'studioOverlay.js');
-          const overlay = new StudioOverlay(this);
-          overlay.open();
+          const overlay = new StudioOverlay(this, { studioBase });
+          await overlay.open();
         } catch (err) {
           console.warn('Failed to load Studio overlay, falling back to new tab:', err.message);
-          const json = JSON.stringify(scene);
-          try {
-            sessionStorage.setItem('globi-studio-scene', json);
-          } catch (_) { /* quota exceeded */ }
           window.open(studioBase + 'index.html', '_blank');
         }
         break;
