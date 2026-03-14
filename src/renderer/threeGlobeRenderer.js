@@ -331,6 +331,8 @@ export class ThreeGlobeRenderer {
       flatLighting: palette.flatLighting ? 1.0 : 0.0,
     });
     this.#bodyMesh = bodyMesh;
+    // Hide body until day texture loads to prevent white flash
+    if (palette.useTextures) bodyMesh.visible = false;
     globeGroup.add(bodyMesh);
 
     // --- Graticule ---
@@ -984,6 +986,8 @@ export class ThreeGlobeRenderer {
       flatLighting: p.flatLighting ? 1.0 : 0.0,
     });
     this.#bodyMesh = bodyMesh;
+    // Hide body until day texture loads to prevent white flash
+    if (p.useTextures) bodyMesh.visible = false;
     this.#globeGroup.add(bodyMesh);
 
     // Rebuild atmosphere (if applicable)
@@ -1111,6 +1115,7 @@ export class ThreeGlobeRenderer {
         this.#bodyMesh.material.uniforms[uniformName].value = cached;
         this.#bodyMesh.material.needsUpdate = true;
         this.#dirty = true;
+        if (uniformName === 'dayTexture') this.#bodyMesh.visible = true;
       }
       return cached;
     }
@@ -1123,6 +1128,10 @@ export class ThreeGlobeRenderer {
         if (this.#bodyMesh?.material?.uniforms?.[uniformName]) {
           this.#bodyMesh.material.uniforms[uniformName].value = loadedTex;
           this.#bodyMesh.material.needsUpdate = true;
+        }
+        // Reveal body mesh once the day texture is ready
+        if (uniformName === 'dayTexture' && this.#bodyMesh) {
+          this.#bodyMesh.visible = true;
         }
         this.#dirty = true;
       },
