@@ -78,8 +78,8 @@ const propsPanel = new PropertiesPanel(document.getElementById('properties'), {
   selectedIds: [],
   locale: scene.locale || 'en',
   onChange: handlePropertyChange,
-  getCamera: () => controllerProxy.getCameraState(),
-  onFlyTo: (target, opts) => controllerProxy.flyTo(target, opts),
+  getCamera: () => viewer.getCameraState(),
+  onFlyTo: (target, opts) => viewer.flyTo(target, opts),
 });
 propsPanel.render();
 
