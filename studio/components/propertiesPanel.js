@@ -110,15 +110,15 @@ export class PropertiesPanel {
 
   _makeField(label, field, value, entityType, entityId, onChange, inputType = 'text') {
     const row = document.createElement('div');
-    row.className = 'props-row';
+    row.className = 'field';
 
     const lbl = document.createElement('label');
-    lbl.className = 'props-label';
+    lbl.className = 'field-label';
     lbl.textContent = label;
     row.appendChild(lbl);
 
     const input = document.createElement('input');
-    input.className = 'props-input';
+    input.className = 'field-input';
     input.type = inputType;
     input.dataset.field = field;
     input.value = value ?? '';
@@ -133,14 +133,9 @@ export class PropertiesPanel {
   }
 
   _makeSection(title) {
-    const section = document.createElement('div');
-    section.className = 'props-section';
-
     const heading = document.createElement('div');
-    heading.className = 'props-section-title';
+    heading.className = 'props-section-header';
     heading.textContent = title;
-    section.appendChild(heading);
-
-    return section;
+    return heading;
   }
 }
