@@ -399,3 +399,14 @@ body { background: #0d0d1a; color: #ccc; font-family: -apple-system, BlinkMacSys
 .modal-body table { width: 100%; border-collapse: collapse; }
 .modal-body td { padding: 4px 12px 4px 0; }
 .modal-body td:last-child { color: #555; text-align: right; }
+
+/* Studio Overlay (inline injection) */
+.studio-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: #0d0d1a;
+}
+.studio-overlay .studio {
+  height: 100%;
+}
