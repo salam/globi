@@ -526,14 +526,17 @@ function handlePropertyChange(entityType, id, field, value) {
   const entity = scene[col].find(e => e.id === id);
   if (!entity) return;
 
+  let updated;
   if (field === 'name') {
-    entity.name = { ...(entity.name || {}), [scene.locale || 'en']: value };
+    updated = { ...entity, name: { ...(entity.name || {}), [scene.locale || 'en']: value } };
   } else if (field === 'lat' || field === 'lon') {
-    entity[field] = parseFloat(value) || 0;
+    updated = { ...entity, [field]: parseFloat(value) || 0 };
   } else {
-    entity[field] = value;
+    updated = { ...entity, [field]: value };
   }
-  pushScene({ ...scene });
+  // New object references so the viewer detects the change
+  scene = { ...scene, [col]: scene[col].map(e => e.id === id ? updated : e) };
+  pushScene(scene);
 }
 
 // Initial render — wait for custom element to be defined

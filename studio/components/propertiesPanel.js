@@ -321,7 +321,9 @@ export class PropertiesPanel {
     input.type = 'color';
     input.dataset.field = field;
     input.value = value || '#000000';
-    input.addEventListener('input', () => {
+    // Use 'change' (not 'input') so the native color picker stays open
+    // while the user is dragging in the gradient area
+    input.addEventListener('change', () => {
       onChange(entityType, entityId, field, input.value);
     });
     row.appendChild(input);
