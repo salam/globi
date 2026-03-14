@@ -22,8 +22,11 @@ A-Frame Inspector style: inject Studio as a full-page overlay on the current pag
 
 **Lazy loading:**
 - Studio bundle is NOT included in `dist/globi.js`
-- `globi-viewer.js` uses `await import('/studio/studioOverlay.js')` when "Open Studio" is selected
+- `globi-viewer.js` uses dynamic `import()` when "Open Studio" is selected
+- The import path is resolved relative to the `<globi-viewer>` element's `studio-base` attribute, defaulting to `/studio/`
 - No sessionStorage transfer needed — the live viewer element is shared directly
+
+**Browser compatibility constraint:** Canvas/WebGL context reparenting works reliably in Chromium-based browsers. Firefox and Safari may tear down the GL context on reparent. If this proves problematic, a fallback approach using `position: fixed` on the viewer in-place (without reparenting) can be implemented. Initial implementation targets Chromium; other browsers are best-effort.
 
 **Viewer hand-off:**
 - Studio reads scene state from the viewer's existing controller (`viewer._controller`)
@@ -38,6 +41,7 @@ A-Frame Inspector style: inject Studio as a full-page overlay on the current pag
 - Overlay attaches to `document.body`, not inside shadow DOM — Studio UI needs full-page layout
 - Viewer is reparented (moved), not cloned — preserves WebGL context and state
 - Close button in Studio menu bar returns viewer to original position
+- `studio-base` attribute on `<globi-viewer>` allows custom deploy paths (default: `/studio/`)
 
 ---
 
@@ -50,17 +54,24 @@ Scene Settings currently uses free-form text inputs for Theme, Projection, Local
 
 **Scene-level controls (when nothing selected):**
 
-| Setting | Control type | Values |
-|---------|-------------|--------|
-| Theme | `<select>` dropdown | `default`, `light`, `dark`, `satellite`, `topo` |
-| Projection | `<select>` dropdown | `globe`, `mercator`, `equirectangular`, `naturalEarth` |
-| Body | `<select>` dropdown | 13 celestial bodies from schema |
-| Locale | `<select>` dropdown | `en`, `de`, `fr`, `es`, `zh`, `ja`, `ar`, `pt`, `ru`, `hi`, `ko` |
-| Surface tint | `<input type="color">` | hex color |
-| Overlay tint | `<input type="color">` | hex color |
-| Lighting mode | `<select>` dropdown | `realistic`, `ambient`, `time` |
-| Show borders | `<input type="checkbox">` | boolean |
-| Show labels | `<input type="checkbox">` | boolean |
+| Setting | Control type | Values | Target path |
+|---------|-------------|--------|-------------|
+| Theme | `<select>` dropdown | `photo`, `wireframe-shaded`, `wireframe-flat`, `grayscale-shaded`, `grayscale-flat` | `scene.theme` |
+| Projection | `<select>` dropdown | `globe`, `azimuthalEquidistant`, `orthographic`, `equirectangular` | `scene.projection` |
+| Body | `<select>` dropdown | `mercury`, `venus`, `earth`, `mars`, `jupiter`, `saturn`, `uranus`, `neptune`, `moon`, `io`, `europa`, `ganymede`, `titan` | `scene.planet.id` (triggers full preset swap) |
+| Locale | `<select>` dropdown | `en`, `de`, `fr`, `es`, `zh`, `ja`, `ar`, `pt`, `ru`, `hi`, `ko` | `scene.locale` |
+| Surface tint | `<input type="color">` | hex color | `scene.surfaceTint` |
+| Overlay tint | `<input type="color">` | hex color | `scene.overlayTint` |
+| Lighting mode | `<select>` dropdown | `fixed`, `sun` | `scene.planet.lightingMode` |
+| Show borders | `<input type="checkbox">` | boolean | `scene.planet.showBorders` |
+| Show labels | `<input type="checkbox">` | boolean | `scene.planet.showLabels` |
+
+**`handlePropertyChange` extension:** The existing handler only dispatches to `scene.markers`, `scene.arcs`, `scene.paths`, `scene.regions`. For scene-level properties, add an `entityType === 'scene'` branch that routes:
+- `theme`, `projection`, `locale`, `surfaceTint`, `overlayTint` → `scene.<field>`
+- `planet.id`, `planet.lightingMode`, `planet.showBorders`, `planet.showLabels` → `scene.planet.<field>`
+- `viewerUi.*` fields → `scene.viewerUi.<field>`
+
+When `planet.id` changes, call `getCelestialPreset(newId)` and merge the preset into `scene.planet` (preserving `lightingMode` and `lightingTimestamp`).
 
 **Viewer UI toggles** (collapsible section):
 
@@ -123,7 +134,13 @@ Several menu actions are stubbed (`exportJSON`, `exportGeoJSON`, `exportOBJ`, `z
 `styles.css` defines classes like `field-label`, `field-input`, `props-section-header` but `propertiesPanel.js` generates elements with `props-label`, `props-input`, `props-section-title`. Result: inputs are completely unstyled.
 
 ### Fix
-Align `propertiesPanel.js` class names to match what `styles.css` already defines, OR update `styles.css` to match the JS — whichever requires fewer changes. Audit all class names across both files and reconcile.
+Update `propertiesPanel.js` to use the class names already defined in `styles.css`:
+- `props-label` → `field-label`
+- `props-input` → `field-input`
+- `props-row` → `field-row`
+- `props-section-title` → `props-section-header`
+
+The CSS already has `props-header` and `props-section` which match — those stay. New control types (select, checkbox, color) will use `field-select`, `field-color` (already in CSS) and a new `field-checkbox` class.
 
 ### New files
 | File | Purpose |
@@ -135,10 +152,10 @@ Align `propertiesPanel.js` class names to match what `styles.css` already define
 | File | Changes |
 |------|---------|
 | `src/components/globi-viewer.js` | Replace `window.open` with dynamic `import()` + `StudioOverlay` |
-| `studio/app.js` | Implement stubbed menu actions, add dirty state, add `closeStudio` |
-| `studio/components/propertiesPanel.js` | Smart controls (selects, checkboxes, color pickers), CSS class fix |
+| `studio/app.js` | Implement stubbed menu actions, add dirty state, add `closeStudio`, extend `handlePropertyChange` for scene-level fields |
+| `studio/components/propertiesPanel.js` | Smart controls (selects, checkboxes, color pickers), align CSS class names to `styles.css` |
 | `studio/components/menuBar.js` | Add "Close Studio" menu item |
-| `studio/styles.css` | Add styles for new control types, reconcile class names |
+| `studio/styles.css` | Add `field-checkbox` style, modal styles |
 
 ---
 
