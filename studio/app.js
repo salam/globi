@@ -97,7 +97,11 @@ const easingEditor = new EasingEditor(viewportEl, { onSelect: () => {} });
 const previewMode = new PreviewMode({
   studioEl,
   onEnter: () => editorStore.dispatch({ type: 'setPlayback', state: 'playing' }),
-  onExit: () => editorStore.dispatch({ type: 'setPlayback', state: 'stopped' }),
+  onExit: () => {
+    editorStore.dispatch({ type: 'setPlayback', state: 'stopped' });
+    // Re-apply scene to viewer in case WebGL context was lost during resize
+    if (viewer.setScene) viewer.setScene(scene);
+  },
 });
 
 // --- Tools ---
