@@ -138,4 +138,68 @@ export class PropertiesPanel {
     heading.textContent = title;
     return heading;
   }
+
+  _makeSelect(label, field, options, value, entityType, entityId, onChange) {
+    const row = document.createElement('div');
+    row.className = 'field';
+    const lbl = document.createElement('label');
+    lbl.className = 'field-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    const select = document.createElement('select');
+    select.className = 'field-select';
+    select.dataset.field = field;
+    for (const opt of options) {
+      const option = document.createElement('option');
+      const optValue = typeof opt === 'object' ? opt.value : opt;
+      const optLabel = typeof opt === 'object' ? opt.label : opt;
+      option.value = optValue;
+      option.textContent = optLabel;
+      if (optValue === value) option.selected = true;
+      select.appendChild(option);
+    }
+    select.addEventListener('change', () => {
+      onChange(entityType, entityId, field, select.value);
+    });
+    row.appendChild(select);
+    return row;
+  }
+
+  _makeCheckbox(label, field, checked, entityType, entityId, onChange) {
+    const row = document.createElement('div');
+    row.className = 'field';
+    const lbl = document.createElement('label');
+    lbl.className = 'field-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    const input = document.createElement('input');
+    input.className = 'field-checkbox';
+    input.type = 'checkbox';
+    input.dataset.field = field;
+    input.checked = !!checked;
+    input.addEventListener('change', () => {
+      onChange(entityType, entityId, field, input.checked);
+    });
+    row.appendChild(input);
+    return row;
+  }
+
+  _makeColorPicker(label, field, value, entityType, entityId, onChange) {
+    const row = document.createElement('div');
+    row.className = 'field';
+    const lbl = document.createElement('label');
+    lbl.className = 'field-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    const input = document.createElement('input');
+    input.className = 'field-color';
+    input.type = 'color';
+    input.dataset.field = field;
+    input.value = value || '#000000';
+    input.addEventListener('input', () => {
+      onChange(entityType, entityId, field, input.value);
+    });
+    row.appendChild(input);
+    return row;
+  }
 }
