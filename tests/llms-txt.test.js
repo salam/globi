@@ -10,8 +10,8 @@ function sampleScene() {
     planet: { id: 'earth', radius: 1 },
     projection: 'globe',
     markers: [
-      { id: 'm1', name: { en: 'Berlin' }, lat: 52.5, lon: 13.4, alt: 0, visualType: 'dot', category: 'capital', calloutMode: 'always' },
-      { id: 'm2', name: { en: 'Tokyo' }, lat: 35.7, lon: 139.7, alt: 0, visualType: 'dot', category: 'capital', calloutMode: 'hover' },
+      { id: 'm1', name: { en: 'Berlin' }, description: { en: 'Capital of Germany' }, lat: 52.5, lon: 13.4, alt: 0, visualType: 'dot', category: 'capital', calloutMode: 'always' },
+      { id: 'm2', name: { en: 'Tokyo' }, calloutLabel: { en: 'Capital of Japan' }, lat: 35.7, lon: 139.7, alt: 0, visualType: 'dot', category: 'capital', calloutMode: 'hover' },
     ],
     arcs: [
       { id: 'a1', name: { en: 'Berlin-Tokyo' }, start: { lat: 52.5, lon: 13.4 }, end: { lat: 35.7, lon: 139.7 }, maxAltitude: 0.3, color: '#ff0' },
@@ -74,5 +74,32 @@ describe('formatLlmsTxt', () => {
     const output = formatLlmsTxt(scene, mockViewState([], []));
     assert.ok(output.includes('# Visible Markers (0)'));
     assert.ok(output.includes('# Visible Arcs (0)'));
+  });
+});
+
+describe('formatLlmsTxt description content', () => {
+  it('includes description field in marker line', () => {
+    const output = formatLlmsTxt(sampleScene(), mockViewState());
+    assert.ok(output.includes('Capital of Germany'),
+      `Expected description in marker line, got: ${output}`);
+  });
+
+  it('falls back to calloutLabel when description is empty', () => {
+    const output = formatLlmsTxt(sampleScene(), mockViewState());
+    assert.ok(output.includes('Capital of Japan'),
+      `Expected calloutLabel fallback, got: ${output}`);
+  });
+
+  it('omits desc field when no description or calloutLabel', () => {
+    const scene = {
+      ...sampleScene(),
+      markers: [
+        { id: 'm5', name: { en: 'Point' }, lat: 10, lon: 20, alt: 0, visualType: 'dot', category: 'default', calloutMode: 'always' },
+      ],
+    };
+    const output = formatLlmsTxt(scene, mockViewState([scene.markers[0]], []));
+    const markerLine = output.split('\n').find(l => l.includes('Point'));
+    assert.ok(markerLine, 'marker line should exist');
+    assert.ok(!markerLine.includes('Point | Point'), 'should not repeat name as description');
   });
 });

@@ -17,6 +17,13 @@ function resolveName(name, locale = 'en') {
   return '';
 }
 
+function resolveDescription(marker, locale = 'en') {
+  const desc = resolveName(marker.description, locale);
+  if (desc) return desc;
+  const label = resolveName(marker.calloutLabel, locale);
+  return label || '';
+}
+
 function formatBounds(bounds) {
   if (!bounds) return '';
   const n = `${Math.abs(bounds.north).toFixed(0)}°${bounds.north >= 0 ? 'N' : 'S'}`;
@@ -56,7 +63,8 @@ export function formatLlmsTxt(scene, viewStateQuery) {
   for (const m of visibleMarkers) {
     const name = resolveName(m.name, locale);
     const coord = formatCoord(m.lat, m.lon);
-    const parts = [name, coord, m.category ?? '', m.visualType ?? '', `callout=${m.calloutMode ?? 'always'}`];
+    const desc = resolveDescription(m, locale);
+    const parts = [name, coord, m.category ?? '', m.visualType ?? '', `callout=${m.calloutMode ?? 'always'}`, desc];
     lines.push(`- ${parts.join(' | ')}`);
   }
   lines.push('');
