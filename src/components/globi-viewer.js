@@ -265,12 +265,23 @@ const TEMPLATE = `
     }
 
     .legend-symbol.pulse {
-      animation: legend-pulse 2s ease-in-out infinite;
+      position: relative;
+      overflow: visible;
     }
 
-    @keyframes legend-pulse {
-      0%, 100% { box-shadow: 0 0 0 1px rgba(10, 15, 28, 0.35); }
-      50% { box-shadow: 0 0 6px 2px var(--legend-symbol-color); }
+    .legend-symbol.pulse::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      border: 1.5px solid var(--legend-symbol-color);
+      animation: legend-pulse-ring 2s ease-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes legend-pulse-ring {
+      0%   { transform: scale(1);   opacity: 0.8; }
+      100% { transform: scale(2.2); opacity: 0; }
     }
 
     .legend-symbol.model::after {
