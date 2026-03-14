@@ -195,6 +195,13 @@ body { background: #0d0d1a; color: #ccc; font-family: -apple-system, BlinkMacSys
   font-family: inherit;
   appearance: none;
 }
+.field-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #7a7aff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 .field-row { display: flex; gap: 4px; flex: 1; }
 .field-row .field-input { min-width: 0; }
 .coord-label { font-size: 10px; color: #555; margin-bottom: -2px; }
