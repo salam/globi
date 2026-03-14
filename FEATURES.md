@@ -238,6 +238,14 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Dark theme CSS with #7a7aff accent color
 - [x] Separate esbuild entry point (dist/studio.js)
 - [x] AI companion prompts (CustomGPT and Claude) with full schema documentation
+- [x] Smart property controls: dropdowns (theme, projection, body, lighting, visualType, calloutMode), color pickers, checkboxes
+- [x] CSS class reconciliation between styles.css and propertiesPanel.js
+- [x] Reusable modal component for dialogs
+- [x] Menu actions: Export JSON/GeoJSON/OBJ, Keyboard Shortcuts, About, Close Studio, Zoom to Fit, Reset Camera
+- [x] Dirty-state tracking with beforeunload guard
+- [x] Inline Studio overlay injection (StudioOverlay class reparents viewer into full-page overlay)
+- [x] Configurable `studio-base` attribute for custom Studio paths
+- [x] Fallback to new-tab when overlay import fails
 
 ## Remaining Gaps
 

@@ -16,7 +16,23 @@
 * AI companion prompts for ChatGPT and Claude with full Globi schema documentation
 * Separate build output: `dist/studio.js` (45 KB) and `dist/studio.min.js` (27 KB)
 
+## Release 1.4 (Sat, Mar 14 2026)
+
+* Inline Studio injection — right-clicking "Open Studio" now opens the editor as a full-page overlay instead of a new tab, reparenting the live `<globi-viewer>` into the editor viewport (falls back to new tab if overlay fails to load)
+* Configurable Studio path via `studio-base` attribute on `<globi-viewer>` for custom deployments
+* Studio menus now fully wired: Export JSON saves the scene as a `.json` file, Export GeoJSON saves as `.geojson`, Export OBJ shows a "coming soon" placeholder
+* Unsaved-changes protection — a browser dialog now prompts before leaving the page if you have unsaved changes; saving clears the dirty flag
+* Keyboard Shortcuts dialog — press `?` or use Help > Keyboard Shortcuts to see a full table of all hotkeys
+* About dialog — Help > About Globi Studio shows version info and a link to the documentation
+* Zoom to Fit and Reset Camera menu actions now forward to the 3D viewer controller
+* Close Studio menu item added to the File menu — respects the studio overlay's own dirty check if embedded, or prompts to confirm if there are unsaved changes
+
 ## Release 1.3 (Sat, Mar 14 2026)
+
+* Studio PropertiesPanel: scene settings now use smart controls — dropdowns for Theme, Projection, Locale, Body, Lighting, and Control Style; color pickers for Surface Tint and Overlay Tint; checkboxes for Borders, Labels, and all 10 Viewer UI toggles
+* Studio PropertiesPanel: CSS class names aligned to `styles.css` (`field`, `field-label`, `field-input`, `props-section-header`)
+
+* Globi Community Platform — new `globi-community/` sub-project: Vite 8 + React 19 SPA scaffolded and deployed at `/community/`, with PocketBase client, react-router-dom routing shell, and globi.world design tokens (Sora font, warm neutral palette)
 
 * Gzip compression for large session transfers — scenes over 4 MB are compressed automatically when the browser supports it, keeping session storage lean
 * Cubic-bezier easing — animation keyframes now accept `cubic-bezier(x1,y1,x2,y2)` easing strings (same syntax as CSS), giving precise control over acceleration curves
