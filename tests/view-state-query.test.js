@@ -7,7 +7,8 @@ function mockGlobeRenderer(cameraState = { centerLat: 45, centerLon: 23, zoom: 1
     type: 'globe',
     getCameraState: () => cameraState,
     projectPointToClient(point) {
-      return { x: (point.lon + 180) * 2, y: (90 - point.lat) * 2 };
+      // Real 3D renderer returns { clientX, clientY, visible }
+      return { clientX: (point.lon + 180) * 2, clientY: (90 - point.lat) * 2, visible: true };
     },
     getCanvasRect: () => ({ left: 0, top: 0, width: 720, height: 360 }),
     hitTest: (x, y) => null,
@@ -93,5 +94,33 @@ describe('ViewStateQuery', () => {
     const bounds = vsq.getViewportBounds();
     assert.ok(typeof bounds.north === 'number');
     assert.ok(bounds.north > bounds.south);
+  });
+});
+
+describe('ViewStateQuery.project() property normalization', () => {
+  it('normalizes { clientX, clientY } from 3D renderer to { x, y }', () => {
+    const vsq = new ViewStateQuery();
+    vsq.setRenderer(mockGlobeRenderer());
+    const pt = vsq.project(52.5, 13.4, 0);
+    assert.ok(pt !== null);
+    assert.equal(typeof pt.x, 'number');
+    assert.equal(typeof pt.y, 'number');
+    assert.equal(pt.clientX, undefined, 'should not expose clientX');
+  });
+
+  it('passes through { x, y } from flat renderer unchanged', () => {
+    const vsq = new ViewStateQuery();
+    vsq.setRenderer(mockFlatRenderer());
+    const pt = vsq.project(52.5, 13.4, 0);
+    assert.ok(pt !== null);
+    assert.equal(typeof pt.x, 'number');
+    assert.equal(typeof pt.y, 'number');
+  });
+
+  it('getVisibleEntities finds markers with 3D renderer returning { clientX, clientY }', () => {
+    const vsq = new ViewStateQuery();
+    vsq.setRenderer(mockGlobeRenderer());
+    const visible = vsq.getVisibleEntities(sampleScene());
+    assert.ok(visible.markers.length > 0, 'should find at least one visible marker');
   });
 });

@@ -6,10 +6,22 @@ export class ViewStateQuery {
 
   project(lat, lon, alt = 0) {
     if (!this.#renderer || typeof this.#renderer.projectPointToClient !== 'function') return null;
+    let result;
     if (this.#renderer.projectPointToClient.length <= 1) {
-      return this.#renderer.projectPointToClient({ lat, lon, alt });
+      result = this.#renderer.projectPointToClient({ lat, lon, alt });
+    } else {
+      result = this.#renderer.projectPointToClient(lat, lon);
     }
-    return this.#renderer.projectPointToClient(lat, lon);
+    if (!result) return null;
+
+    // Normalize: 3D renderer returns { clientX, clientY, visible }, flat returns { x, y }.
+    // Note: the `visible` flag (v.z < 1 far-plane check) is intentionally not used —
+    // the isPointOccluded() dot-product test is more precise for globe occlusion.
+    const x = result.x ?? result.clientX;
+    const y = result.y ?? result.clientY;
+    if (x == null || y == null) return null;
+
+    return { x, y };
   }
 
   getViewAngle() {
