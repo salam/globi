@@ -34,4 +34,15 @@ describe('MenuBar', () => {
     preview.click();
     assert.equal(fired, 'togglePreview');
   });
+
+  it('has Close Studio menu item with correct action', () => {
+    const el = document.getElementById('menu-bar');
+    let fired = null;
+    const mb = new MenuBar(el, { onAction: (action) => { fired = action; } });
+    const items = el.querySelectorAll('.dropdown-item');
+    const closeItem = [...items].find(i => i.textContent.includes('Close Studio'));
+    assert.ok(closeItem, 'Close Studio should be in menu');
+    closeItem.click();
+    assert.equal(fired, 'closeStudio');
+  });
 });

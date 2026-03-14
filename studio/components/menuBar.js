@@ -10,6 +10,8 @@ const MENU_STRUCTURE = [
       { label: 'Export JSON', action: 'exportJSON' },
       { label: 'Export GeoJSON', action: 'exportGeoJSON' },
       { label: 'Export OBJ', action: 'exportOBJ' },
+      { divider: true },
+      { label: 'Close Studio', action: 'closeStudio' },
     ],
   },
   {
