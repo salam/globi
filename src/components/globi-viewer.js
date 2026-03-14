@@ -1811,8 +1811,13 @@ export class GlobiViewerElement extends HTMLElement {
       }
       case 'openStudio': {
         const studioBase = this.getAttribute('studio-base') || '/studio/';
-        // Write current scene to sessionStorage so Studio app.js picks it up
-        const json = JSON.stringify(scene);
+        // Embed current camera state into scene for Studio to restore
+        const cameraState = this.getCameraState();
+        const sceneWithCamera = { ...scene };
+        if (cameraState) {
+          sceneWithCamera._cameraState = cameraState;
+        }
+        const json = JSON.stringify(sceneWithCamera);
         try {
           sessionStorage.setItem('globi-studio-scene', json);
         } catch (_) { /* quota exceeded — Studio will start empty */ }
@@ -2006,6 +2011,18 @@ export class GlobiViewerElement extends HTMLElement {
 
   exportScene() {
     return this.#controller.getScene();
+  }
+
+  screenToLatLon(x, y) {
+    return this.#controller?.screenToLatLon(x, y) ?? null;
+  }
+
+  hitTest(x, y) {
+    return this.#controller?.hitTest(x, y) ?? null;
+  }
+
+  getCameraState() {
+    return this.#controller?.getCameraState() ?? null;
   }
 }
 

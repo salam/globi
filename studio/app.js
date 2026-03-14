@@ -32,7 +32,7 @@ function downloadText(text, filename, mimeType = 'text/plain') {
 
 // --- Init ---
 const viewer = document.getElementById('viewer');
-const studioEl = document.getElementById('studio');
+const studioEl = document.getElementById('studio') || document.querySelector('.studio');
 const viewportEl = document.getElementById('viewport');
 
 const EMPTY_SCENE = { version: 1, markers: [], arcs: [], paths: [], regions: [], animations: [], cameraAnimation: [], filters: [], dataSources: [] };
@@ -40,6 +40,11 @@ const EMPTY_SCENE = { version: 1, markers: [], arcs: [], paths: [], regions: [],
 // Load scene from sessionStorage or create empty
 const transferred = await readScene();
 let scene = transferred || EMPTY_SCENE;
+
+// Extract embedded camera state (set by viewer on Open Studio)
+const _initialCameraState = scene._cameraState || null;
+delete scene._cameraState;
+
 let isDirty = false;
 
 if (typeof window !== 'undefined') {
@@ -55,11 +60,6 @@ if (typeof window !== 'undefined') {
 const editorStore = new EditorStore();
 const undoRedo = new UndoRedo(50);
 undoRedo.push(scene);
-
-// Wait for viewer to be ready (custom element)
-function getController() {
-  return viewer._controller || viewer.controller || null;
-}
 
 // --- UI Components ---
 const menuBar = new MenuBar(document.getElementById('menu-bar'), {
@@ -77,6 +77,8 @@ const propsPanel = new PropertiesPanel(document.getElementById('properties'), {
   selectedIds: [],
   locale: scene.locale || 'en',
   onChange: handlePropertyChange,
+  getCamera: () => controllerProxy.getCameraState(),
+  onFlyTo: (target, opts) => controllerProxy.flyTo(target, opts),
 });
 propsPanel.render();
 
@@ -99,21 +101,15 @@ const previewMode = new PreviewMode({
 });
 
 // --- Tools ---
-const controller = {
-  hitTest: () => null,
-  screenToLatLon: () => null,
+// Delegate to viewer's public API (screenToLatLon, hitTest, getCameraState, flyTo)
+const controllerProxy = {
+  hitTest: (x, y) => viewer.hitTest(x, y),
+  screenToLatLon: (x, y) => viewer.screenToLatLon(x, y),
+  getCameraState: () => viewer.getCameraState(),
+  flyTo: (target, opts) => viewer.flyTo(target, opts),
   getScene: () => scene,
   setScene: (s) => { scene = s; },
 };
-
-// Create a placeholder for controller that will be populated when viewer is ready
-const controllerProxy = new Proxy(controller, {
-  get(target, prop) {
-    const real = getController();
-    if (real && typeof real[prop] === 'function') return real[prop].bind(real);
-    return target[prop];
-  }
-});
 
 function pushScene(newScene) {
   scene = newScene;
@@ -539,4 +535,16 @@ function handlePropertyChange(entityType, id, field, value) {
 // Initial render — wait for custom element to be defined
 customElements.whenDefined('globi-viewer').then(() => {
   if (viewer.setScene) viewer.setScene(scene);
+  // Restore camera: prefer transferred state, fall back to scene initial fields
+  const camLat = _initialCameraState?.centerLat ?? scene.initialLat;
+  const camLon = _initialCameraState?.centerLon ?? scene.initialLon;
+  const camZoom = _initialCameraState?.zoom ?? scene.initialZoom;
+  if ((camLat != null || camLon != null || camZoom != null) && viewer.flyTo) {
+    requestAnimationFrame(() => {
+      viewer.flyTo({
+        lat: camLat ?? 0,
+        lon: camLon ?? 0,
+      }, { zoom: camZoom ?? 1 });
+    });
+  }
 });

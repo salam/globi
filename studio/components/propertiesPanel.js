@@ -15,6 +15,9 @@ export class PropertiesPanel {
   render() {
     const { scene, selectedIds, locale, onChange } = this._opts;
 
+    // Preserve scroll position across re-renders
+    const scrollTop = this._container.scrollTop;
+
     // Clear
     while (this._container.firstChild) {
       this._container.removeChild(this._container.firstChild);
@@ -28,6 +31,9 @@ export class PropertiesPanel {
         this._renderEntityProps(entity.item, entity.type, locale, onChange);
       }
     }
+
+    // Restore scroll position
+    this._container.scrollTop = scrollTop;
   }
 
   _findEntity(scene, id) {
@@ -64,6 +70,85 @@ export class PropertiesPanel {
       scene.surfaceTint || '#000000', 'scene', '__scene__', onChange));
     this._container.appendChild(this._makeColorPicker('Overlay Tint', 'overlayTint',
       scene.overlayTint || '#000000', 'scene', '__scene__', onChange));
+
+    // Camera section
+    this._container.appendChild(this._makeSection('Camera'));
+    this._container.appendChild(this._makeField('Initial Zoom', 'initialZoom',
+      scene.initialZoom ?? 1, 'scene', '__scene__', onChange, 'number'));
+
+    // Live zoom display with "use current" action
+    const { getCamera, onFlyTo } = this._opts;
+    if (getCamera) {
+      const cam = getCamera();
+      if (cam) {
+        const zoomRow = document.createElement('div');
+        zoomRow.className = 'field';
+        const zoomLabel = document.createElement('label');
+        zoomLabel.className = 'field-label';
+        zoomLabel.textContent = 'Current Zoom';
+        zoomRow.appendChild(zoomLabel);
+        const zoomLink = document.createElement('span');
+        zoomLink.style.cssText = 'text-decoration: underline; cursor: pointer; color: #7a7aff; font-size: 12px;';
+        zoomLink.textContent = cam.zoom.toFixed(2);
+        zoomLink.title = 'Click to set as initial zoom';
+        zoomLink.addEventListener('click', () => {
+          onChange('scene', '__scene__', 'initialZoom', parseFloat(cam.zoom.toFixed(2)));
+        });
+        zoomRow.appendChild(zoomLink);
+        this._container.appendChild(zoomRow);
+      }
+    }
+
+    this._container.appendChild(this._makeField('Initial Lat', 'initialLat',
+      scene.initialLat ?? 0, 'scene', '__scene__', onChange, 'number'));
+    this._container.appendChild(this._makeField('Initial Lon', 'initialLon',
+      scene.initialLon ?? 0, 'scene', '__scene__', onChange, 'number'));
+
+    // "Use current position" action
+    if (getCamera) {
+      const cam = getCamera();
+      if (cam) {
+        const posRow = document.createElement('div');
+        posRow.className = 'field';
+        const posLabel = document.createElement('label');
+        posLabel.className = 'field-label';
+        posLabel.textContent = 'Current Pos';
+        posRow.appendChild(posLabel);
+        const posLink = document.createElement('span');
+        posLink.style.cssText = 'text-decoration: underline; cursor: pointer; color: #7a7aff; font-size: 12px;';
+        posLink.textContent = `${cam.centerLat.toFixed(1)}, ${cam.centerLon.toFixed(1)}`;
+        posLink.title = 'Click to set as initial focus';
+        posLink.addEventListener('click', () => {
+          onChange('scene', '__scene__', 'initialLat', parseFloat(cam.centerLat.toFixed(2)));
+          onChange('scene', '__scene__', 'initialLon', parseFloat(cam.centerLon.toFixed(2)));
+        });
+        posRow.appendChild(posLink);
+        this._container.appendChild(posRow);
+      }
+    }
+
+    // Crosshair button to pick location from globe
+    if (onFlyTo) {
+      const pickRow = document.createElement('div');
+      pickRow.className = 'field';
+      const pickLabel = document.createElement('label');
+      pickLabel.className = 'field-label';
+      pickLabel.textContent = '';
+      pickRow.appendChild(pickLabel);
+      const pickBtn = document.createElement('button');
+      pickBtn.className = 'preview-btn';
+      pickBtn.style.cssText = 'font-size: 11px; padding: 3px 10px;';
+      pickBtn.textContent = '\u271A Go to Initial';
+      pickBtn.title = 'Fly camera to the saved initial position';
+      pickBtn.addEventListener('click', () => {
+        onFlyTo({
+          lat: scene.initialLat ?? 0,
+          lon: scene.initialLon ?? 0,
+        }, { zoom: scene.initialZoom ?? 1 });
+      });
+      pickRow.appendChild(pickBtn);
+      this._container.appendChild(pickRow);
+    }
 
     this._container.appendChild(this._makeSection('Planet'));
     this._container.appendChild(this._makeSelect('Body', 'planet.id',

@@ -13,14 +13,16 @@ export class PreviewMode {
   enter() {
     if (this._active) return;
     this._active = true;
-    this._studioEl.classList.add('preview');
+    const el = this._studioEl || document.querySelector('.studio');
+    if (el) el.classList.add('preview');
     this._onEnter();
   }
 
   exit() {
     if (!this._active) return;
     this._active = false;
-    this._studioEl.classList.remove('preview');
+    const el = this._studioEl || document.querySelector('.studio');
+    if (el) el.classList.remove('preview');
     this._onExit();
   }
 

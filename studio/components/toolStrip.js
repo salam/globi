@@ -4,7 +4,7 @@ const TOOLS = [
   { tool: 'marker', icon: '\u25C9', tooltip: 'Add Marker (M)' },
   { tool: 'arc',    icon: '\u2312', tooltip: 'Add Arc (A)' },
   { tool: 'path',   icon: '\u223F', tooltip: 'Add Path (L)' },
-  { tool: 'region', icon: '\u25A2', tooltip: 'Add Region (Shift+R)' },
+  { tool: 'region', icon: '\u2B21', tooltip: 'Add Region (Shift+R)' },
   null,
   { tool: 'draw',   icon: '\u270E', tooltip: 'Freehand Draw (D)' },
 ];
