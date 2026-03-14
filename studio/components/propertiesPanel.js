@@ -125,16 +125,20 @@ export class PropertiesPanel {
       this._container.appendChild(this._makeField('Lon', 'lon', item.lon, entityType, item.id, onChange, 'number'));
     }
     if (item.color !== undefined) {
-      this._container.appendChild(this._makeField('Color', 'color', item.color, entityType, item.id, onChange, 'color'));
+      this._container.appendChild(this._makeColorPicker('Color', 'color', item.color, entityType, item.id, onChange));
     }
 
     // Appearance section
     this._container.appendChild(this._makeSection('Appearance'));
     if (item.visualType !== undefined) {
-      this._container.appendChild(this._makeField('Visual Type', 'visualType', item.visualType, entityType, item.id, onChange));
+      this._container.appendChild(this._makeSelect('Visual Type', 'visualType',
+        ['dot', 'pin', 'pulse', 'ring', 'label', 'sprite'],
+        item.visualType, entityType, item.id, onChange));
     }
     if (item.calloutMode !== undefined) {
-      this._container.appendChild(this._makeField('Callout Mode', 'calloutMode', item.calloutMode, entityType, item.id, onChange));
+      this._container.appendChild(this._makeSelect('Callout Mode', 'calloutMode',
+        ['none', 'hover', 'always', 'click'],
+        item.calloutMode, entityType, item.id, onChange));
     }
 
     // Metadata section

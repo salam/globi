@@ -147,4 +147,48 @@ describe('PropertiesPanel', () => {
     assert.ok(colorInput);
     assert.equal(colorInput.value, '#ff0000');
   });
+
+  it('renders entity color as a color picker', () => {
+    const el = document.getElementById('props');
+    const panel = new PropertiesPanel(el, {
+      scene: {
+        markers: [{ id: 'm1', name: { en: 'Test' }, lat: 0, lon: 0, color: '#ff0000', visualType: 'dot', calloutMode: 'hover' }],
+        arcs: [], paths: [], regions: [],
+      },
+      selectedIds: ['m1'], locale: 'en', onChange: () => {},
+    });
+    panel.render();
+    const colorInput = el.querySelector('input[type="color"][data-field="color"]');
+    assert.ok(colorInput, 'color should be a color picker');
+  });
+
+  it('renders visualType as a select dropdown', () => {
+    const el = document.getElementById('props');
+    const panel = new PropertiesPanel(el, {
+      scene: {
+        markers: [{ id: 'm1', name: { en: 'Test' }, lat: 0, lon: 0, color: '#ff0000', visualType: 'dot', calloutMode: 'hover' }],
+        arcs: [], paths: [], regions: [],
+      },
+      selectedIds: ['m1'], locale: 'en', onChange: () => {},
+    });
+    panel.render();
+    const vtSelect = el.querySelector('select[data-field="visualType"]');
+    assert.ok(vtSelect, 'visualType should be a select');
+    assert.equal(vtSelect.value, 'dot');
+  });
+
+  it('renders calloutMode as a select dropdown', () => {
+    const el = document.getElementById('props');
+    const panel = new PropertiesPanel(el, {
+      scene: {
+        markers: [{ id: 'm1', name: { en: 'Test' }, lat: 0, lon: 0, color: '#ff0000', visualType: 'dot', calloutMode: 'hover' }],
+        arcs: [], paths: [], regions: [],
+      },
+      selectedIds: ['m1'], locale: 'en', onChange: () => {},
+    });
+    panel.render();
+    const cmSelect = el.querySelector('select[data-field="calloutMode"]');
+    assert.ok(cmSelect, 'calloutMode should be a select');
+    assert.equal(cmSelect.value, 'hover');
+  });
 });
