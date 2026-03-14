@@ -3,6 +3,7 @@
 **Date:** 2026-03-14
 **Status:** Draft
 **Scope:** SEO optimization for globe detail pages on `globi.world/community/`
+**Dependency:** Requires the community platform (see `2026-03-14-community-platform-design.md`) to be built first. The source files referenced in "Files to Create/Modify" are defined in that spec.
 
 ---
 
@@ -20,17 +21,20 @@ A PHP front controller (`seo.php`) that intercepts globe detail page requests, f
 
 **Pattern:** `/community/globe/:id/:slug`
 
-- `:id` — PocketBase scene ID (e.g. `prt9qai4qswc380`)
-- `:slug` — URL-safe version of the title (e.g. `ancient-trade-routes`)
+- `:id` — PocketBase scene ID, alphanumeric (e.g. `prt9qai4qswc380`). May contain uppercase letters.
+- `:slug` — URL-safe version of the title (e.g. `ancient-trade-routes`), always lowercase
 - Slug is optional — bare `/community/globe/:id` issues a 301 redirect to the canonical slug URL
 - If the slug is wrong/outdated, the server ignores it — ID is authoritative
 
 **Slug generation rules:**
 1. Lowercase the title
-2. Replace non-alphanumeric characters with hyphens
-3. Collapse multiple hyphens into one
-4. Trim leading/trailing hyphens
-5. Truncate to ~60 characters on a word boundary
+2. Transliterate accented characters to ASCII (e.g. `ö` → `o`, `é` → `e`)
+3. Replace non-alphanumeric characters with hyphens
+4. Collapse multiple hyphens into one
+5. Trim leading/trailing hyphens
+6. Truncate to 60 ASCII characters, breaking at the last hyphen before the limit (i.e. word boundary = hyphen position)
+
+**Test fixtures:** A shared JSON file (`slug-test-fixtures.json`) with `{input, expected}` pairs must be consumed by both PHP and JS unit tests to guarantee parity.
 
 **Backward compatibility:** Existing links (`/community/globe/prt9qai4qswc380`) continue working via 301 redirect.
 
@@ -40,12 +44,17 @@ A PHP front controller (`seo.php`) that intercepts globe detail page requests, f
 
 ## 2. .htaccess Routing
 
+**Location:** `/public_html/globi.world/community/.htaccess` (inside the `/community/` subdirectory, so paths are relative to `/community/`)
+
 ```apache
+RewriteEngine On
+
 # Route globe detail pages through PHP front controller
-RewriteRule ^community/globe/([a-zA-Z0-9]+)(/[a-z0-9-]*)?/?$ community/seo.php?id=$1 [L,QSA]
+# Slug segment requires at least one character if present
+RewriteRule ^globe/([a-zA-Z0-9]+)(/[a-z0-9][a-z0-9-]*)?/?$ seo.php?id=$1 [L,QSA]
 
 # Sitemap
-RewriteRule ^community/sitemap\.xml$ community/sitemap.php [L]
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
 ```
 
 Static assets (JS, CSS, images) continue to be served directly — only globe detail URLs route through PHP.
@@ -67,21 +76,37 @@ Static assets (JS, CSS, images) continue to be served directly — only globe de
 
 ### Template Injection
 
-The PHP script reads the Vite-built `index.html` and injects:
+The PHP script reads `__DIR__ . '/index.html'` (the Vite-built `index.html` in the same directory as `seo.php`) and injects:
 
 **Into `<head>`:**
 - `<title>{title} — Globi Community</title>`
 - `<meta name="description" content="{description, truncated to 160 chars}">`
 - `<meta name="keywords" content="{tags, comma-separated}">`
 - `<link rel="canonical" href="https://globi.world/community/globe/{id}/{slug}">`
-- Open Graph tags: `og:title`, `og:description`, `og:image`, `og:url`, `og:type: article`, `og:site_name: Globi Community`
+- Open Graph tags: `og:title`, `og:description`, `og:image`, `og:url`, `og:type: website`, `og:site_name: Globi Community`, `og:image:width: 1200`, `og:image:height: 630`
 - Twitter Card tags: `twitter:card: summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`
-- Article meta: `article:author`, `article:published_time`, `article:modified_time`, `article:tag` (one per tag)
 - `<link rel="alternate" type="application/json" href="/community/api/collections/scenes/records/{id}">`
 - JSON-LD blocks (see Section 4)
 
 **Into `<body>` (before React root):**
 - `<div id="seo-content">` containing the collapsible scene description and FAQ (see Sections 5–6)
+
+### sceneJson Parsing
+
+`seo.php` must parse the `sceneJson` JSON blob server-side to extract marker names, coordinates, paths, arcs, regions, and data source references. The expected schema fields used are:
+
+- `sceneJson.markers[]` — `.name.en`, `.lat`, `.lon`, `.sourceId`
+- `sceneJson.paths[]` — `.name.en`, `.points[]`
+- `sceneJson.arcs[]` — `.name.en`, `.start`, `.end`
+- `sceneJson.regions[]` — `.name.en`
+- `sceneJson.dataSources[]` — `.id`, `.name`, `.url`, `.license`
+- `sceneJson.planet` — fallback if top-level `planet` field is empty
+
+Missing or malformed fields are silently skipped — the description renders whatever is available.
+
+### Author URL Guard
+
+If `author.username` is null or empty, omit the `author.url` field from JSON-LD and omit any author-related meta tags. Display name falls back to "Anonymous".
 
 ---
 
@@ -99,12 +124,11 @@ The PHP script reads the Vite-built `index.html` and injects:
   "url": "https://globi.world/community/globe/{id}/{slug}",
   "author": {
     "@type": "Person",
-    "name": "{author.displayName}",
-    "url": "https://globi.world/community/user/{author.username}"
+    "name": "{author.displayName}"
   },
   "dateCreated": "{created}",
   "dateModified": "{updated}",
-  "license": "https://creativecommons.org/licenses/{license}/",
+  "license": "{mapped license URL, see below}",
   "interactionStatistic": [
     {
       "@type": "InteractionCounter",
@@ -125,6 +149,17 @@ The PHP script reads the Vite-built `index.html` and injects:
   }
 }
 ```
+
+If `author.username` is set, add `"url": "https://globi.world/community/user/{author.username}"` to the author object.
+
+**License URL mapping:**
+
+| PocketBase value | JSON-LD `license` URL |
+|---|---|
+| `CC-BY-4.0` | `https://creativecommons.org/licenses/by/4.0/` |
+| `CC-BY-SA` | `https://creativecommons.org/licenses/by-sa/4.0/` |
+| `CC0` | `https://creativecommons.org/publicdomain/zero/1.0/` |
+| `All-Rights-Reserved` | Omit the `license` field entirely |
 
 ### 4b. FAQPage
 
@@ -165,7 +200,7 @@ Contains 5–6 questions (see Section 6 for full list).
 
 ## 5. Collapsible Scene Description
 
-A `<details>` element injected into `<div id="seo-content">`, containing a human-readable summary of the scene data (similar to "Copy LLMs.txt" output).
+A `<details>` element injected into `<div id="seo-content">`, containing a human-readable summary of the scene data (similar to "Copy LLMs.txt" output). Data is extracted by parsing the `sceneJson` blob in PHP (see Section 3).
 
 ### Content
 
@@ -219,7 +254,7 @@ Minimal, unobtrusive. Collapsed by default. CSS in the SPA stylesheet for visual
 
 ## 6. FAQ with Microformats
 
-A static FAQ block on every globe detail page. Uses microformats (`h-entry`, `p-question`, `p-answer`) for indie web parsers and JSON-LD FAQPage schema for Google rich snippets.
+A static FAQ block on every globe detail page. Uses JSON-LD FAQPage schema (Section 4b) for Google rich snippets. Uses standard microformats2 classes (`h-entry`, `p-name`, `e-content`) for indie web parser compatibility — no custom property names.
 
 ### Questions
 
@@ -233,18 +268,18 @@ A static FAQ block on every globe detail page. Uses microformats (`h-entry`, `p-
 ### HTML Structure
 
 ```html
-<section class="seo-faq h-feed">
+<section class="seo-faq">
   <h2>Frequently Asked Questions</h2>
-  <div class="h-entry p-question-answer">
-    <h3 class="p-name p-question">What is Globi?</h3>
-    <div class="e-content p-answer">
+  <div class="h-entry">
+    <h3 class="p-name">What is Globi?</h3>
+    <div class="e-content">
       <p>Globi is an interactive 3D globe component for the web that lets
          you visualize geographic data on 13 celestial bodies...</p>
     </div>
   </div>
-  <div class="h-entry p-question-answer">
-    <h3 class="p-name p-question">What data does this globe show?</h3>
-    <div class="e-content p-answer">
+  <div class="h-entry">
+    <h3 class="p-name">What data does this globe show?</h3>
+    <div class="e-content">
       <p>This globe displays {planet} with {markerCount} markers,
          {pathCount} paths, and {regionCount} regions in the
          {category} category.</p>
@@ -262,6 +297,10 @@ A static FAQ block on every globe detail page. Uses microformats (`h-entry`, `p-
 
 A PHP script that queries PocketBase for all public scenes and generates a standard XML sitemap.
 
+### Pagination
+
+PocketBase returns paginated results (default 30, max 500 per page). `sitemap.php` must loop through all pages (`page=1,2,...` until `page * perPage >= totalItems`). If scene count exceeds 50,000, generate a sitemap index file pointing to multiple sitemap files.
+
 ### Included URLs
 
 - `/community/` — gallery page
@@ -276,7 +315,9 @@ A PHP script that queries PocketBase for all public scenes and generates a stand
 - `<changefreq>` — `weekly` for scenes, `daily` for gallery
 - `<priority>` — `1.0` for gallery, `0.8` for scenes, `0.5` for profiles
 
-### robots.txt Addition
+### robots.txt
+
+The sitemap directive goes in the **domain root** `robots.txt` at `https://globi.world/robots.txt` (not a subdirectory `robots.txt`):
 
 ```
 Sitemap: https://globi.world/community/sitemap.xml
@@ -287,8 +328,9 @@ Sitemap: https://globi.world/community/sitemap.xml
 ## 8. Thumbnail & Open Graph Image
 
 - Primary: PocketBase thumbnail URL (`/community/api/files/scenes/{id}/{thumbnail}`)
-- Fallback: Default Globi Community image (e.g. `/community/assets/og-default.png`)
-- Dimensions specified in OG tags: `og:image:width`, `og:image:height`
+- Fallback: Default Globi Community image at `/community/assets/og-default.png`
+- Recommended dimensions: **1200×630** pixels (both primary thumbnails and fallback)
+- OG tags include `og:image:width: 1200` and `og:image:height: 630`
 
 ---
 
@@ -296,12 +338,17 @@ Sitemap: https://globi.world/community/sitemap.xml
 
 **File-based cache** for PocketBase API responses:
 
-- Cache directory: `/community/cache/` (gitignored)
-- Key: scene ID
+- **Cache directory:** Located **outside the web root** at `/home/salach/globi-seo-cache/` to prevent direct HTTP access to cached data
+- Key: scene ID (filename: `{id}.json`)
 - TTL: 60 seconds
 - Format: JSON file with `expires` timestamp and `data` payload
 - Cache miss → fetch from PocketBase, write cache file
 - No explicit invalidation — natural expiry is sufficient given the 60s window
+
+`deploy.sh` must create this directory on first deploy:
+```bash
+ssh salach@s003.cyon.net "mkdir -p /home/salach/globi-seo-cache"
+```
 
 ---
 
@@ -320,18 +367,19 @@ Sitemap: https://globi.world/community/sitemap.xml
 ### New files
 - `globi-community/public/seo.php` — PHP front controller
 - `globi-community/public/sitemap.php` — Dynamic sitemap generator
-- `globi-community/public/assets/og-default.png` — Fallback OG image
+- `globi-community/public/assets/og-default.png` — Fallback OG image (1200×630)
+- `globi-community/slug-test-fixtures.json` — Shared test cases for slug generation
 
 ### Modified files
-- `.htaccess` (on server) — Add rewrite rules for globe URLs and sitemap
+- `/public_html/globi.world/community/.htaccess` (on server) — Add rewrite rules for globe URLs and sitemap
 - `globi-community/src/main.jsx` — Update React Router to `/globe/:id/:slug?`
 - `globi-community/src/pages/Detail.jsx` — Generate slug, update internal links, handle `#seo-content` div
 - `globi-community/src/components/ShareDialog.jsx` — Include slug in shared URLs
 - `globi-community/src/components/EmbedDialog.jsx` — Include slug in embed URLs
 - `globi-community/src/pages/Gallery.jsx` — Include slug in globe card links
-- `globi-community/deploy.sh` — Deploy `seo.php`, `sitemap.php`, cache dir
-- `robots.txt` — Add sitemap reference
+- `globi-community/deploy.sh` — Deploy `seo.php`, `sitemap.php`; create cache dir on server; exclude cache from rsync `--delete`
+- `/public_html/globi.world/robots.txt` (on server) — Add sitemap reference
 - SPA stylesheet — Styles for `.seo-scene-description` and `.seo-faq`
 
 ### Shared logic
-- Slug generation function must be identical in PHP and JS to ensure URL consistency
+- Slug generation function must be identical in PHP and JS to ensure URL consistency. Both implementations validated against `slug-test-fixtures.json`.
