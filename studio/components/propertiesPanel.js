@@ -50,14 +50,50 @@ export class PropertiesPanel {
     header.textContent = 'Scene Settings';
     this._container.appendChild(header);
 
-    const fields = [
-      { label: 'Theme', field: 'theme', type: 'text', value: scene.theme ?? '' },
-      { label: 'Projection', field: 'projection', type: 'text', value: scene.projection ?? '' },
-      { label: 'Locale', field: 'locale', type: 'text', value: scene.locale ?? locale ?? '' },
-    ];
+    this._container.appendChild(this._makeSection('Appearance'));
+    this._container.appendChild(this._makeSelect('Theme', 'theme',
+      ['photo', 'wireframe-shaded', 'wireframe-flat', 'grayscale-shaded', 'grayscale-flat'],
+      scene.theme ?? 'photo', 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeSelect('Projection', 'projection',
+      ['globe', 'azimuthalEquidistant', 'orthographic', 'equirectangular'],
+      scene.projection ?? 'globe', 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeSelect('Locale', 'locale',
+      ['en', 'de', 'fr', 'es', 'zh', 'ja', 'ar', 'pt', 'ru', 'hi', 'ko'],
+      scene.locale ?? locale ?? 'en', 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeColorPicker('Surface Tint', 'surfaceTint',
+      scene.surfaceTint || '#000000', 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeColorPicker('Overlay Tint', 'overlayTint',
+      scene.overlayTint || '#000000', 'scene', '__scene__', onChange));
 
-    for (const f of fields) {
-      this._container.appendChild(this._makeField(f.label, f.field, f.value, 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeSection('Planet'));
+    this._container.appendChild(this._makeSelect('Body', 'planet.id',
+      ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'moon', 'io', 'europa', 'ganymede', 'titan'],
+      scene.planet?.id ?? 'earth', 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeSelect('Lighting', 'planet.lightingMode',
+      ['fixed', 'sun'], scene.planet?.lightingMode ?? 'fixed', 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeCheckbox('Borders', 'planet.showBorders',
+      scene.planet?.showBorders ?? true, 'scene', '__scene__', onChange));
+    this._container.appendChild(this._makeCheckbox('Labels', 'planet.showLabels',
+      scene.planet?.showLabels ?? true, 'scene', '__scene__', onChange));
+
+    this._container.appendChild(this._makeSection('Viewer UI'));
+    const ui = scene.viewerUi || {};
+    this._container.appendChild(this._makeSelect('Control Style', 'viewerUi.controlStyle',
+      ['text', 'icon'], ui.controlStyle ?? 'text', 'scene', '__scene__', onChange));
+    const uiBooleans = [
+      ['Body Selector', 'viewerUi.showBodySelector', ui.showBodySelector],
+      ['Fullscreen', 'viewerUi.showFullscreenButton', ui.showFullscreenButton],
+      ['Legend', 'viewerUi.showLegendButton', ui.showLegendButton],
+      ['Inspect', 'viewerUi.showInspectButton', ui.showInspectButton],
+      ['Compass', 'viewerUi.showCompass', ui.showCompass],
+      ['Scale', 'viewerUi.showScale', ui.showScale],
+      ['Marker Filter', 'viewerUi.showMarkerFilter', ui.showMarkerFilter],
+      ['Attribution', 'viewerUi.showAttribution', ui.showAttribution],
+      ['Projection Toggle', 'viewerUi.showProjectionToggle', ui.showProjectionToggle],
+      ['Theme Toggle', 'viewerUi.showThemeToggle', ui.showThemeToggle],
+    ];
+    for (const [label, field, value] of uiBooleans) {
+      this._container.appendChild(this._makeCheckbox(label, field, value ?? true, 'scene', '__scene__', onChange));
     }
   }
 
