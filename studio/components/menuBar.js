@@ -32,6 +32,9 @@ const MENU_STRUCTURE = [
       { label: 'Toggle Timeline', action: 'toggleTimeline', shortcut: 'T' },
       { label: 'Toggle HUD', action: 'toggleHud', shortcut: 'H' },
       { divider: true },
+      { label: 'Show Scene Graph', action: 'toggleSceneGraph', shortcut: 'G' },
+      { label: 'Show Hidden Objects', action: 'toggleShowHidden' },
+      { divider: true },
       { label: 'Zoom to Fit', action: 'zoomToFit', shortcut: 'F' },
       { label: 'Reset Camera', action: 'resetCamera', shortcut: 'R' },
     ],
@@ -40,6 +43,7 @@ const MENU_STRUCTURE = [
     label: 'Tools',
     items: [
       { label: 'Edit Filters\u2026', action: 'editFilters' },
+      { label: 'Edit Data Sources\u2026', action: 'editDataSources' },
       { divider: true },
       { label: 'Custom ChatGPT \u2197', action: 'openChatGPT' },
       { label: 'Claude Cowork \u2197', action: 'openClaude' },

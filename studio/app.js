@@ -524,6 +524,7 @@ export async function boot() {
       case 'p': editorStore.dispatch({ type: 'togglePanel', panel: 'properties' }); break;
       case 't': editorStore.dispatch({ type: 'togglePanel', panel: 'timeline' }); break;
       case 'h': editorStore.dispatch({ type: 'togglePanel', panel: 'hud' }); break;
+      case 'g': editorStore.dispatch({ type: 'toggleSceneGraphPinned' }); break;
       case 'f': handleMenuAction('zoomToFit'); break;
       case 'r': if (e.shiftKey) editorStore.dispatch({ type: 'setTool', tool: 'region' }); else handleMenuAction('resetCamera'); break;
       case 'delete': case 'backspace': handleMenuAction('deleteSelected'); break;
@@ -682,6 +683,12 @@ export async function boot() {
       case 'toggleProperties': editorStore.dispatch({ type: 'togglePanel', panel: 'properties' }); break;
       case 'toggleTimeline': editorStore.dispatch({ type: 'togglePanel', panel: 'timeline' }); break;
       case 'toggleHud': editorStore.dispatch({ type: 'togglePanel', panel: 'hud' }); break;
+      case 'toggleSceneGraph':
+        editorStore.dispatch({ type: 'toggleSceneGraphPinned' });
+        break;
+      case 'toggleShowHidden':
+        editorStore.dispatch({ type: 'toggleShowHiddenObjects' });
+        break;
       case 'zoomToFit': {
         // Compute bounding center of all scene entities
         const points = [
@@ -735,7 +742,7 @@ export async function boot() {
         const shortcuts = [
           ['V', 'Select tool'], ['M', 'Marker tool'], ['A', 'Arc tool'],
           ['L', 'Path (line) tool'], ['D', 'Draw tool'], ['Shift+R', 'Region tool'],
-          ['P', 'Toggle properties'], ['T', 'Toggle timeline'], ['H', 'Toggle HUD'],
+          ['P', 'Toggle properties'], ['T', 'Toggle timeline'], ['H', 'Toggle HUD'], ['G', 'Toggle scene graph'],
           ['F', 'Zoom to fit'], ['R', 'Reset camera'],
           ['Space', 'Preview mode'], ['Escape', 'Cancel / deselect'],
           ['Enter', 'Finish path/region'], ['Delete', 'Delete selected'],
