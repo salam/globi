@@ -9,6 +9,9 @@ const DEFAULTS = {
   hudVisible: true,
   playbackState: 'stopped',
   playheadMs: 0,
+  sceneGraphDock: 'left',
+  sceneGraphPinned: false,
+  showHiddenObjects: false,
 };
 
 const PANEL_KEYS = {
@@ -48,6 +51,15 @@ export class EditorStore extends Emitter {
         break;
       case 'setPlayhead':
         this._state.playheadMs = action.ms;
+        break;
+      case 'setSceneGraphDock':
+        this._state.sceneGraphDock = action.dock;
+        break;
+      case 'toggleSceneGraphPinned':
+        this._state.sceneGraphPinned = !this._state.sceneGraphPinned;
+        break;
+      case 'toggleShowHiddenObjects':
+        this._state.showHiddenObjects = !this._state.showHiddenObjects;
         break;
       default:
         return;

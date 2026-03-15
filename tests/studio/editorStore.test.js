@@ -62,4 +62,32 @@ describe('EditorStore', () => {
     store.dispatch({ type: 'setPlayhead', ms: 3500 });
     assert.equal(store.getState().playheadMs, 3500);
   });
+
+  it('has scene graph defaults', () => {
+    const store = new EditorStore();
+    const s = store.getState();
+    assert.equal(s.sceneGraphDock, 'left');
+    assert.equal(s.sceneGraphPinned, false);
+    assert.equal(s.showHiddenObjects, false);
+  });
+
+  it('dispatches setSceneGraphDock', () => {
+    const store = new EditorStore();
+    store.dispatch({ type: 'setSceneGraphDock', dock: 'right' });
+    assert.equal(store.getState().sceneGraphDock, 'right');
+  });
+
+  it('dispatches toggleSceneGraphPinned', () => {
+    const store = new EditorStore();
+    store.dispatch({ type: 'toggleSceneGraphPinned' });
+    assert.equal(store.getState().sceneGraphPinned, true);
+    store.dispatch({ type: 'toggleSceneGraphPinned' });
+    assert.equal(store.getState().sceneGraphPinned, false);
+  });
+
+  it('dispatches toggleShowHiddenObjects', () => {
+    const store = new EditorStore();
+    store.dispatch({ type: 'toggleShowHiddenObjects' });
+    assert.equal(store.getState().showHiddenObjects, true);
+  });
 });
