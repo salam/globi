@@ -93,6 +93,22 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] `showAttribution` viewerUi toggle (defaults to true)
 - [x] All 7 example loaders updated with dataSources and sourceId
 
+## Scene Graph Panel
+
+- [x] Tree panel listing all scene entities grouped by type (Markers, Arcs, Paths, Regions)
+- [x] Two docking positions: left sidebar or top of properties panel, toggled via dock button
+- [x] Auto-show on globe selection, auto-hide after 2 seconds (pin button to keep open)
+- [x] Collapsible groups with entity count and type icons from tool strip
+- [x] Click to select entity, Ctrl/Cmd+click for multi-select, Shift+click for range select
+- [x] Eye icon per entity and group header to toggle visibility (`visible` property)
+- [x] View menu "Show Hidden Objects" renders hidden entities in studio
+- [x] Right-click context menu: Rename, Duplicate, Delete, Toggle Visibility
+- [x] Context menu on group headers: Select All, Show All, Hide All
+- [x] Double-click entity name for inline rename
+- [x] Drag-to-reorder entities within their group (affects render order)
+- [x] Duplicate now supports all entity types (markers, arcs, paths, regions)
+- [x] Keyboard shortcut: G to toggle scene graph
+
 ## Scene Data Model
 
 - [x] Define versioned schema for `Marker`, `Path`, `Arc`, `Region`, `Animation`.
@@ -125,6 +141,16 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Anchor inspect panel to selected marker position and keep it aligned during camera movement.
 - [x] Clicking a marker or callout always triggers the inspect popup (no inspect-mode toggle needed).
 - [x] Add fulltext search: single match flies to marker, multiple matches filter callouts to show only hits.
+- [x] Show lat/lon coordinates at the bottom center when hovering over the globe surface.
+- [x] Screenshot API: `captureScreenshot()` method on `<globi-viewer>` for programmatic globe capture.
+- [x] "Copy as image" context menu item — right-click the globe to copy a clean screenshot to clipboard.
+- [x] `scene-loaded` event — dispatched when scene is rendered and ready for capture.
+
+## Community — Auto-Thumbnail
+
+- [x] Auto-generate 1200×630 thumbnail on globe save/publish (no HUD, 15% zoom-out padding).
+- [x] Show auto-generated thumbnail preview with "Retake" button on Create/Edit page.
+- [x] Manual thumbnail upload overrides auto-generated one.
 
 ## Animation System
 - [x] Build keyframe timeline engine for position/rotation/scale.
@@ -140,6 +166,9 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Add multilingual content editing UI.
 - [x] Add inline inspect panel for immediate click-and-edit updates.
 - [x] Add prose place-name lookup (OSM Nominatim) to search and drop marker pins.
+- [x] Add arc height (maxAltitude) and stroke width editing in the properties panel.
+- [x] Add path stroke width editing in the properties panel.
+- [x] Add draggable arc height handle at the arc apex for visual arc height adjustment.
 
 ## Import/Export
 - [x] Import GeoJSON and map to scene entities.
@@ -246,6 +275,23 @@ Derived from `docs/PRD for Spherical Earth Model.md`.
 - [x] Inline Studio overlay injection (StudioOverlay class reparents viewer into full-page overlay)
 - [x] Configurable `studio-base` attribute for custom Studio paths
 - [x] Fallback to new-tab when overlay import fails
+- [x] Inline data source editing in properties panel (replaces modal editor)
+- [x] Inline filter editing in properties panel with category checkboxes and auto-generate (replaces modal editor)
+- [x] Reset-to-default buttons on each section header (Appearance, Camera, Planet, Viewer UI)
+- [x] License warning when disabling data attribution toggle
+- [x] `legendOpen` viewerUi config option to show the legend panel initially open (default: closed)
+
+## Soft-Delete / Recycle Bin
+
+- [ ] Add `deletedAt` field to scenes collection (PocketBase migration)
+- [ ] Update list/view rules to exclude soft-deleted scenes from public queries
+- [ ] Custom endpoint `POST /api/scenes/{id}/trash` — author soft-deletes a scene
+- [ ] Custom endpoint `POST /api/scenes/{id}/restore` — author restores a trashed scene
+- [ ] Custom endpoint `GET /api/scenes/trash` — list authenticated user's trashed scenes
+- [ ] Cron job to permanently purge scenes trashed more than 30 days ago
+- [ ] Delete button on Detail page (owner only, with confirmation)
+- [ ] Trash page listing deleted scenes with restore and permanent-delete actions
+- [ ] Navigation link to trash from Profile page
 
 ## Remaining Gaps
 
