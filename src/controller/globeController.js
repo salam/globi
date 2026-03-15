@@ -222,6 +222,25 @@ export class GlobeController {
     return null;
   }
 
+  setPreview(data) {
+    if (typeof this.#activeRenderer.setPreview === 'function') {
+      this.#activeRenderer.setPreview(data);
+    }
+  }
+
+  clearPreview() {
+    if (typeof this.#activeRenderer.clearPreview === 'function') {
+      this.#activeRenderer.clearPreview();
+    }
+  }
+
+  captureScreenshot(options) {
+    if (typeof this.#activeRenderer.captureScreenshot === 'function') {
+      return this.#activeRenderer.captureScreenshot(options);
+    }
+    return Promise.reject(new Error('captureScreenshot not supported by active renderer'));
+  }
+
   pauseIdleRotation() {
     if (typeof this.#activeRenderer.pauseIdleRotation === 'function') {
       this.#activeRenderer.pauseIdleRotation();
@@ -330,6 +349,12 @@ export class GlobeController {
   endDrag(clientX, clientY) {
     if (typeof this.#activeRenderer.endDrag === 'function') {
       this.#activeRenderer.endDrag(clientX, clientY);
+    }
+  }
+
+  setStudioOptions(opts) {
+    if (typeof this.#globeRenderer.setStudioOptions === 'function') {
+      this.#globeRenderer.setStudioOptions(opts);
     }
   }
 

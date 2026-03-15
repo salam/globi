@@ -124,10 +124,13 @@ const TEMPLATE = `
       border-radius: 4px;
     }
 
-    /* BUG15: hidden attribute must win over icon-only display */
+    /* BUG15/BUG38: hidden attribute must win over explicit display values */
     .controls button[hidden],
     .controls select[hidden],
-    .controls input[hidden] {
+    .controls input[hidden],
+    .scale[hidden],
+    .compass[hidden],
+    .nav-hud[hidden] {
       display: none !important;
     }
 
@@ -405,6 +408,28 @@ const TEMPLATE = `
       gap: 4px;
     }
 
+    .coord-hud {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(0, 0, 0, 0.45);
+      padding: 2px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 5;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .coord-hud.visible {
+      opacity: 1;
+    }
+
     .scale-bar {
       height: 2px;
       min-width: 18px;
@@ -622,6 +647,7 @@ const TEMPLATE = `
   </style>
 
   <div class="stage" part="stage" data-globi-role="viewport"></div>
+  <div class="coord-hud"></div>
   <div class="controls">
     <input class="search-input" type="search" placeholder="Search markers…" aria-label="Search markers" />
     <select class="marker-filter filter-hidden" aria-label="Filter markers"></select>
@@ -687,6 +713,7 @@ export class GlobiViewerElement extends HTMLElement {
   #viewerUi = resolveViewerUiConfig();
   #celestialPresets = listCelestialPresets();
   #currentScene = null;
+  #sceneLoadedFired = false;
   #inspectMode = false;
   #legendVisible = false;
   #drag = {
@@ -713,6 +740,7 @@ export class GlobiViewerElement extends HTMLElement {
   #agentAPI = null;
   #ariaLiveEl = null;
   #describeDebounce = 0;
+  #coordHud = null;
   constructor() {
     super();
     this.#root = this.attachShadow({ mode: 'open' });
@@ -726,6 +754,7 @@ export class GlobiViewerElement extends HTMLElement {
     this.#compassArrow = this.#root.querySelector('.compass-arrow');
     this.#scaleBar = this.#root.querySelector('.scale-bar');
     this.#scaleLabel = this.#root.querySelector('.scale-label');
+    this.#coordHud = this.#root.querySelector('.coord-hud');
     this.#celestialSelect = this.#root.querySelector('.celestial-select');
     this.#markerFilterSelect = this.#root.querySelector('.marker-filter');
     this.#fullscreenButton = this.#root.querySelector('.fullscreen');
@@ -800,6 +829,9 @@ export class GlobiViewerElement extends HTMLElement {
     this.#stage.addEventListener('pointercancel', (event) => this.#onPointerUp(event));
     this.#stage.addEventListener('wheel', (event) => this.#onWheel(event), { passive: false });
     this.#stage.addEventListener('mousemove', (event) => this.#onHoverMove(event));
+    this.#stage.addEventListener('mouseleave', () => {
+      if (this.#coordHud) this.#coordHud.classList.remove('visible');
+    });
   }
 
   connectedCallback() {
@@ -819,6 +851,16 @@ export class GlobiViewerElement extends HTMLElement {
       this.#updateNavigationHud();
       this.#updateAttribution(scene);
       dispatchCustomEvent(this, 'sceneChange', scene);
+
+      // Emit scene-loaded after a frame renders (textures may still be loading)
+      if (!this.#sceneLoadedFired) {
+        this.#sceneLoadedFired = true;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            dispatchCustomEvent(this, 'scene-loaded', scene);
+          });
+        });
+      }
 
       // Update accessibility state
       this.#viewStateQuery.setRenderer(this.#controller.getActiveRenderer?.() ?? null);
@@ -907,6 +949,15 @@ export class GlobiViewerElement extends HTMLElement {
     const theme = this.getAttribute('theme');
     if (theme) {
       this.setTheme(theme);
+    }
+
+    // Read scene attribute set before element upgrade (e.g. SSR or setAttribute fallback)
+    const sceneAttr = this.getAttribute('scene');
+    if (sceneAttr) {
+      try {
+        const parsed = typeof sceneAttr === 'string' ? JSON.parse(sceneAttr) : sceneAttr;
+        this.setScene(parsed);
+      } catch (_) { /* invalid JSON — ignore */ }
     }
 
     const observer = new ResizeObserver((entries) => {
@@ -1124,6 +1175,10 @@ export class GlobiViewerElement extends HTMLElement {
     if (!this.#viewerUi.showLegendButton) {
       this.#legendVisible = false;
       this.#legend.classList.remove('visible');
+    } else {
+      // Apply legendOpen initial state
+      this.#legendVisible = this.#viewerUi.legendOpen;
+      this.#legend.classList.toggle('visible', this.#legendVisible);
     }
 
     this.#compass.hidden = !hudVisibility.showCompass;
@@ -1295,6 +1350,8 @@ export class GlobiViewerElement extends HTMLElement {
       centerLat: 0,
       zoom: 1,
     };
+
+    dispatchCustomEvent(this, 'cameraChange', camera);
 
     if (this.#compassArrow) {
       const { rotation, tilt, dotOpacity } = computeNorthArrowState(camera);
@@ -1472,6 +1529,7 @@ export class GlobiViewerElement extends HTMLElement {
     }
     cancelAnimationFrame(this.#focusFrame);
     this.#focusFrame = 0;
+    this.#controller?.resumeIdleRotation();
   }
 
   #animateFocusTo(target, options = {}) {
@@ -1502,6 +1560,9 @@ export class GlobiViewerElement extends HTMLElement {
 
     this.#stopFocusAnimation();
 
+    // Pause idle rotation so it doesn't fight the animation
+    this.#controller.pauseIdleRotation();
+
     const tick = (now) => {
       const elapsed = Math.max(0, now - startedAt);
       const t = Math.min(1, elapsed / durationMs);
@@ -1522,6 +1583,7 @@ export class GlobiViewerElement extends HTMLElement {
 
       if (t >= 1) {
         this.#focusFrame = 0;
+        this.#controller.resumeIdleRotation();
         return;
       }
       this.#focusFrame = requestAnimationFrame(tick);
@@ -1724,6 +1786,20 @@ export class GlobiViewerElement extends HTMLElement {
     if (this.#drag.active || !this.#controller) return;
     const hit = this.#controller.hitTest(event.clientX, event.clientY);
     this.#stage.style.cursor = hit ? 'pointer' : '';
+
+    if (this.#coordHud) {
+      const latLon = this.#controller.screenToLatLon(event.clientX, event.clientY);
+      if (latLon) {
+        const lat = latLon.lat.toFixed(2);
+        const lon = latLon.lon.toFixed(2);
+        const ns = latLon.lat >= 0 ? 'N' : 'S';
+        const ew = latLon.lon >= 0 ? 'E' : 'W';
+        this.#coordHud.textContent = `${Math.abs(lat)}° ${ns}, ${Math.abs(lon)}° ${ew}`;
+        this.#coordHud.classList.add('visible');
+      } else {
+        this.#coordHud.classList.remove('visible');
+      }
+    }
   }
 
   #panByScreenDelta(dx, dy) {
@@ -1842,8 +1918,50 @@ export class GlobiViewerElement extends HTMLElement {
         if (output) this.#downloadText(output, `globi-scene.${data.format}`, data.format === 'json' ? 'application/json' : 'text/plain');
         break;
       }
+      case 'copyAsImage': {
+        try {
+          const blob = await this.captureScreenshot();
+          if (navigator.clipboard?.write) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob }),
+            ]);
+          } else {
+            this.#downloadBlob(blob, 'globi-screenshot.png');
+          }
+        } catch (_) {
+          // Fallback: try download
+          try {
+            const blob = await this.captureScreenshot();
+            this.#downloadBlob(blob, 'globi-screenshot.png');
+          } catch (__) { /* silently fail */ }
+        }
+        break;
+      }
       case 'openStudio': {
-        const studioBase = this.getAttribute('studio-base') || '/studio/';
+        // Resolve Studio base: explicit attribute > auto-detect from module origin > fallback
+        let studioBase = this.getAttribute('studio-base');
+        if (!studioBase) {
+          // Derive from the viewer module's own URL so Studio loads from the
+          // same origin even when the globe is embedded on a third-party host.
+          // Dev:  .../src/components/globi-viewer.js → .../studio/
+          // Dist: .../dist/globi.js                 → .../studio/
+          try {
+            const moduleUrl = new URL(import.meta.url);
+            const pathParts = moduleUrl.pathname.split('/');
+            // Drop path segments to reach the project root:
+            //   Dev:  /src/components/globi-viewer.js → pop 3 (file, components, src)
+            //   Dist: /dist/globi.js                  → pop 2 (file, dist)
+            pathParts.pop(); // filename
+            const parentDir = pathParts[pathParts.length - 1];
+            pathParts.pop(); // "components" or "dist"
+            if (parentDir === 'components') {
+              pathParts.pop(); // "src" — one more level in dev layout
+            }
+            studioBase = moduleUrl.origin + pathParts.join('/') + '/studio/';
+          } catch (_) {
+            studioBase = '/studio/';
+          }
+        }
         // Embed current camera state into scene for Studio to restore
         const cameraState = this.getCameraState();
         const sceneWithCamera = { ...scene };
@@ -1854,12 +1972,31 @@ export class GlobiViewerElement extends HTMLElement {
         try {
           sessionStorage.setItem('globi-studio-scene', json);
         } catch (_) { /* quota exceeded — Studio will start empty */ }
+
+        // Try loading Studio: single-file bundle first, then multi-file, then new tab
+        let opened = false;
+        // 1. Try single-file bundle (globi-studio.js next to globi.js in dist/)
         try {
-          const { StudioOverlay } = await import(studioBase + 'studioOverlay.js');
+          const moduleUrl = new URL(import.meta.url);
+          const dirParts = moduleUrl.pathname.split('/');
+          dirParts.pop(); // remove filename
+          const bundleUrl = moduleUrl.origin + dirParts.join('/') + '/globi-studio.js';
+          const { StudioOverlay } = await import(bundleUrl);
           const overlay = new StudioOverlay(this, { studioBase });
           await overlay.open();
-        } catch (err) {
-          console.warn('Failed to load Studio overlay, falling back to new tab:', err.message);
+          opened = true;
+        } catch (_) { /* bundle not available */ }
+        // 2. Try multi-file (separate studioOverlay.js + app.js + styles.css)
+        if (!opened) {
+          try {
+            const { StudioOverlay } = await import(studioBase + 'studioOverlay.js');
+            const overlay = new StudioOverlay(this, { studioBase });
+            await overlay.open();
+            opened = true;
+          } catch (_) { /* multi-file not available */ }
+        }
+        // 3. Fall back to opening Studio in a new tab
+        if (!opened) {
           window.open(studioBase + 'index.html', '_blank');
         }
         break;
@@ -1892,6 +2029,10 @@ export class GlobiViewerElement extends HTMLElement {
 
   #downloadText(text, filename, mimeType = 'text/plain') {
     const blob = new Blob([text], { type: mimeType });
+    this.#downloadBlob(blob, filename);
+  }
+
+  #downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1940,10 +2081,22 @@ export class GlobiViewerElement extends HTMLElement {
   }
 
   setScene(scene) {
+    this.#sceneLoadedFired = false;
     const result = this.#controller.setScene(scene);
     this.#syncCelestialSelection(result.planet?.id);
     this.#updateHudTint(scene);
+    // Apply initial camera position if provided
+    if (scene.camera && Number.isFinite(scene.camera.lat) && Number.isFinite(scene.camera.lon)) {
+      this.flyTo(
+        { lat: scene.camera.lat, lon: scene.camera.lon },
+        { durationMs: 1200, zoomArc: true }
+      );
+    }
     return result;
+  }
+
+  setStudioOptions(opts) {
+    this.#controller.setStudioOptions(opts);
   }
 
   setPlanet(config) {
@@ -2052,6 +2205,19 @@ export class GlobiViewerElement extends HTMLElement {
 
   hitTest(x, y) {
     return this.#controller?.hitTest(x, y) ?? null;
+  }
+
+  setPreview(data) {
+    this.#controller?.setPreview(data);
+  }
+
+  clearPreview() {
+    this.#controller?.clearPreview();
+  }
+
+  captureScreenshot(options) {
+    if (!this.#controller) return Promise.reject(new Error('Viewer not initialised'));
+    return this.#controller.captureScreenshot(options);
   }
 
   getCameraState() {
