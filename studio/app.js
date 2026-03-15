@@ -625,14 +625,47 @@ export async function boot() {
       }
       case 'duplicate': {
         const state = editorStore.getState();
+        const newIds = [];
         for (const id of state.selectedIds) {
           const marker = scene.markers.find(m => m.id === id);
           if (marker) {
-            const dup = { ...marker, id: `${marker.id}-dup-${Date.now()}`, lat: marker.lat + 1 };
+            const dup = { ...marker, id: `${marker.id}-dup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, lat: marker.lat + 1 };
             scene.markers.push(dup);
+            newIds.push(dup.id);
+            continue;
+          }
+          const arc = scene.arcs.find(a => a.id === id);
+          if (arc) {
+            const dup = { ...arc, id: `${arc.id}-dup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              start: { ...arc.start, lat: arc.start.lat + 1 },
+              end: { ...arc.end, lat: arc.end.lat + 1 } };
+            scene.arcs.push(dup);
+            newIds.push(dup.id);
+            continue;
+          }
+          const path = scene.paths.find(p => p.id === id);
+          if (path) {
+            const dup = { ...path, id: `${path.id}-dup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              points: (path.points || []).map(p => ({ ...p, lat: p.lat + 1 })) };
+            scene.paths.push(dup);
+            newIds.push(dup.id);
+            continue;
+          }
+          const region = scene.regions.find(r => r.id === id);
+          if (region) {
+            const dup = { ...region, id: `${region.id}-dup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
+            if (dup.geojson?.coordinates?.[0]) {
+              dup.geojson = { ...dup.geojson,
+                coordinates: [dup.geojson.coordinates[0].map(c => [c[0], c[1] + 1])] };
+            }
+            scene.regions.push(dup);
+            newIds.push(dup.id);
           }
         }
-        pushScene({ ...scene });
+        if (newIds.length > 0) {
+          pushScene({ ...scene });
+          editorStore.dispatch({ type: 'select', ids: newIds });
+        }
         break;
       }
       case 'selectAll': {
