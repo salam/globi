@@ -1,13 +1,20 @@
 import {
   AmbientLight,
+  BufferGeometry,
   Color,
   DirectionalLight,
   Euler,
+  Float32BufferAttribute,
   Group,
+  Line,
+  LineBasicMaterial,
+  MeshBasicMaterial,
   PerspectiveCamera,
   Quaternion,
   Raycaster,
   Scene,
+  SphereGeometry,
+  Mesh,
   TextureLoader,
   Vector2,
   Vector3,
@@ -90,6 +97,8 @@ export class ThreeGlobeRenderer {
   #landmassGroup = null;
   #geoLabelManager = new GeoLabelManager();
   #geoLabelGroup = null;
+  #previewGroup = null;
+  #studioOptions = {};
 
   // --- Camera state (derived from globe rotation) ---
   #centerLon = 0;
@@ -163,6 +172,11 @@ export class ThreeGlobeRenderer {
    * indicate data is being fetched. The previous rotation speed is restored
    * when loading ends.
    */
+  setStudioOptions(opts) {
+    this.#studioOptions = opts;
+    if (this.#lastScene) this.renderScene(this.#lastScene);
+  }
+
   setLoading(loading) {
     if (loading) {
       if (this.#loadingSavedSpeed === null) {
@@ -364,6 +378,10 @@ export class ThreeGlobeRenderer {
     this.#geoLabelGroup = new Group();
     globeGroup.add(this.#geoLabelGroup);
 
+    this.#previewGroup = new Group();
+    this.#previewGroup.renderOrder = 3;
+    globeGroup.add(this.#previewGroup);
+
     // BUG28: Only fetch country borders for Earth — other planets have no countries
     if (resolvedPlanet.id === 'earth') {
       fetch(new URL('../../assets/ne_110m_countries.geojson', import.meta.url).href)
@@ -463,22 +481,26 @@ export class ThreeGlobeRenderer {
     // Update sub-managers with new scene data
     const locale = scene.locale ?? 'en';
 
+    const markers = (scene.markers ?? []).filter(m => m.visible !== false || this.#studioOptions.showHiddenObjects);
     if (this.#markerGroup) {
-      this.#markerManager.update(this.#markerGroup, scene.markers ?? [], locale);
+      this.#markerManager.update(this.#markerGroup, markers, locale);
       this.#markerManager.applyZoom(this.#zoom);
       this.#lastMarkerZoom = this.#zoom;
     }
     if (this.#arcGroup) {
-      this.#arcPathManager.update(this.#arcGroup, scene.arcs ?? [], scene.paths ?? []);
+      const arcs = (scene.arcs ?? []).filter(a => a.visible !== false || this.#studioOptions.showHiddenObjects);
+      const paths = (scene.paths ?? []).filter(p => p.visible !== false || this.#studioOptions.showHiddenObjects);
+      this.#arcPathManager.update(this.#arcGroup, arcs, paths);
     }
     if (this.#regionGroup) {
-      this.#regionManager.update(this.#regionGroup, scene.regions ?? []);
+      const regions = (scene.regions ?? []).filter(r => r.visible !== false || this.#studioOptions.showHiddenObjects);
+      this.#regionManager.update(this.#regionGroup, regions);
     }
 
     // Callout manager + CSS2D labels
     if (this.#calloutGroup) {
       this.#lastClusterZoom = this.#zoom;
-      this.#calloutManager.update(this.#calloutGroup, scene.markers ?? [], locale, {
+      this.#calloutManager.update(this.#calloutGroup, markers, locale, {
         leaderColor: palette.leaderColor,
         textColor: palette.calloutTextColor,
         zoom: this.#zoom,
@@ -741,6 +763,11 @@ export class ThreeGlobeRenderer {
     if (hits.length === 0) return null;
 
     const worldPoint = hits[0].point.clone();
+    // BUG37: undo obliquity rotation first (outer group), then globe rotation (inner group)
+    if (this.#obliquityGroup) {
+      const inverseObliquity = this.#obliquityGroup.quaternion.clone().invert();
+      worldPoint.applyQuaternion(inverseObliquity);
+    }
     const inverseRotation = this.#globeGroup.quaternion.clone().invert();
     worldPoint.applyQuaternion(inverseRotation);
 
@@ -749,10 +776,63 @@ export class ThreeGlobeRenderer {
   }
 
   /**
-   * Project a geographic point to client (screen) coordinates.
-   * @param {{ lat: number, lon: number, alt?: number }} point
-   * @returns {{ clientX: number, clientY: number, visible: boolean } | null}
+   * Render temporary preview geometry (dots + lines) on the globe.
+   * Used by studio tools to show real-time feedback while drawing.
+   * @param {{ points?: {lat,lon,alt?}[], lineColor?: string, dotColor?: string, closed?: boolean }} data
    */
+  setPreview(data) {
+    this.clearPreview();
+    if (!this.#previewGroup || !data) return;
+
+    const points = data.points ?? [];
+    const lineColor = data.lineColor ?? '#00ccff';
+    const dotColor = data.dotColor ?? '#ffffff';
+    const closed = data.closed ?? false;
+
+    // Draw dots at each point
+    const dotRadius = 0.01;
+    const dotGeom = new SphereGeometry(dotRadius, 12, 8);
+    const dotMat = new MeshBasicMaterial({ color: dotColor, depthTest: false });
+    for (const pt of points) {
+      const pos = latLonToCartesian(pt.lat, pt.lon, 1, pt.alt ?? 0);
+      const dot = new Mesh(dotGeom, dotMat);
+      dot.position.set(pos.x, pos.y, pos.z);
+      dot.renderOrder = 4;
+      this.#previewGroup.add(dot);
+    }
+
+    // Draw connecting line segments
+    if (points.length >= 2) {
+      const allPts = closed ? [...points, points[0]] : points;
+      const verts = new Float32Array(allPts.length * 3);
+      for (let i = 0; i < allPts.length; i++) {
+        const pos = latLonToCartesian(allPts[i].lat, allPts[i].lon, 1, (allPts[i].alt ?? 0) + 0.002);
+        verts[i * 3] = pos.x;
+        verts[i * 3 + 1] = pos.y;
+        verts[i * 3 + 2] = pos.z;
+      }
+      const geom = new BufferGeometry();
+      geom.setAttribute('position', new Float32BufferAttribute(verts, 3));
+      const mat = new LineBasicMaterial({ color: lineColor, depthTest: false });
+      const line = new Line(geom, mat);
+      line.renderOrder = 4;
+      this.#previewGroup.add(line);
+    }
+
+    this.#dirty = true;
+  }
+
+  clearPreview() {
+    if (!this.#previewGroup) return;
+    while (this.#previewGroup.children.length > 0) {
+      const child = this.#previewGroup.children[0];
+      this.#previewGroup.remove(child);
+      child.geometry?.dispose();
+      child.material?.dispose();
+    }
+    this.#dirty = true;
+  }
+
   filterCallouts(matchingIds) {
     this.#calloutManager.filterCallouts(matchingIds);
     this.#dirty = true;
@@ -802,6 +882,59 @@ export class ThreeGlobeRenderer {
   getCanvasRect() {
     if (!this.#webglRenderer) return null;
     return this.#webglRenderer.domElement.getBoundingClientRect();
+  }
+
+  /**
+   * Capture a screenshot of the globe as a Blob.
+   * Uses a temporary offscreen WebGLRenderer for exact output dimensions.
+   */
+  async captureScreenshot({ width, height, padding = 0, format = 'image/png', quality = 0.92 } = {}) {
+    if (!this.#scene || !this.#camera) {
+      throw new Error('Renderer not initialised');
+    }
+
+    const el = this.#webglRenderer?.domElement;
+    const w = width ?? el?.clientWidth ?? 800;
+    const h = height ?? el?.clientHeight ?? 500;
+
+    // Save camera state
+    const savedZ = this.#camera.position.z;
+    const savedAspect = this.#camera.aspect;
+
+    try {
+      // Zoom out for padding
+      if (padding > 0) {
+        this.#camera.position.z = savedZ * (1 + padding);
+      }
+      this.#camera.aspect = w / h;
+      this.#camera.updateProjectionMatrix();
+
+      // Temporary offscreen renderer
+      const offscreen = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      offscreen.setSize(w, h);
+      offscreen.setPixelRatio(1);
+      offscreen.outputColorSpace = SRGBColorSpace;
+      offscreen.setClearColor(this.#webglRenderer.getClearColor(new Color()), this.#webglRenderer.getClearAlpha());
+
+      offscreen.render(this.#scene, this.#camera);
+
+      const blob = await new Promise((resolve, reject) => {
+        offscreen.domElement.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))),
+          format,
+          quality,
+        );
+      });
+
+      offscreen.dispose();
+      return blob;
+    } finally {
+      // Restore camera
+      this.#camera.position.z = savedZ;
+      this.#camera.aspect = savedAspect;
+      this.#camera.updateProjectionMatrix();
+      this.#dirty = true;
+    }
   }
 
   show() {
@@ -1215,7 +1348,7 @@ export class ThreeGlobeRenderer {
       enabled: config.enabled,
       thresholdDeg: config.thresholdDeg / Math.max(this.#zoom, 0.3),
     };
-    const markers = scene.markers ?? [];
+    const markers = (scene.markers ?? []).filter(m => m.visible !== false || this.#studioOptions.showHiddenObjects);
     clusterMarkers(markers, zoomAdjusted);
 
     const locale = scene.locale ?? 'en';
