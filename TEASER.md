@@ -2,7 +2,7 @@
 
 **Oneliner.** A drop-in `<globi-viewer>` web component that turns a JSON scene into an interactive 3D globe — built for content creators, educators, and newsrooms.
 
-**Creator.** Matthias ()
+**Creator.** Matthias
 **Repo.** https://github.com/salam/globi
 **Live.** https://globi.world/ · editor at https://globi.world/editor/
 **License.** MIT · **Stack.** Web Components + WebGL (Three.js) + esbuild, zero runtime framework.
